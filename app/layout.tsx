@@ -9,6 +9,7 @@ const roboto = Roboto({ weight: ["400", "700"], subsets: ["latin"] });
 
 export const metadata = {
   ...SEO_CONFIG,
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
 };
 
 interface RootLayoutProps {

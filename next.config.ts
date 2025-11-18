@@ -5,8 +5,11 @@ import { SiteSettings } from "./lib/config/settings";
 const nextConfig: NextConfig = {
   // Image optimization
   images: {
-    domains: ["cdn.sanity.io"],
     remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+      },
       {
         protocol: "https",
         hostname: "**.fashn.ai",
