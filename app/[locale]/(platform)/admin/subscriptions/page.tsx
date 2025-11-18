@@ -37,9 +37,10 @@ async function getSubscriptions(page = 1, limit = 10) {
 export default async function AdminSubscriptionsPage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: Promise<{ page?: string }>;
 }) {
-  const page = parseInt(searchParams.page || "1", 10);
+  const params = await searchParams;
+  const page = parseInt(params.page || "1", 10);
   const { subscriptions, total } = await getSubscriptions(page, 10);
 
   return (

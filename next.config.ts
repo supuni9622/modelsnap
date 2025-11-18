@@ -44,8 +44,6 @@ const nextConfig: NextConfig = {
       "lucide-react",
       "framer-motion",
     ],
-    // Enable faster refresh
-    optimizeCss: true,
   },
 
   // Compression

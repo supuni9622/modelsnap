@@ -34,9 +34,10 @@ async function getUsers(page = 1, limit = 10) {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: Promise<{ page?: string }>;
 }) {
-  const page = parseInt(searchParams.page || "1", 10);
+  const params = await searchParams;
+  const page = parseInt(params.page || "1", 10);
   const { users, total } = await getUsers(page, 10);
 
   return (
