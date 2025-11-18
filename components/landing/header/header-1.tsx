@@ -61,7 +61,10 @@ export default function Header1() {
   }, []);
 
   useEffect(() => {
-    if (isOpen) toggleMenu(); // Only close if it's open
+    if (isOpen) {
+      toggleMenu(); // Only close if it's open
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   const scrollToSection = (id: string) => {
