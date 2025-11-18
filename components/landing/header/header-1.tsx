@@ -119,14 +119,18 @@ export default function Header1() {
                 <AccountButton />
               ) : isLoaded ? (
                 <>
-                  <Link className="md:flex hidden" href="/sign-in">
-                    <Button variant="outline" size="sm">
-                      {t("SignIn")}
-                    </Button>
-                  </Link>
-                  <Link className="md:flex hidden" href="/sign-up">
-                    <Button size="sm">{t("SignUp")}</Button>
-                  </Link>
+                  <div className="hidden md:flex">
+                    <Link href="/sign-in">
+                      <Button variant="outline" size="sm">
+                        {t("SignIn")}
+                      </Button>
+                    </Link>
+                  </div>
+                  <div className="hidden md:flex">
+                    <Link href="/sign-up">
+                      <Button size="sm">{t("SignUp")}</Button>
+                    </Link>
+                  </div>
                 </>
               ) : null}
 

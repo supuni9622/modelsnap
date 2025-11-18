@@ -31,14 +31,15 @@ export default function MyCreditsButton() {
             </Link>
           ) : (
             <>
-              <Button
-                onClick={() => setShowDialog(!showDialog)}
-                variant="secondary"
-                className="md:flex hidden"
-              >
-                <CoinsIcon />
-                {billing?.credits} Credits
-              </Button>
+              <div className="hidden md:flex">
+                <Button
+                  onClick={() => setShowDialog(!showDialog)}
+                  variant="secondary"
+                >
+                  <CoinsIcon />
+                  {billing?.credits} Credits
+                </Button>
+              </div>
 
               {showDialog && (
                 <CreditTopUpDialog open={showDialog} setOpen={setShowDialog} />

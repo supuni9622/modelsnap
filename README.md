@@ -1,30 +1,29 @@
-# Founderflow - SaaS Boilerplate
+# ModelSnap.ai - AI Fashion Photography Platform
 
-A complete, production-ready Next.js SaaS boilerplate with authentication, payments, internationalization, and more.
+AI-powered fashion photography platform for Sri Lankan fashion brands. Upload clothing, select AI models, and get studio-quality photos in minutes.
 
 ## 🚀 Features
 
-- **Authentication**: Clerk integration with sign-up/sign-in
-- **Payments**: Dual payment provider support (Stripe & Lemon Squeezy) 
-- **Internationalization**: Multi-language support with next-intl
-- **Database**: MongoDB integration with Mongoose
-- **UI Components**: Radix UI components with Tailwind CSS
-- **Email**: Resend integration for transactional emails
-- **Analytics**: PostHog integration (optional)
-- **CMS**: Sanity integration for blog content (optional)
-- **Responsive Design**: Mobile-first approach
-- **TypeScript**: Full type safety
+- **AI Clothing Renders**: Upload clothing and render it on AI-generated Sri Lankan models
+- **Avatar Gallery**: 32 pre-generated Sri Lankan avatars (4 body types × 4 skin tones × 2 genders)
+- **Credit System**: Pay-per-render with subscription plans
+- **Render History**: Track all your renders with download links
+- **Admin Dashboard**: User management and subscription handling
+- **Bank Transfer Support**: Manual payment processing for local customers
+- **Landing Page**: Complete marketing site with hero, gallery, pricing, and more
 
 ## 📦 Tech Stack
 
-- **Framework**: Next.js 15
+- **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **UI Components**: Radix UI
 - **Database**: MongoDB with Mongoose
 - **Authentication**: Clerk
 - **Payments**: Stripe & Lemon Squeezy
+- **AI API**: FASHN.ai for virtual try-on
 - **Email**: Resend
+- **Testing**: Playwright
 - **Deployment**: Vercel ready
 
 ## 🛠️ Quick Start
@@ -33,7 +32,7 @@ A complete, production-ready Next.js SaaS boilerplate with authentication, payme
 
 ```bash
 git clone <your-repo-url>
-cd FounderflowBoilerplate
+cd modelsnap
 ```
 
 ### 2. Install dependencies
@@ -47,14 +46,50 @@ npm install
 Copy the example environment file and update with your credentials:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
-Fill in all required environment variables in `.env`. See the [Environment Variables](#environment-variables) section below for details.
+Required environment variables:
 
-### 4. Set up the database
+```env
+# Database
+MONGO_URI=mongodb://localhost:27017/modelsnap
 
-Ensure MongoDB is running and accessible via the `MONGO_URI` in your `.env` file.
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
+
+# FASHN AI API
+FASHN_API_KEY=your_fashn_api_key
+
+# Payments (Stripe or Lemon Squeezy)
+STRIPE_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Email
+RESEND_API_KEY=re_...
+
+# Admin Access
+ADMIN_EMAILS=admin@example.com,another@example.com
+
+# Optional
+NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX
+```
+
+### 4. Generate Avatar Gallery
+
+Run the avatar generation script to create the 32 Sri Lankan avatars:
+
+```bash
+npx tsx scripts/generate-avatars.ts
+```
+
+This will:
+- Generate 32 avatars using FASHN API
+- Save them to `public/avatars/`
+- Create `public/avatars/avatarMap.json` for frontend mapping
 
 ### 5. Run the development server
 
@@ -64,101 +99,121 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 🔧 Environment Variables
-
-### Required Variables
-
-- `MONGO_URI` - MongoDB connection string
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk publishable key
-- `CLERK_SECRET_KEY` - Clerk secret key
-- `CLERK_WEBHOOK_SIGNING_SECRET` - Clerk webhook secret
-
-### Payment Providers (Choose One or Both)
-
-**Stripe:**
-- `STRIPE_SECRET_KEY` - Stripe secret key
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
-- `STRIPE_WEBHOOK_SECRET` - Stripe webhook secret
-
-**Lemon Squeezy:**
-- `LEMON_SQUEEZY_API_KEY` - Lemon Squeezy API key
-- `LEMON_SQUEEZY_STORE_ID` - Your store ID
-- `LEMON_SQUEEZY_WEBHOOK_SECRET` - Webhook secret
-
-### Optional Services
-
-- `RESEND_API_KEY` - For transactional emails
-- `NEXT_PUBLIC_POSTHOG_KEY` - For analytics
-- `SANITY_PROJECT_ID` - For blog CMS
-- `SANITY_DATASET` - Sanity dataset name
-
 ## 🏗️ Project Structure
 
 ```
-├── app/                    # Next.js app directory
-│   ├── [locale]/          # Internationalized routes
-│   ├── api/               # API routes
-│   └── globals.css        # Global styles
-├── components/            # Reusable components
-│   ├── ui/               # Base UI components
-│   ├── landing/          # Landing page components
-│   └── platform/         # App dashboard components
-├── lib/                  # Utility functions
-│   ├── config/          # Configuration files
-│   └── utils/           # Helper functions
-├── models/              # Database models
-├── hooks/               # Custom React hooks
-├── types/               # TypeScript type definitions
-└── docs/                # Documentation
+├── app/                          # Next.js app directory
+│   ├── [locale]/                # Internationalized routes
+│   │   ├── (guest)/            # Public routes (landing page)
+│   │   ├── (platform)/        # Authenticated routes
+│   │   │   ├── app/           # Main app dashboard
+│   │   │   └── admin/         # Admin dashboard
+│   │   └── (auth)/            # Authentication pages
+│   └── api/                    # API routes
+│       ├── render/             # Render API (server-side)
+│       ├── avatars/            # Avatar listing API
+│       ├── upload/             # File upload API
+│       └── admin/              # Admin APIs
+├── components/
+│   ├── platform/              # Platform components
+│   │   ├── upload/           # Upload component
+│   │   ├── avatar/           # Avatar selector
+│   │   ├── render/           # Render interface
+│   │   └── history/          # Render history
+│   └── landing/              # Landing page sections
+├── lib/
+│   ├── fashn.ts              # FASHN API client
+│   ├── analytics.ts          # Google Analytics
+│   └── config/               # Configuration
+├── models/                    # Database models
+│   ├── user.ts               # User model
+│   ├── avatar.ts             # Avatar model
+│   └── render.ts             # Render model
+├── scripts/
+│   └── generate-avatars.ts   # Avatar generation script
+└── tests/                     # Playwright tests
 ```
 
-## 💳 Payment Integration
+## 🎨 Rendering Pipeline
 
-This boilerplate supports both Stripe and Lemon Squeezy:
+The rendering process follows a strict server-side pipeline (AGENTS.md rule 6):
 
-- Users can choose their preferred payment method
-- Unified checkout experience
-- Automatic webhook processing
-- Credit and subscription management
+1. **Credit Check**: Verify user has sufficient credits
+2. **Validation**: Validate garment upload (file type, size)
+3. **FASHN API Call**: Process virtual try-on
+4. **Database Save**: Save render record atomically
+5. **Credit Deduction**: Deduct credits from user
+6. **Return Result**: Return rendered image URL
 
-Configure pricing in `lib/config/pricing.ts` and set up webhooks as documented in the `docs/` folder.
+All rendering logic runs server-side for security and consistency.
 
-## 🌍 Internationalization
+## 💳 Pricing Plans
 
-Built-in support for multiple languages using `next-intl`:
+- **Free**: 10 watermarked renders
+- **Starter** (LKR 2,000/mo): 50 renders per month
+- **Growth** (LKR 4,500/mo): 150 renders per month
 
-- Add translations in `locales/`
-- Configure supported locales in `lib/config/locales.ts`
-- Automatic locale detection and routing
+Configure pricing in `lib/config/pricing.ts`.
 
-## 📝 Scripts
+## 🧪 Testing
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+Run Playwright tests:
+
+```bash
+npm test              # Run all tests
+npm run test:ui       # Run tests with UI
+```
+
+Test files are in the `tests/` directory:
+- `example.spec.ts` - Basic landing page tests
+- `upload.spec.ts` - Upload component tests
+- `avatar-selector.spec.ts` - Avatar selector tests
+- `render-flow.spec.ts` - Complete render flow integration tests
 
 ## 🚀 Deployment
 
-This project is optimized for Vercel deployment:
+### Vercel Deployment
 
 1. Connect your repository to Vercel
 2. Add all environment variables in Vercel dashboard
-3. Deploy
+3. Configure build settings:
+   - Build Command: `npm run build`
+   - Output Directory: `.next`
+4. Deploy
+
+### CI/CD
+
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push:
+- Linting and type checking
+- Build verification
+- Playwright tests
 
 ## 📚 Documentation
 
-Additional documentation is available in the `docs/` folder:
+- `docs/PRD.md` - Product Requirements Document
+- `docs/FASHIONAI_GUIDE.md` - FASHN API integration guide
+- `docs/LANDING_PAGE_GUIDE.md` - Landing page design guide
+- `ROADMAP.md` - Implementation roadmap and progress
 
-- Payment provider setup guides
-- Webhook configuration
-- Deployment instructions
+## 🔐 Admin Access
+
+Admin access is controlled via the `ADMIN_EMAILS` environment variable. Add comma-separated email addresses:
+
+```env
+ADMIN_EMAILS=admin@example.com,another@example.com
+```
+
+Admins can:
+- View and manage all users
+- Adjust user credits
+- Update subscription plans
+- Process bank transfer payments
 
 ## 🤝 Support
 
 For issues and questions:
 1. Check the documentation in the `docs/` folder
-2. Review the code examples in `examples/`
+2. Review `ROADMAP.md` for implementation status
 3. Open an issue on GitHub
 
 ## 📄 License

@@ -5,7 +5,20 @@ import { SiteSettings } from "./lib/config/settings";
 const nextConfig: NextConfig = {
   // Image optimization
   images: {
-    domains: ["cdn.sanity.io"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+      },
+      {
+        protocol: "https",
+        hostname: "**.fashn.ai",
+      },
+      {
+        protocol: "https",
+        hostname: "api.fashn.ai",
+      },
+    ],
     formats: ["image/webp", "image/avif"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -30,7 +43,9 @@ const nextConfig: NextConfig = {
       "@radix-ui/react-tooltip",
       "lucide-react",
       "framer-motion",
-    ]
+    ],
+    // Enable faster refresh
+    optimizeCss: true,
   },
 
   // Compression
@@ -95,14 +110,7 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  turbopack: {
-    rules: {
-      "*.svg": {
-        loaders: ["@svgr/webpack"],
-        as: "*.js",
-      },
-    }
-  }
+  // Turbopack config removed - using standard webpack for better compatibility
 };
 
 const withNextIntl = createNextIntlPlugin();

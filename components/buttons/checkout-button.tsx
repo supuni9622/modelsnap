@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { paymentProvider } from "@/lib/config/pricing";
-import { analytics } from "@/lib/analytics";
+import { trackEvent, trackConversion } from "@/lib/analytics";
 import { createLogger } from "@/lib/utils/logger";
 
 // Create logger for this component
@@ -70,12 +70,7 @@ export default function CheckoutButton({
     }
 
     // Track purchase started
-    analytics.purchaseStarted(priceId, "unknown", {
-      mode,
-      payment_provider: paymentProvider,
-      variant_id: variantId,
-      trial: trial,
-    });
+    trackEvent("purchase_started", "checkout", priceId);
 
     setIsLoading(true);
     const isSubscription = mode === "subscription";
@@ -156,11 +151,7 @@ export default function CheckoutButton({
       });
       
       // Track purchase failed for analytics
-      analytics.purchaseFailed(priceId, errorMessage, {
-        mode,
-        payment_provider: paymentProvider,
-        variant_id: variantId,
-      });
+      trackEvent("purchase_failed", "checkout", `${priceId}: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }

@@ -1,16 +1,99 @@
+/**
+ * MongoDB Connection Module
+ * 
+ * Centralized database connection management for ModelSnap.ai
+ * 
+ * Usage:
+ * 
+ * 1. In Next.js API routes and server components:
+ *    ```typescript
+ *    import { connectDB } from "@/lib/db";
+ *    await connectDB();
+ *    // Use Mongoose models...
+ *    ```
+ * 
+ * 2. In standalone scripts:
+ *    ```typescript
+ *    import { connectDB, disconnectDB } from "@/lib/db";
+ *    await connectDB();
+ *    // Use Mongoose models...
+ *    await disconnectDB(); // Optional, but recommended for scripts
+ *    ```
+ * 
+ * Environment Variables:
+ * - MONGO_URI (preferred) or MONGODB_URI: MongoDB connection string
+ * 
+ * Features:
+ * - Automatic environment variable loading from .env.local for scripts
+ * - Connection retry logic with exponential backoff
+ * - Connection state tracking and health checks
+ * - Graceful shutdown handling
+ * - Works seamlessly in both Next.js and standalone scripts
+ */
+
 import mongoose from "mongoose";
 import { createLogger } from "@/lib/utils/logger";
+import { config } from "dotenv";
+import { resolve } from "path";
 
 const logger = createLogger({ component: "database" });
 
-// Database connection configuration
-const DB_CONFIG = {
+/**
+ * Load environment variables from .env.local if not already loaded
+ * This is useful for scripts that run outside of Next.js
+ */
+function ensureEnvLoaded(): void {
+  // Check if MONGO_URI or MONGODB_URI is already set
+  const mongoUri = getMongoUri();
+  
+  if (!mongoUri) {
+    try {
+      // Try to load from .env.local
+      const envPath = resolve(process.cwd(), ".env.local");
+      const result = config({ path: envPath });
+      
+      if (result.error) {
+        // File doesn't exist or can't be read
+        logger.debug("Could not load .env.local", { 
+          error: result.error.message,
+          path: envPath 
+        });
+      } else {
+        // Successfully loaded (even if no new vars were added)
+        logger.debug("Attempted to load environment variables from .env.local", { 
+          path: envPath,
+          loaded: !!getMongoUri() // Check if MONGO_URI is now available
+        });
+      }
+    } catch (error) {
+      // Unexpected error loading .env.local
+      logger.warn("Error loading .env.local", {
+        error: (error as Error).message,
+        path: resolve(process.cwd(), ".env.local")
+      });
+    }
+  } else {
+    logger.debug("MongoDB URI already available, skipping .env.local load");
+  }
+}
+
+// Get database name from environment or use default
+function getDatabaseName(): string {
+  return process.env.MONGODB_DATABASE || process.env.MONGO_DATABASE || "model_snap_local";
+}
+
+// Database connection configuration (without dbName - set at connection time)
+const DB_CONFIG_BASE = {
   // Connection timeout in milliseconds
   connectTimeoutMS: 30000, // 30 seconds
   // Socket timeout in milliseconds
   socketTimeoutMS: 45000, // 45 seconds
   // Server selection timeout in milliseconds
   serverSelectionTimeoutMS: 30000, // 30 seconds
+  // Retry writes for transient failures
+  retryWrites: true,
+  // Write concern
+  w: "majority" as const,
 };
 
 // Retry configuration (handled at application level)
@@ -27,15 +110,23 @@ let lastConnectionAttempt = 0;
 let isConnecting = false;
 
 /**
+ * Get MongoDB URI from environment variables
+ * Supports both MONGO_URI and MONGODB_URI for compatibility
+ */
+function getMongoUri(): string | undefined {
+  return process.env.MONGO_URI || process.env.MONGODB_URI;
+}
+
+/**
  * Validate MongoDB URI and environment variables
  */
 function validateEnvironment(): { isValid: boolean; error?: string } {
-  const mongoUri = process.env.MONGO_URI;
+  const mongoUri = getMongoUri();
   
   if (!mongoUri) {
     return {
       isValid: false,
-      error: "MONGO_URI environment variable is not set",
+      error: "MONGO_URI or MONGODB_URI environment variable is not set",
     };
   }
   
@@ -133,9 +224,13 @@ export async function disconnectDB(): Promise<void> {
 
 /**
  * Connect to MongoDB with comprehensive error handling and retry logic
+ * Works in both Next.js API routes and standalone scripts
  */
 export const connectDB = async (): Promise<void> => {
   try {
+    // Ensure environment variables are loaded (for scripts)
+    ensureEnvLoaded();
+    
     // Validate environment variables
     const validation = validateEnvironment();
     if (!validation.isValid) {
@@ -168,7 +263,7 @@ export const connectDB = async (): Promise<void> => {
     connectionAttempts++;
     lastConnectionAttempt = Date.now();
     
-    const mongoUri = process.env.MONGO_URI!;
+    const mongoUri = getMongoUri()!;
     
     logger.info("Attempting to connect to database", {
       attempt: connectionAttempts,
@@ -209,6 +304,15 @@ export const connectDB = async (): Promise<void> => {
  */
 async function connectWithRetry(uri: string): Promise<void> {
   let lastError: Error | null = null;
+
+  // Get database name at connection time (after env vars are loaded)
+  const dbName = getDatabaseName();
+  logger.debug("Using database", { dbName, source: process.env.MONGODB_DATABASE || process.env.MONGO_DATABASE || "default" });
+  
+  const DB_CONFIG = {
+    ...DB_CONFIG_BASE,
+    dbName,
+  };
 
   for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {

@@ -1,0 +1,53 @@
+{
+  "female": {
+    "slim": {
+      "SL-01": "/avatars/female/slim/SL-01.jpg",
+      "SL-02": "/avatars/female/slim/SL-02.jpg",
+      "SL-03": "/avatars/female/slim/SL-03.jpg",
+      "SL-04": "/avatars/female/slim/SL-04.jpg"
+    },
+    "curvy": {
+      "SL-01": "/avatars/female/curvy/SL-01.jpg",
+      "SL-02": "/avatars/female/curvy/SL-02.jpg",
+      "SL-03": "/avatars/female/curvy/SL-03.jpg",
+      "SL-04": "/avatars/female/curvy/SL-04.jpg"
+    },
+    "athletic": {
+      "SL-01": "/avatars/female/athletic/SL-01.jpg",
+      "SL-02": "/avatars/female/athletic/SL-02.jpg",
+      "SL-03": "/avatars/female/athletic/SL-03.jpg",
+      "SL-04": "/avatars/female/athletic/SL-04.jpg"
+    },
+    "plus-size": {
+      "SL-01": "/avatars/female/plus-size/SL-01.jpg",
+      "SL-02": "/avatars/female/plus-size/SL-02.jpg",
+      "SL-03": "/avatars/female/plus-size/SL-03.jpg",
+      "SL-04": "/avatars/female/plus-size/SL-04.jpg"
+    }
+  },
+  "male": {
+    "slim": {
+      "SL-01": "/avatars/male/slim/SL-01.jpg",
+      "SL-02": "/avatars/male/slim/SL-02.jpg",
+      "SL-03": "/avatars/male/slim/SL-03.jpg",
+      "SL-04": "/avatars/male/slim/SL-04.jpg"
+    },
+    "athletic": {
+      "SL-01": "/avatars/male/athletic/SL-01.jpg",
+      "SL-02": "/avatars/male/athletic/SL-02.jpg",
+      "SL-03": "/avatars/male/athletic/SL-03.jpg",
+      "SL-04": "/avatars/male/athletic/SL-04.jpg"
+    },
+    "dad-bod": {
+      "SL-01": "/avatars/male/dad-bod/SL-01.jpg",
+      "SL-02": "/avatars/male/dad-bod/SL-02.jpg",
+      "SL-03": "/avatars/male/dad-bod/SL-03.jpg",
+      "SL-04": "/avatars/male/dad-bod/SL-04.jpg"
+    },
+    "plus-size": {
+      "SL-01": "/avatars/male/plus-size/SL-01.jpg",
+      "SL-02": "/avatars/male/plus-size/SL-02.jpg",
+      "SL-04": "/avatars/male/plus-size/SL-04.jpg"
+    }
+  }
+}

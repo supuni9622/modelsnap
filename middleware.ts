@@ -30,21 +30,40 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   }
 
-  // Check environment variables FIRST - before any other processing
-  try {
-    const envResult = checkEnvironmentVariables();
-    
-    // If critical environment variables are missing, redirect to setup
-    if (!envResult.isComplete) {
+  // Check environment variables ONLY in production and cache the result
+  // Skip in development to improve performance
+  if (process.env.NODE_ENV === "production") {
+    try {
+      // Cache env check result (check once per minute)
+      const cacheKey = "env-check-cache";
+      const cacheTime = 60000; // 1 minute
+      const cached = (global as any)[cacheKey];
+      
+      if (!cached || Date.now() - cached.timestamp > cacheTime) {
+        const envResult = checkEnvironmentVariables();
+        (global as any)[cacheKey] = {
+          result: envResult,
+          timestamp: Date.now(),
+        };
+        
+        // If critical environment variables are missing, redirect to setup
+        if (!envResult.isComplete) {
+          const url = req.nextUrl.clone();
+          url.pathname = "/setup";
+          return NextResponse.redirect(url);
+        }
+      } else if (!cached.result.isComplete) {
+        // Use cached result
+        const url = req.nextUrl.clone();
+        url.pathname = "/setup";
+        return NextResponse.redirect(url);
+      }
+    } catch (error) {
+      // If environment check fails, redirect to setup
       const url = req.nextUrl.clone();
       url.pathname = "/setup";
       return NextResponse.redirect(url);
     }
-  } catch (error) {
-    // If environment check fails, redirect to setup
-    const url = req.nextUrl.clone();
-    url.pathname = "/setup";
-    return NextResponse.redirect(url);
   }
 
   // Only proceed with locale redirect if environment is complete

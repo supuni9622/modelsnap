@@ -83,6 +83,34 @@ const ENV_CONFIG = {
       },
     ],
   },
+  
+  // FASHN AI API
+  FASHN: {
+    name: "FASHN AI API",
+    description: "AI clothing render and model generation",
+    variables: [
+      {
+        name: "FASHN_API_KEY",
+        description: "FASHN AI API key for virtual try-on and model generation",
+        example: "your_fashn_api_key_here",
+        required: true,
+      },
+    ],
+  },
+  
+  // Admin Access
+  ADMIN: {
+    name: "Admin Access",
+    description: "Admin email addresses for dashboard access",
+    variables: [
+      {
+        name: "ADMIN_EMAILS",
+        description: "Comma-separated list of admin email addresses",
+        example: "admin@example.com,another@example.com",
+        required: false,
+      },
+    ],
+  },
 };
 
 /**
@@ -204,6 +232,26 @@ export function getSetupInstructions(): {
             ];
             break;
             
+          case "FASHN":
+            instructions = [
+              "1. Go to https://fashn.ai/products/api",
+              "2. Sign up or log in to your FASHN account",
+              "3. Navigate to API settings or dashboard",
+              "4. Generate or copy your API key",
+              "5. Set the API key as FASHN_API_KEY in your .env.local file",
+            ];
+            break;
+            
+          case "ADMIN":
+            instructions = [
+              "1. Add comma-separated email addresses of users who should have admin access",
+              "2. These emails must match the email addresses in Clerk (authentication provider)",
+              "3. Example: ADMIN_EMAILS=admin@example.com,another@example.com",
+              "4. Admin users can access /admin routes and manage users/subscriptions",
+              "5. Note: This is optional - if not set, no users will have admin access",
+            ];
+            break;
+            
           default:
             instructions = [
               "Please check the documentation for setup instructions.",
@@ -275,6 +323,10 @@ export function validateEnvVariable(name: string): {
     RESEND_API_KEY: {
       pattern: /^re_[a-zA-Z0-9]{50,}$/,
       message: "Invalid Resend API key format",
+    },
+    FASHN_API_KEY: {
+      pattern: /^[a-zA-Z0-9_-]{20,}$/,
+      message: "Invalid FASHN API key format",
     },
   };
   

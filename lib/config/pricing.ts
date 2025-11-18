@@ -69,96 +69,111 @@ export interface PricingPlanTypes {
  */
 export const PricingPlans: PricingPlanTypes[] = [
   {
-    id: "coffee",
-    trial: 14,
-    description:
-      "Perfect for trying out our service with all features included",
-    name: "Coffee Plan",
+    id: "free",
+    description: "Perfect for trying out ModelSnap.ai",
+    name: "Free",
+    type: "payment",
+    price: "0",
+    currency: "lkr",
+    currencySymbol: "LKR",
+    billingCycle: "one-time",
+    priceId: "",
+    variantId: "",
+    features: [
+      {
+        active: true,
+        title: "10 watermarked renders",
+      },
+      {
+        active: true,
+        title: "Access to all AI avatars",
+      },
+      {
+        active: true,
+        title: "Basic support",
+      },
+    ],
+    popular: false,
+    isFreeCredits: 10,
+    displayButtonName: "Get Started",
+  },
+  {
+    id: "starter",
+    description: "Perfect for small fashion brands and boutiques",
+    name: "Starter",
     type: "subscription",
-    price: "4.99",
-    currency: "usd",
-    currencySymbol: "$",
+    price: "2000",
+    currency: "lkr",
+    currencySymbol: "LKR",
     billingCycle: "monthly",
     priceId: "", // Replace with actual Stripe price ID
     variantId: "", // Replace with actual Lemon Squeezy variant ID
     features: [
       {
         active: true,
-        title: "Effortless Contract Creation (NDA, Service Agreements, etc.)",
+        title: "50 renders per month",
       },
       {
         active: true,
-        title: "Instant Agreement Sharing",
+        title: "Access to all AI avatars",
       },
       {
         active: true,
-        title: "Legally Binding E-Signatures ✍️",
+        title: "High-resolution downloads",
       },
       {
         active: true,
-        title: "Seamless Payment Link Generation",
+        title: "No watermarks",
       },
       {
         active: true,
-        title: "On-Demand Invoicing (Pay-as-you-go)",
-      },
-      {
-        active: true,
-        title: "One-Click AI-Powered Contract Generation 🤖",
-      },
-      {
-        active: true,
-        title: "50 Free Credits to kickstart your journey",
+        title: "Email support",
       },
     ],
     popular: false,
-    isFreeCredits: 0,
+    isFreeCredits: 50,
     displayButtonName: "Start Monthly",
   },
   {
-    id: "one-time",
-    description: "Save money with our annual plan while keeping all features",
-    name: "Save Money Plan",
-    type: "payment",
-    price: "670",
-    currency: "usd",
-    currencySymbol: "$",
-    billingCycle: "one-time",
+    id: "growth",
+    description: "For growing fashion brands with high volume needs",
+    name: "Growth",
+    type: "subscription",
+    price: "4500",
+    currency: "lkr",
+    currencySymbol: "LKR",
+    billingCycle: "monthly",
     priceId: "", // Replace with actual Stripe price ID
     variantId: "", // Replace with actual Lemon Squeezy variant ID
     features: [
       {
         active: true,
-        title: "Effortless Contract Creation (NDA, Service Agreements, etc.)",
+        title: "150 renders per month",
       },
       {
         active: true,
-        title: "Instant Agreement Sharing",
+        title: "Access to all AI avatars",
       },
       {
         active: true,
-        title: "Legally Binding E-Signatures ✍️",
+        title: "High-resolution downloads",
       },
       {
         active: true,
-        title: "Seamless Payment Link Generation",
+        title: "No watermarks",
       },
       {
         active: true,
-        title: "On-Demand Invoicing (Pay-as-you-go)",
+        title: "Priority support",
       },
       {
         active: true,
-        title: "One-Click AI-Powered Contract Generation 🤖",
-      },
-      {
-        active: true,
-        title: "50 Free Credits to kickstart your journey",
+        title: "WhatsApp delivery",
       },
     ],
     popular: true,
-    isFreeCredits: 50,
-    displayButtonName: "Lifetime Deal",
+    isFreeCredits: 150,
+    displayButtonName: "Start Monthly",
   },
 ];
 
