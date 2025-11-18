@@ -4,8 +4,61 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+
+interface Avatar {
+  _id: string;
+  gender: string;
+  bodyType: string;
+  skinTone: string;
+  imageUrl: string;
+}
 
 export function HeroModelSnap() {
+  const [avatars, setAvatars] = useState<Avatar[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch a few sample avatars for the hero preview
+    // Only runs on client to avoid hydration mismatch
+    const fetchAvatars = async () => {
+      try {
+        const response = await fetch("/api/avatars");
+        if (response.ok) {
+          const data = await response.json();
+          const allAvatars = data.data || [];
+          if (allAvatars.length > 0) {
+            // Use deterministic selection instead of Math.random() to avoid hydration issues
+            // Select first 3 female and first 3 male avatars for consistent display
+            const femaleAvatars = allAvatars.filter((a: Avatar) => a.gender === "female").slice(0, 3);
+            const maleAvatars = allAvatars.filter((a: Avatar) => a.gender === "male").slice(0, 3);
+            const selected = [...femaleAvatars, ...maleAvatars].slice(0, 6);
+            setAvatars(selected);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch avatars:", error);
+        // Fallback: Use static avatar paths if API fails
+        const fallbackAvatars: Avatar[] = [
+          { _id: "1", gender: "female", bodyType: "slim", skinTone: "SL-01", imageUrl: "/avatars/female/slim/SL-01.jpg" },
+          { _id: "2", gender: "female", bodyType: "curvy", skinTone: "SL-02", imageUrl: "/avatars/female/curvy/SL-02.jpg" },
+          { _id: "3", gender: "male", bodyType: "athletic", skinTone: "SL-01", imageUrl: "/avatars/male/athletic/SL-01.jpg" },
+          { _id: "4", gender: "male", bodyType: "slim", skinTone: "SL-03", imageUrl: "/avatars/male/slim/SL-03.jpg" },
+          { _id: "5", gender: "female", bodyType: "athletic", skinTone: "SL-03", imageUrl: "/avatars/female/athletic/SL-03.jpg" },
+          { _id: "6", gender: "male", bodyType: "dad-bod", skinTone: "SL-02", imageUrl: "/avatars/male/dad-bod/SL-02.jpg" },
+        ];
+        setAvatars(fallbackAvatars);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Only fetch on client side
+    if (typeof window !== "undefined") {
+      fetchAvatars();
+    }
+  }, []);
   return (
     <section className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-[#1A1A1A] text-white">
       {/* Background gradient overlay */}
@@ -154,17 +207,44 @@ export function HeroModelSnap() {
           </motion.div>
         </div>
 
-        {/* Hero Image/Preview - Placeholder for AI model image */}
+        {/* Hero Image/Preview - AI Model Gallery */}
         <motion.div
-          className="mt-16 max-w-4xl mx-auto"
+          className="mt-16 max-w-5xl mx-auto"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1 }}
         >
-          <div className="relative rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <div className="aspect-video rounded-lg bg-gradient-to-br from-[#356DFF]/20 to-[#4BE4C1]/20 flex items-center justify-center">
-              <p className="text-gray-400">AI Model Preview</p>
-            </div>
+          <div className="relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+            {loading ? (
+              <div className="aspect-video rounded-lg bg-gradient-to-br from-[#356DFF]/20 to-[#4BE4C1]/20 flex items-center justify-center">
+                <p className="text-gray-400">Loading AI Models...</p>
+              </div>
+            ) : avatars.length > 0 ? (
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                {avatars.map((avatar, index) => (
+                  <motion.div
+                    key={avatar._id}
+                    className="relative aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 1.2 + index * 0.1 }}
+                    whileHover={{ scale: 1.05, zIndex: 10 }}
+                  >
+                    <Image
+                      src={avatar.imageUrl}
+                      alt={`${avatar.gender} ${avatar.bodyType} ${avatar.skinTone}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 33vw, 16vw"
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="aspect-video rounded-lg bg-gradient-to-br from-[#356DFF]/20 to-[#4BE4C1]/20 flex items-center justify-center">
+                <p className="text-gray-400">AI Model Preview</p>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
