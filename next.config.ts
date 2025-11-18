@@ -43,7 +43,9 @@ const nextConfig: NextConfig = {
       "@radix-ui/react-tooltip",
       "lucide-react",
       "framer-motion",
-    ]
+    ],
+    // Enable faster refresh
+    optimizeCss: true,
   },
 
   // Compression
@@ -108,14 +110,7 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  turbopack: {
-    rules: {
-      "*.svg": {
-        loaders: ["@svgr/webpack"],
-        as: "*.js",
-      },
-    }
-  }
+  // Turbopack config removed - using standard webpack for better compatibility
 };
 
 const withNextIntl = createNextIntlPlugin();

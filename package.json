@@ -4,7 +4,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "dev:ngrok": "ngrok start app --config=ngrok.yml",
     "build": "next build",
     "start": "next start",
