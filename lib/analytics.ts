@@ -1,103 +1,60 @@
-"use client";
+/**
+ * Google Analytics utility functions
+ * Track page views and custom events
+ */
 
-import posthog from "posthog-js";
+declare global {
+  interface Window {
+    gtag?: (
+      command: string,
+      targetId: string | Date,
+      config?: {
+        [key: string]: unknown;
+      }
+    ) => void;
+  }
+}
 
-export const initPostHog = () => {
-  if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com",
-      debug: process.env.NODE_ENV === "development",
+/**
+ * Track page view
+ */
+export function trackPageView(url: string): void {
+  if (typeof window !== "undefined" && window.gtag) {
+    window.gtag("config", process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || "", {
+      page_path: url,
     });
   }
-};
+}
 
-// Analytics tracking functions
-export const analytics = {
-  // User events
-  identify: (userId: string, properties?: Record<string, any>) => {
-    if (typeof window !== "undefined") {
-      posthog.identify(userId, properties);
-    }
-  },
-
-  // Page views
-  page: (pageName?: string, properties?: Record<string, any>) => {
-    if (typeof window !== "undefined") {
-      posthog.capture("$pageview", {
-        $current_url: window.location.href,
-        page_name: pageName,
-        ...properties,
-      });
-    }
-  },
-
-  // Custom events
-  track: (eventName: string, properties?: Record<string, any>) => {
-    if (typeof window !== "undefined") {
-      posthog.capture(eventName, properties);
-    }
-  },
-
-  // Authentication events
-  signUp: (properties?: Record<string, any>) => {
-    analytics.track("user_signed_up", properties);
-  },
-
-  signIn: (properties?: Record<string, any>) => {
-    analytics.track("user_signed_in", properties);
-  },
-
-  signOut: () => {
-    analytics.track("user_signed_out");
-    if (typeof window !== "undefined") {
-      posthog.reset();
-    }
-  },
-
-  // Payment events
-  purchaseStarted: (planId: string, price: string, properties?: Record<string, any>) => {
-    analytics.track("purchase_started", {
-      plan_id: planId,
-      price,
-      ...properties,
+/**
+ * Track custom event
+ */
+export function trackEvent(
+  action: string,
+  category: string,
+  label?: string,
+  value?: number
+): void {
+  if (typeof window !== "undefined" && window.gtag) {
+    window.gtag("event", action, {
+      event_category: category,
+      event_label: label,
+      value: value,
     });
-  },
+  }
+}
 
-  purchaseCompleted: (planId: string, price: string, properties?: Record<string, any>) => {
-    analytics.track("purchase_completed", {
-      plan_id: planId,
-      price,
-      ...properties,
-    });
+/**
+ * Track conversion events
+ */
+export const trackConversion = {
+  earlyAccessSignup: () => {
+    trackEvent("early_access_signup", "conversion", "Early Access");
   },
-
-  purchaseFailed: (planId: string, error: string, properties?: Record<string, any>) => {
-    analytics.track("purchase_failed", {
-      plan_id: planId,
-      error,
-      ...properties,
-    });
+  renderCompleted: (renderId: string) => {
+    trackEvent("render_completed", "conversion", renderId);
   },
-
-  // Feature usage
-  featureUsed: (featureName: string, properties?: Record<string, any>) => {
-    analytics.track("feature_used", {
-      feature_name: featureName,
-      ...properties,
-    });
-  },
-
-  // Marketing events
-  newsletterSubscribed: (email: string) => {
-    analytics.track("newsletter_subscribed", { email });
-  },
-
-  leadGenerated: (source: string, properties?: Record<string, any>) => {
-    analytics.track("lead_generated", {
-      source,
-      ...properties,
-    });
+  paymentCompleted: (planId: string, amount: number) => {
+    trackEvent("payment_completed", "conversion", planId, amount);
   },
 };
-
-export default posthog;

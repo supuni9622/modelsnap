@@ -23,6 +23,25 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <meta charSet="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta name="robots" content="index, follow" />
+          {/* Google Analytics */}
+          {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID && (
+            <>
+              <script
+                async
+                src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}`}
+              />
+              <script
+                dangerouslySetInnerHTML={{
+                  __html: `
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    gtag('config', '${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}');
+                  `,
+                }}
+              />
+            </>
+          )}
         </head>
         <body className={roboto.className} suppressHydrationWarning>
           <ThemeProvider
