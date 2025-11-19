@@ -31,8 +31,8 @@ export interface SiteSettingsType {
  */
 export const SiteSettings: SiteSettingsType = {
   name: "ModelSnap.ai",
-  logoUrlLight: "/static/images/light-logo.png",
-  logoUrlDark: "/static/images/light-logo.png",
+  logoUrlLight: "/static/images/dark-logo.png",
+  logoUrlDark: "/static/images/dark-logo.png",
   defaultTheme: "light",
   domainName: "Founderflow.online",
   domainUrl:
