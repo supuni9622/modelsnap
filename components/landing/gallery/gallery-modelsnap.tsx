@@ -94,26 +94,24 @@ export function GalleryModelSnap() {
                   scale: 1.02,
                 }}
                 transition={{ duration: 0.3 }}
-                style={{ transformStyle: "preserve-3d" }}
+                style={{ transformStyle: "preserve-3d", willChange: "transform" }}
                 className="h-full"
               >
                 <Card className="overflow-hidden cursor-pointer group relative h-full
-                  bg-card/50 backdrop-blur-sm
+                  bg-card
                   border border-border/50
-                  shadow-[0_8px_30px_rgb(0,0,0,0.12)]
-                  dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)]
-                  hover:shadow-[0_12px_40px_rgb(0,0,0,0.15)]
-                  dark:hover:shadow-[0_12px_40px_rgb(0,0,0,0.4)]
+                  shadow-lg
+                  hover:shadow-xl
                   transition-all duration-300">
                   {/* Embedded inset shadow effect */}
                   <div className="absolute inset-0 
-                    shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]
-                    dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]
+                    shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]
+                    dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]
                     pointer-events-none z-10" />
                   
                   {/* Gradient overlay on hover */}
                   <div className="absolute inset-0 
-                    bg-gradient-to-br from-white/10 via-transparent to-transparent 
+                    bg-gradient-to-br from-white/5 via-transparent to-transparent 
                     opacity-0 group-hover:opacity-100
                     transition-opacity duration-300
                     pointer-events-none z-10" />

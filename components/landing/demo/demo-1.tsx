@@ -52,21 +52,21 @@ export function DemoModelSnap() {
               scale: 1.01,
             }}
             transition={{ duration: 0.3 }}
-            style={{ transformStyle: "preserve-3d" }}
+            style={{ transformStyle: "preserve-3d", willChange: "transform" }}
             className="group"
           >
             <Card className="bg-white/5 border-white/10 overflow-hidden relative
-              shadow-[0_8px_30px_rgb(0,0,0,0.3)]
-              hover:shadow-[0_12px_40px_rgb(0,0,0,0.4)]
+              shadow-xl
+              hover:shadow-2xl
               transition-all duration-300">
               {/* Embedded inset shadow effect */}
               <div className="absolute inset-0 
-                shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]
+                shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]
                 pointer-events-none z-10" />
               
               {/* Gradient overlay on hover */}
               <div className="absolute inset-0 
-                bg-gradient-to-br from-white/10 via-transparent to-transparent 
+                bg-gradient-to-br from-white/5 via-transparent to-transparent 
                 opacity-0 group-hover:opacity-100
                 transition-opacity duration-300
                 pointer-events-none z-10" />
