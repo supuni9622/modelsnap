@@ -54,7 +54,7 @@ export function BaseEmail({ preview, title, children }: BaseEmailProps) {
                 margin: "0",
               }}
             >
-              Founderflow
+              ModelSnap.ai
             </Heading>
           </Section>
         </Row>
@@ -92,7 +92,7 @@ export function BaseEmail({ preview, title, children }: BaseEmailProps) {
                 margin: "0",
               }}
             >
-              © 2024 Founderflow. All rights reserved.
+              © 2025 ModelSnap.ai. All rights reserved.
             </Text>
             <Text
               style={{
