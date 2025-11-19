@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Palette, Shirt, MessageCircle, Shield } from "lucide-react";
+import { Palette, Shirt, Download, Shield } from "lucide-react";
 
 const advantages = [
   {
@@ -18,9 +18,9 @@ const advantages = [
     color: "text-[#356DFF]",
   },
   {
-    icon: MessageCircle,
-    title: "WhatsApp delivery",
-    description: "Get your renders delivered via WhatsApp for convenience",
+    icon: Download,
+    title: "Easy download",
+    description: "Download high-resolution images instantly, ready for your store",
     color: "text-[#4BE4C1]",
   },
   {

@@ -24,6 +24,8 @@ const HERO_AVATARS: Avatar[] = [
   { _id: "6", gender: "male", bodyType: "dad-bod", skinTone: "SL-02", imageUrl: "/avatars/male/dad-bod/SL-02.jpg" },
 ];
 
+const WAITLIST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf4bHDv4PzMSW07HVhGYRP3DffXD_LZEGtVN7pkt1V3AR79WA/viewform?usp=publish-editor";
+
 export function HeroModelSnap() {
   return (
     <section className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-[#1A1A1A] text-white">
@@ -103,20 +105,19 @@ export function HeroModelSnap() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
           >
-            <Link href="#pricing">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button
+                size="lg"
+                className="bg-[#356DFF] hover:bg-[#356DFF]/90 text-white font-semibold px-8 py-6 text-lg gap-2"
+                onClick={() => window.open(WAITLIST_FORM_URL, "_blank", "noopener,noreferrer")}
               >
-                <Button
-                  size="lg"
-                  className="bg-[#356DFF] hover:bg-[#356DFF]/90 text-white font-semibold px-8 py-6 text-lg gap-2"
-                >
-                  Get Early Access
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </motion.div>
-            </Link>
+                Get Early Access
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+            </motion.div>
             {/* <Link href="#demo">
               <motion.div
                 whileHover={{ scale: 1.05 }}

@@ -1,12 +1,27 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Play } from "lucide-react";
+import { useRef, useEffect } from "react";
 
 export function DemoModelSnap() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    // Try to play the video when component mounts
+    const playVideo = async () => {
+      if (videoRef.current) {
+        try {
+          await videoRef.current.play();
+        } catch (error) {
+          // Autoplay was prevented, user interaction required
+          console.log("Video autoplay prevented:", error);
+        }
+      }
+    };
+    playVideo();
+  }, []);
+
   return (
     <section className="py-20 px-4 md:px-24 bg-[#1A1A1A] text-white">
       <div className="max-w-4xl mx-auto">
@@ -17,10 +32,10 @@ export function DemoModelSnap() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Live Demo</h2>
-          <p className="text-gray-300 max-w-2xl mx-auto">
-            See how easy it is to create professional fashion photos in minutes
-          </p>
+         <h2 className="text-3xl md:text-4xl font-bold mb-4">See It In Action</h2>
+<p className="text-gray-300 max-w-2xl mx-auto">
+  Watch how you can create stunning fashion photos in just minutes
+</p>
         </motion.div>
 
         <motion.div
@@ -31,21 +46,23 @@ export function DemoModelSnap() {
         >
           <Card className="bg-white/5 border-white/10 overflow-hidden">
             <CardContent className="p-0">
-              <div className="aspect-video relative bg-gradient-to-br from-[#356DFF]/20 to-[#4BE4C1]/20 flex items-center justify-center">
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+              <div className="aspect-video relative bg-gradient-to-br from-[#356DFF]/20 to-[#4BE4C1]/20">
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover"
+                  controls
+                  playsInline
+                  muted
+                  loop
+                  autoPlay
+                  preload="auto"
+                  onError={(e) => {
+                    console.error("Video error:", e);
+                  }}
                 >
-                  <Button
-                    size="lg"
-                    className="bg-[#356DFF] hover:bg-[#356DFF]/90 text-white rounded-full w-20 h-20"
-                  >
-                    <Play className="h-8 w-8 ml-1" />
-                  </Button>
-                </motion.div>
-                <p className="absolute bottom-4 left-4 text-white/60 text-sm">
-                  Demo video coming soon
-                </p>
+                  <source src="/demo.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
               </div>
             </CardContent>
           </Card>

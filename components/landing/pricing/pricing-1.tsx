@@ -6,8 +6,6 @@ import { motion, useInView } from "framer-motion";
 import { Check, X, Star, Zap, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PricingPlans } from "@/lib/config/pricing";
-import CheckoutButton from "@/components/buttons/checkout-button";
-import { useAppContext } from "@/context/app";
 
 // Mock data for demonstration
 
@@ -22,7 +20,8 @@ export default function Pricing({
 }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
-  const { billing } = useAppContext();
+  
+  const WAITLIST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf4bHDv4PzMSW07HVhGYRP3DffXD_LZEGtVN7pkt1V3AR79WA/viewform?usp=publish-editor";
   return (
     <section
       id="pricing"
@@ -168,11 +167,8 @@ export default function Pricing({
                     </div>
 
                     {/* CTA Button */}
-                    <CheckoutButton
-                      priceId={plan.priceId}
-                      variantId={plan.variantId}
-                      disabled={plan.id === billing?.details.id}
-                      mode={plan.type}
+                    <button
+                      onClick={() => window.open(WAITLIST_FORM_URL, "_blank", "noopener,noreferrer")}
                       className={cn(
                         "w-full py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200",
                         "hover:scale-105 hover:shadow-lg active:scale-95",
@@ -184,7 +180,7 @@ export default function Pricing({
                       {plan.trial
                         ? `Free Trial (${plan.trial} days)`
                         : plan.displayButtonName}
-                    </CheckoutButton>
+                    </button>
                   </div>
                 </motion.div>
               );

@@ -6,7 +6,7 @@ import { GalleryModelSnap } from "@/components/landing/gallery/gallery-modelsnap
 import { DemoModelSnap } from "@/components/landing/demo/demo-1";
 import { AdvantageModelSnap } from "@/components/landing/advantage/advantage-1";
 import Pricing from "@/components/landing/pricing/pricing-1";
-import { TractionModelSnap } from "@/components/landing/traction/traction-1";
+//import { TractionModelSnap } from "@/components/landing/traction/traction-1";
 //import { RoadmapModelSnap } from "@/components/landing/roadmap/roadmap-1";
 import { TeamModelSnap } from "@/components/landing/team/team-1";
 
@@ -21,7 +21,7 @@ export default function LandingPage() {
       <DemoModelSnap />
       <AdvantageModelSnap />
       <Pricing />
-      <TractionModelSnap />
+      {/* <TractionModelSnap /> */}
       {/* <RoadmapModelSnap /> */}
       <TeamModelSnap />
     </main>

@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ScrollToTop } from "@/components/scroll-top";
 import { TailwindIndicator } from "@/components/tailwindIndicator";
 import Script from "next/script";
+import { locales } from "@/lib/config/locales";
 
 async function getMessages(locale: string) {
   try {
@@ -23,11 +24,23 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }) {
   const resolvedParams = await params;
-  const messages = await getMessages(resolvedParams.locale);
+  
+  // Validate locale - filter out Clerk IDs and invalid locales
+  let locale = resolvedParams.locale;
+  if (
+    !locale ||
+    typeof locale !== "string" ||
+    !locales.values.includes(locale) ||
+    locale.startsWith("clerk_")
+  ) {
+    locale = locales.default;
+  }
+  
+  const messages = await getMessages(locale);
 
   return (
     <NextIntlClientProvider
-      locale={resolvedParams.locale}
+      locale={locale}
       messages={messages}
     >
       {/* Google Analytics - Replace GA_MEASUREMENT_ID with your actual Google Analytics ID */}

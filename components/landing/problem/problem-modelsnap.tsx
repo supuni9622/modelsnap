@@ -7,28 +7,28 @@ import { Clock, Image, DollarSign, UserX, TrendingUp } from "lucide-react";
 const problems = [
   {
     icon: Clock,
-    title: "Delayed product launches",
-    description: "Waiting weeks for photoshoots delays your product drops",
+    title: "Photoshoots take too long",
+    description: "Waiting weeks for model photos slows down your product drops.",
   },
   {
     icon: Image,
-    title: "Inconsistent visuals",
-    description: "Different photographers, different styles, no brand consistency",
+    title: "Hard to find the right models",
+    description: "Finding models who match your brand's look or size is stressful and time-consuming.",
   },
   {
     icon: DollarSign,
-    title: "High photoshoot costs",
-    description: "LKR 25,000–50,000 per session adds up quickly",
+    title: "Photoshoots are expensive",
+    description: "Studios, photographers, models, and editing add up quickly — even for small collections.",
   },
   {
     icon: UserX,
-    title: "No access to models",
-    description: "Finding available models for weekly drops is nearly impossible",
+    title: "Visuals look inconsistent",
+    description: "Different lighting, styles, and poses make your website and Instagram look mismatched.",
   },
   {
     icon: TrendingUp,
-    title: "Fast-fashion cycle",
-    description: "Weekly drops require constant visuals, but photoshoots are slow",
+    title: "Can't keep up with weekly drops",
+    description: "Fast-fashion cycles need fast visuals — but traditional photoshoots are too slow.",
   },
 ];
 
@@ -49,7 +49,7 @@ export function ProblemModelSnap() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          The Hair-on-Fire Problem
+          Challenges Fashion Brands Deal With Every Day
         </motion.h2>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

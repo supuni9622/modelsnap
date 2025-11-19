@@ -74,19 +74,23 @@ export const PricingPlans: PricingPlanTypes[] = [
     name: "Free",
     type: "payment",
     price: "0",
-    currency: "lkr",
-    currencySymbol: "LKR",
-    billingCycle: "one-time",
+    currency: "usd",
+    currencySymbol: "$",
+    billingCycle: "subscription",
     priceId: "",
     variantId: "",
     features: [
       {
         active: true,
-        title: "10 watermarked renders",
+        title: "3 AI-generated on-model photos per month",
       },
       {
         active: true,
-        title: "Access to all AI avatars",
+        title: "Watermarked",
+      },
+      {
+        active: true,
+        title: "Access to AI model gallery",
       },
       {
         active: true,
@@ -94,69 +98,65 @@ export const PricingPlans: PricingPlanTypes[] = [
       },
     ],
     popular: false,
-    isFreeCredits: 10,
-    displayButtonName: "Get Started",
+    isFreeCredits: 3,
+    displayButtonName: "Join Waitlist",
   },
   {
     id: "starter",
-    description: "Perfect for small fashion brands and boutiques",
+    description: "For small boutiques, Instagram sellers & designers",
     name: "Starter",
     type: "subscription",
-    price: "6000",
-    currency: "lkr",
-    currencySymbol: "LKR",
+    price: "19",
+    currency: "usd",
+    currencySymbol: "$",
     billingCycle: "monthly",
     priceId: "", // Replace with actual Stripe price ID
     variantId: "", // Replace with actual Lemon Squeezy variant ID
     features: [
       {
         active: true,
-        title: "50 renders per month",
-      },
-      {
-        active: true,
-        title: "Access to all AI avatars",
-      },
-      {
-        active: true,
-        title: "High-resolution downloads",
+        title: "40 AI-generated on-model photos/month",
       },
       {
         active: true,
         title: "No watermarks",
+      },
+      {
+        active: true,
+        title: "Access to AI model gallery",
+      },
+      {
+        active: true,
+        title: "Access to Human Model Marketplace",
+      },
+      {
+        active: true,
+        title: "High-resolution downloads",
       },
       {
         active: true,
         title: "Email support",
       },
     ],
-    popular: false,
-    isFreeCredits: 50,
-    displayButtonName: "Start Monthly",
+    popular: true,
+    isFreeCredits: 40,
+    displayButtonName: "Join Waitlist",
   },
   {
     id: "growth",
-    description: "For growing fashion brands with high volume needs",
+    description: "For manufacturers & fast-moving fashion brands",
     name: "Growth",
     type: "subscription",
-    price: "14500",
-    currency: "lkr",
-    currencySymbol: "LKR",
+    price: "49",
+    currency: "usd",
+    currencySymbol: "$",
     billingCycle: "monthly",
     priceId: "", // Replace with actual Stripe price ID
     variantId: "", // Replace with actual Lemon Squeezy variant ID
     features: [
       {
         active: true,
-        title: "150 renders per month",
-      },
-      {
-        active: true,
-        title: "Access to all AI avatars",
-      },
-      {
-        active: true,
-        title: "High-resolution downloads",
+        title: "100 AI-generated on-model photos/month",
       },
       {
         active: true,
@@ -164,16 +164,24 @@ export const PricingPlans: PricingPlanTypes[] = [
       },
       {
         active: true,
-        title: "Priority support",
+        title: "Access to AI model gallery",
       },
       {
         active: true,
-        title: "WhatsApp delivery",
+        title: "Access to Human Model Marketplace",
       },
+      {
+        active: true,
+        title: "High-resolution downloads",
+      },
+      {
+        active: true,
+        title: "Priority support",
+      }
     ],
-    popular: true,
-    isFreeCredits: 150,
-    displayButtonName: "Start Monthly",
+    popular: false,
+    isFreeCredits: 100,
+    displayButtonName: "Join Waitlist",
   },
 ];
 

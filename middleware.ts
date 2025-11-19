@@ -25,7 +25,7 @@ export default clerkMiddleware(async (auth, req) => {
     pathname.startsWith("/trpc") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
-    pathname.match(/\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot)$/)
+    pathname.match(/\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot|mp4|webm|ogg|mov|avi)$/)
   ) {
     return NextResponse.next();
   }
@@ -82,6 +82,22 @@ export default clerkMiddleware(async (auth, req) => {
 
   if (!isPublicRoute(req)) {
     await auth.protect(); // Protect private routes
+  }
+
+  // Extract locale from pathname and validate it
+  const pathSegments = pathname.split("/").filter(Boolean);
+  const potentialLocale = pathSegments[0];
+  
+  // If the first segment is not a valid locale (or is a Clerk ID), ensure we use default locale
+  if (
+    potentialLocale &&
+    (potentialLocale.startsWith("clerk_") || !locales.values.includes(potentialLocale))
+  ) {
+    // If invalid locale detected, replace it with default locale
+    const url = req.nextUrl.clone();
+    const remainingPath = pathSegments.slice(1).join("/");
+    url.pathname = remainingPath ? `/${locales.default}/${remainingPath}` : `/${locales.default}`;
+    return NextResponse.redirect(url);
   }
 
   const intlResponse = intlMiddleware(req);
