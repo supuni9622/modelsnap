@@ -6,7 +6,7 @@ import { Code, TrendingUp } from "lucide-react";
 
 const team = [
   {
-    name: "Supuni — Tech Builder",
+    name: "Supuni",
     role: "Tech Builder",
     icon: Code,
     description1: "🌟 Turning crazy ideas into real features.",
