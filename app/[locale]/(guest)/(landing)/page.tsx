@@ -5,6 +5,7 @@ import { SolutionModelSnap } from "@/components/landing/solution/solution-1";
 import { GalleryModelSnap } from "@/components/landing/gallery/gallery-modelsnap";
 import { DemoModelSnap } from "@/components/landing/demo/demo-1";
 import { AdvantageModelSnap } from "@/components/landing/advantage/advantage-1";
+import { StatsModelSnap } from "@/components/landing/stats/stats-modelsnap";
 import Pricing from "@/components/landing/pricing/pricing-1";
 //import { TractionModelSnap } from "@/components/landing/traction/traction-1";
 //import { RoadmapModelSnap } from "@/components/landing/roadmap/roadmap-1";
@@ -21,6 +22,7 @@ export default function LandingPage() {
       <GalleryModelSnap />
       <DemoModelSnap />
       <AdvantageModelSnap />
+      <StatsModelSnap />
       <Pricing />
       {/* <TractionModelSnap /> */}
       {/* <RoadmapModelSnap /> */}
