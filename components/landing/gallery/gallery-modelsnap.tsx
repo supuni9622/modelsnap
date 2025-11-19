@@ -71,7 +71,7 @@ export function GalleryModelSnap() {
           Hover over any image to see the try-on preview
         </motion.p>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6" style={{ perspective: "1000px" }}>
           {galleryItems.map((item, i) => (
             <motion.div
               key={item.id}
@@ -81,59 +81,92 @@ export function GalleryModelSnap() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
-              className="relative"
+              whileHover={{ 
+                y: -8,
+                transition: { duration: 0.3 }
+              }}
+              className="relative h-full"
             >
-              <Card className="overflow-hidden cursor-pointer group">
-                <CardContent className="p-0">
-                  <div className="relative aspect-square bg-gray-100">
-                    <AnimatePresence mode="wait">
-                      {hoveredId === item.id ? (
-                        <motion.div
-                          key="rendered"
-                          className="absolute inset-0"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <Image
-                            src={item.rendered}
-                            alt={`${item.title} rendered`}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 50vw, 33vw"
-                            unoptimized={item.rendered.endsWith('.svg')}
-                          />
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="garment"
-                          className="absolute inset-0"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <Image
-                            src={item.garment}
-                            alt={item.title}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 50vw, 33vw"
-                            unoptimized={item.garment.endsWith('.svg')}
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <p className="text-white font-semibold">{item.title}</p>
-                        <p className="text-white/80 text-sm">Hover to see try-on</p>
+              <motion.div
+                whileHover={{
+                  rotateY: 5,
+                  rotateX: -5,
+                  scale: 1.02,
+                }}
+                transition={{ duration: 0.3 }}
+                style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+                className="h-full"
+              >
+                <Card className="overflow-hidden cursor-pointer group relative h-full
+                  bg-card
+                  border border-border/50
+                  shadow-lg
+                  hover:shadow-xl
+                  transition-all duration-300">
+                  {/* Embedded inset shadow effect */}
+                  <div className="absolute inset-0 
+                    shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]
+                    dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]
+                    pointer-events-none z-10" />
+                  
+                  {/* Gradient overlay on hover */}
+                  <div className="absolute inset-0 
+                    bg-gradient-to-br from-white/5 via-transparent to-transparent 
+                    opacity-0 group-hover:opacity-100
+                    transition-opacity duration-300
+                    pointer-events-none z-10" />
+                  
+                  <CardContent className="p-0 relative z-0">
+                    <div className="relative aspect-square bg-gray-100">
+                      <AnimatePresence mode="wait">
+                        {hoveredId === item.id ? (
+                          <motion.div
+                            key="rendered"
+                            className="absolute inset-0"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <Image
+                              src={item.rendered}
+                              alt={`${item.title} rendered`}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                              unoptimized={item.rendered.endsWith('.svg')}
+                            />
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="garment"
+                            className="absolute inset-0"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <Image
+                              src={item.garment}
+                              alt={item.title}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                              unoptimized={item.garment.endsWith('.svg')}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <p className="text-white font-semibold">{item.title}</p>
+                          <p className="text-white/80 text-sm">Hover to see try-on</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </motion.div>
           ))}
         </div>
