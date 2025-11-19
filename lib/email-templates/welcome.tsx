@@ -9,7 +9,7 @@ interface WelcomeEmailProps {
 export function WelcomeEmail({ firstName, dashboardUrl }: WelcomeEmailProps) {
   return (
     <BaseEmail
-      preview={`Welcome to Founderflow, ${firstName}!`}
+      preview={`Welcome to ModelSnap.ai, ${firstName}!`}
       title={`Welcome aboard, ${firstName}! 🎉`}
     >
       <Text
@@ -20,7 +20,7 @@ export function WelcomeEmail({ firstName, dashboardUrl }: WelcomeEmailProps) {
           margin: "0 0 20px 0",
         }}
       >
-        Thank you for joining Founderflow! We're excited to have you as part of our
+        Thank you for joining ModelSnap.ai! We're excited to have you as part of our
         community.
       </Text>
 
@@ -120,7 +120,7 @@ export function WelcomeEmail({ firstName, dashboardUrl }: WelcomeEmailProps) {
       >
         Best regards,
         <br />
-        The Founderflow Team
+        The ModelSnap.ai Team
       </Text>
     </BaseEmail>
   );

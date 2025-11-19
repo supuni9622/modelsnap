@@ -6,7 +6,7 @@ import { FooterLinkTypes } from "@/components/landing/footer-link";
  */
 
 /** The name of your application */
-export const SiteName = "Founderflow Boilerplate";
+export const SiteName = "ModelSnap.ai";
 
 /**
  * Main site settings interface
@@ -30,15 +30,15 @@ export interface SiteSettingsType {
  * ⚠️  IMPORTANT: Update these settings for your application
  */
 export const SiteSettings: SiteSettingsType = {
-  name: "Founderflow",
+  name: "ModelSnap.ai",
   logoUrlLight: "/static/images/light-logo.png",
-  logoUrlDark: "/static/images/dark-logo.png",
+  logoUrlDark: "/static/images/light-logo.png",
   defaultTheme: "light",
   domainName: "Founderflow.online",
   domainUrl:
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : "https://Founderflow.online",
+      : "https://modelsnap-oqja41jn2-model-snap-ai.vercel.app/en",
 };
 
 /**
@@ -63,14 +63,14 @@ export const footerData: FooterData = {
       label: "Pricing",
       href: "/pricing",
     },
-    {
-      label: "Support",
-      href: "/support",
-    },
-    {
-      label: "Documentation",
-      href: "/doc",
-    },
+    // {
+    //   label: "Support",
+    //   href: "/support",
+    // },
+    // {
+    //   label: "Documentation",
+    //   href: "/doc",
+    // },
   ],
   More: [
     {
@@ -82,14 +82,14 @@ export const footerData: FooterData = {
       label: "Pricing",
       href: "/pricing",
     },
-    {
-      label: "Support",
-      href: "/support",
-    },
-    {
-      label: "Documentation",
-      href: "/doc",
-    },
+    // {
+    //   label: "Support",
+    //   href: "/support",
+    // },
+    // {
+    //   label: "Documentation",
+    //   href: "/doc",
+    // },
   ],
 };
 
@@ -100,12 +100,12 @@ export const footerData: FooterData = {
  * Leave empty strings for platforms you don't use
  */
 export const SocialLink = {
-  facebook: "",
-  instagram: "",
-  tiktok: "",
+  facebook: "https://www.facebook.com/profile.php?id=61584141892640",
+  instagram: "https://www.instagram.com/modelsnap.ai/",
+  tiktok: "https://www.tiktok.com/@modelsnap.ai",
   x: "",
-  youtube: "",
-  linkedin: "",
+  youtube: "https://www.youtube.com/@ModelSnap-ai",
+  linkedin: "https://www.linkedin.com/company/model-snap-ai/?viewAsMember=true",
   pinterest: "",
   snapchat: "",
   reddit: "",

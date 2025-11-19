@@ -4,37 +4,37 @@ import { SiteSettings } from "./settings";
 const SEO_CONFIG: Metadata = {
   title: {
     template: `%s | ${SiteSettings.name}`,
-    default: "Founderflow - Modern Next.js SaaS Boilerplate",
+    default: "ModelSnap.ai - AI Fashion Photography",
   },
   description:
-    "A modern, fully featured Next.js boilerplate with authentication, subscriptions, i18n, beautiful UI components, and everything you need to launch your SaaS quickly.",
+    "ModelSnap.ai is an AI fashion photography platform that allows you to create realistic fashion photos with AI.",
   keywords:
-    "nextjs, saas, boilerplate, authentication, subscriptions, i18n, ui components, typescript",
+    "fashion photography, ai fashion photography, ai model photography, ai avatar photography, ai model photos, ai avatar photos, ai model renders, ai avatar renders, ai model render, ai avatar render",
   icons: "/static/favicon.ico",
   openGraph: {
     type: "website",
-    siteName: "Founderflow",
+    siteName: "ModelSnap.ai",
     locale: "en_US",
-    url: "https://Founderflow.online",
-    title: "Founderflow - Next.js SaaS Boilerplate",
+    url: "https://modelsnap-oqja41jn2-model-snap-ai.vercel.app/en",
+    title: "ModelSnap.ai - AI Fashion Photography",
     description:
-      "A modern, fully featured Next.js boilerplate with authentication, subscriptions, i18n, beautiful UI components, and everything you need to launch your SaaS quickly.",
+      "ModelSnap.ai is an AI fashion photography platform that allows you to create realistic fashion photos with AI.",
     images: [
       {
-        url: "/og-blog.jpg",
+        url: "/light-logo.png",
         width: 1200,
         height: 630,
-        alt: "Founderflow - Next.js SaaS Boilerplate",
+        alt: "ModelSnap.ai - AI Fashion Photography",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     site: "@Founderflowdev",
-    title: "Founderflow - Next.js SaaS Boilerplate",
+    title: "ModelSnap.ai - AI Fashion Photography",
     description:
-      "A modern, fully featured Next.js boilerplate with authentication, subscriptions, i18n, beautiful UI components, and everything you need to launch your SaaS quickly.",
-    images: ["/og-blog.jpg"],
+      "ModelSnap.ai is an AI fashion photography platform that allows you to create realistic fashion photos with AI.",
+    images: ["/light-logo.png"],
   },
 };
 

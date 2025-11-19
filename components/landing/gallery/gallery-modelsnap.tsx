@@ -3,44 +3,45 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import Image from "next/image";
 
-// Placeholder gallery items - in production, these would come from actual renders
+// Gallery items from /public/gallery folder
 const galleryItems = [
   {
     id: 1,
-    garment: "/placeholder.svg",
-    rendered: "/placeholder.svg",
-    title: "Casual T-Shirt",
-  },
-  {
-    id: 2,
-    garment: "/placeholder.svg",
-    rendered: "/placeholder.svg",
-    title: "Summer Dress",
-  },
-  {
-    id: 3,
-    garment: "/placeholder.svg",
-    rendered: "/placeholder.svg",
+    garment: "/gallery/hoodie.jpg",
+    rendered: "/gallery/hoodie-model.jpg",
     title: "Hoodie",
   },
   {
+    id: 2,
+    garment: "/gallery/tshirt.png",
+    rendered: "/gallery/tshirt-model.png",
+    title: "Casual T-Shirt",
+  },
+  {
+    id: 3,
+    garment: "/gallery/frock.png",
+    rendered: "/gallery/frock-model.png",
+    title: "Dress",
+  },
+  {
     id: 4,
-    garment: "/placeholder.svg",
-    rendered: "/placeholder.svg",
+    garment: "/gallery/kurtha.png",
+    rendered: "/gallery/kurtha-model.png",
     title: "Kurta",
   },
   {
     id: 5,
-    garment: "/placeholder.svg",
-    rendered: "/placeholder.svg",
-    title: "Jeans",
+    garment: "/gallery/saree.png",
+    rendered: "/gallery/saree-model.png",
+    title: "Saree",
   },
   {
     id: 6,
-    garment: "/placeholder.svg",
-    rendered: "/placeholder.svg",
-    title: "Blouse",
+    garment: "/gallery/jean.png",
+    rendered: "/gallery/jean-model.png",
+    title: "Jeans",
   },
 ];
 
@@ -84,30 +85,44 @@ export function GalleryModelSnap() {
             >
               <Card className="overflow-hidden cursor-pointer group">
                 <CardContent className="p-0">
-                  <div className="relative aspect-square">
+                  <div className="relative aspect-square bg-gray-100">
                     <AnimatePresence mode="wait">
                       {hoveredId === item.id ? (
-                        <motion.img
+                        <motion.div
                           key="rendered"
-                          src={item.rendered}
-                          alt={`${item.title} rendered`}
-                          className="w-full h-full object-cover"
+                          className="absolute inset-0"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.3 }}
-                        />
+                        >
+                          <Image
+                            src={item.rendered}
+                            alt={`${item.title} rendered`}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 50vw, 33vw"
+                            unoptimized={item.rendered.endsWith('.svg')}
+                          />
+                        </motion.div>
                       ) : (
-                        <motion.img
+                        <motion.div
                           key="garment"
-                          src={item.garment}
-                          alt={item.title}
-                          className="w-full h-full object-cover"
+                          className="absolute inset-0"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.3 }}
-                        />
+                        >
+                          <Image
+                            src={item.garment}
+                            alt={item.title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 50vw, 33vw"
+                            unoptimized={item.garment.endsWith('.svg')}
+                          />
+                        </motion.div>
                       )}
                     </AnimatePresence>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">

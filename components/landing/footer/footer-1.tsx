@@ -58,7 +58,7 @@ export default function Footer1() {
             <div className=" relative w-4 h-4 ml-2 group-hover:scale-[1.02] group-hover:-rotate-6 duration-300">
               <Image src="/icon.png" alt="" fill />
             </div>{" "}
-            Founderflow
+            Modelsnap
           </Button>
         </div>
 
