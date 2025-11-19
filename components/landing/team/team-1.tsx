@@ -6,16 +6,20 @@ import { Code, TrendingUp } from "lucide-react";
 
 const team = [
   {
-    name: "Suu",
-    role: "Senior Engineer",
+    name: "Supuni — Tech Builder",
+    role: "Tech Builder",
     icon: Code,
-    description: "Building the technical foundation",
+    description1: "🌟 Turning crazy ideas into real features.",
+    description2: "💻 Building the tech that powers every ModelSnap render.",
+    url:'https://www.linkedin.com/in/supuni-manamperi-bb5baa176/'
   },
   {
     name: "Hoshini",
-    role: "Marketing + Fashion Insight",
+    role: "Fashion & Community",
     icon: TrendingUp,
-    description: "Connecting with fashion brands",
+    description1: "👗 Talking to fashion sellers every day.",
+    description2: "🚀 Making sure ModelSnap solves real fashion problems.",
+    url:'https://www.linkedin.com/in/hoshiniperera/'
   },
 ];
 
@@ -30,7 +34,7 @@ export function TeamModelSnap() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          Meet the Team
+          Meet the Team Behind the Magic ✨
         </motion.h2>
 
         <div className="grid md:grid-cols-2 gap-6 mt-12">
@@ -44,7 +48,10 @@ export function TeamModelSnap() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.2 }}
               >
-                <Card className="h-full hover:shadow-lg transition-shadow group">
+                <Card 
+                  className="h-full hover:shadow-lg transition-shadow group cursor-pointer"
+                  onClick={() => window.open(member.url, "_blank", "noopener,noreferrer")}
+                >
                   <CardHeader>
                     <div className="flex items-center gap-4 mb-2">
                       <div className="rounded-full bg-[#356DFF]/10 p-4 group-hover:bg-[#356DFF]/20 transition-colors">
@@ -57,7 +64,8 @@ export function TeamModelSnap() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground">{member.description}</p>
+                    <p className="text-muted-foreground mb-2">{member.description1}</p>
+                    <p className="text-muted-foreground">{member.description2}</p>
                   </CardContent>
                 </Card>
               </motion.div>
