@@ -116,7 +116,7 @@ export function StatsModelSnap() {
           What Brands Achieve With ModelSnap
         </motion.h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mt-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mt-12" style={{ perspective: "1000px" }}>
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -124,21 +124,58 @@ export function StatsModelSnap() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: i * 0.1 }}
+              whileHover={{ 
+                y: -8,
+                transition: { duration: 0.3 }
+              }}
+              className="h-full"
             >
-              <Card className="h-full text-center hover:shadow-lg transition-shadow">
-                <CardContent className="p-6 flex flex-col items-center">
-                  <div className="mb-4">
-                    <AnimatedStatCounter
-                      value={stat.value}
-                      prefix={stat.prefix}
-                      suffix={stat.suffix}
-                      multiplier={stat.multiplier}
-                    />
-                  </div>
-                  <h3 className="text-base md:text-lg font-semibold mb-2">{stat.label}</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">{stat.description}</p>
-                </CardContent>
-              </Card>
+              <motion.div
+                whileHover={{
+                  rotateY: 5,
+                  rotateX: -5,
+                  scale: 1.02,
+                }}
+                transition={{ duration: 0.3 }}
+                style={{ transformStyle: "preserve-3d" }}
+                className="h-full"
+              >
+                <Card className="h-full text-center relative overflow-hidden 
+                  bg-card/50 backdrop-blur-sm
+                  border border-border/50
+                  shadow-[0_8px_30px_rgb(0,0,0,0.12)]
+                  dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)]
+                  hover:shadow-[0_12px_40px_rgb(0,0,0,0.15)]
+                  dark:hover:shadow-[0_12px_40px_rgb(0,0,0,0.4)]
+                  transition-all duration-300
+                  group">
+                  {/* Embedded inset shadow effect */}
+                  <div className="absolute inset-0 
+                    shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]
+                    dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]
+                    pointer-events-none" />
+                  
+                  {/* Gradient overlay on hover */}
+                  <div className="absolute inset-0 
+                    bg-gradient-to-br from-white/10 via-transparent to-transparent 
+                    opacity-0 group-hover:opacity-100
+                    transition-opacity duration-300
+                    pointer-events-none" />
+                  
+                  <CardContent className="p-6 flex flex-col items-center relative z-10">
+                    <div className="mb-4">
+                      <AnimatedStatCounter
+                        value={stat.value}
+                        prefix={stat.prefix}
+                        suffix={stat.suffix}
+                        multiplier={stat.multiplier}
+                      />
+                    </div>
+                    <h3 className="text-base md:text-lg font-semibold mb-2">{stat.label}</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">{stat.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </motion.div>
           ))}
         </div>
