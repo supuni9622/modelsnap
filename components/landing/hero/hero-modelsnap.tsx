@@ -180,29 +180,56 @@ export function HeroModelSnap() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1 }}
+          style={{ perspective: "1000px" }}
         >
-          <div className="relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-              {HERO_AVATARS.map((avatar, index) => (
-                <motion.div
-                  key={avatar._id}
-                  className="relative aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 1.2 + index * 0.1 }}
-                  whileHover={{ scale: 1.05, zIndex: 10 }}
-                >
-                  <Image
-                    src={avatar.imageUrl}
-                    alt={`${avatar.gender} ${avatar.bodyType} ${avatar.skinTone}`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 33vw, 16vw"
-                  />
-                </motion.div>
-              ))}
+          <motion.div
+            whileHover={{
+              rotateY: 2,
+              rotateX: -2,
+              scale: 1.01,
+            }}
+            transition={{ duration: 0.3 }}
+            style={{ transformStyle: "preserve-3d" }}
+            className="group"
+          >
+            <div className="relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm overflow-hidden
+              shadow-[0_8px_30px_rgb(0,0,0,0.3)]
+              hover:shadow-[0_12px_40px_rgb(0,0,0,0.4)]
+              transition-all duration-300">
+              {/* Embedded inset shadow effect */}
+              <div className="absolute inset-0 
+                shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]
+                pointer-events-none" />
+              
+              {/* Gradient overlay on hover */}
+              <div className="absolute inset-0 
+                bg-gradient-to-br from-white/10 via-transparent to-transparent 
+                opacity-0 group-hover:opacity-100
+                transition-opacity duration-300
+                pointer-events-none" />
+              
+              <div className="relative z-10 grid grid-cols-3 md:grid-cols-6 gap-4">
+                {HERO_AVATARS.map((avatar, index) => (
+                  <motion.div
+                    key={avatar._id}
+                    className="relative aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 1.2 + index * 0.1 }}
+                    whileHover={{ scale: 1.05, zIndex: 10 }}
+                  >
+                    <Image
+                      src={avatar.imageUrl}
+                      alt={`${avatar.gender} ${avatar.bodyType} ${avatar.skinTone}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 33vw, 16vw"
+                    />
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
     </section>

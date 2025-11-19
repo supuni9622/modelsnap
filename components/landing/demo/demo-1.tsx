@@ -43,10 +43,36 @@ export function DemoModelSnap() {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.2 }}
+          style={{ perspective: "1000px" }}
         >
-          <Card className="bg-white/5 border-white/10 overflow-hidden">
-            <CardContent className="p-0">
-              <div className="aspect-video relative bg-gradient-to-br from-[#356DFF]/20 to-[#4BE4C1]/20">
+          <motion.div
+            whileHover={{
+              rotateY: 2,
+              rotateX: -2,
+              scale: 1.01,
+            }}
+            transition={{ duration: 0.3 }}
+            style={{ transformStyle: "preserve-3d" }}
+            className="group"
+          >
+            <Card className="bg-white/5 border-white/10 overflow-hidden relative
+              shadow-[0_8px_30px_rgb(0,0,0,0.3)]
+              hover:shadow-[0_12px_40px_rgb(0,0,0,0.4)]
+              transition-all duration-300">
+              {/* Embedded inset shadow effect */}
+              <div className="absolute inset-0 
+                shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]
+                pointer-events-none z-10" />
+              
+              {/* Gradient overlay on hover */}
+              <div className="absolute inset-0 
+                bg-gradient-to-br from-white/10 via-transparent to-transparent 
+                opacity-0 group-hover:opacity-100
+                transition-opacity duration-300
+                pointer-events-none z-10" />
+              
+              <CardContent className="p-0 relative z-0">
+                <div className="aspect-video relative bg-gradient-to-br from-[#356DFF]/20 to-[#4BE4C1]/20">
                 <video
                   ref={videoRef}
                   className="w-full h-full object-cover"
@@ -63,9 +89,10 @@ export function DemoModelSnap() {
                   <source src="/demo.mp4" type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
 
         {/* <motion.div

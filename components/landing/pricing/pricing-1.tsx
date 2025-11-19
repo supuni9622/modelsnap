@@ -60,13 +60,13 @@ export default function Pricing({
           {/* Background decoration */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 rounded-3xl blur-3xl" />
 
-          <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-4">
+          <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-4" style={{ perspective: "1000px" }}>
             {PricingPlans.map((plan, index) => {
               return (
                 <motion.div
                   key={index}
                   className={cn(
-                    "relative group",
+                    "relative group h-full",
                     plan.popular && "lg:scale-105 z-10"
                   )}
                   initial={{ opacity: 0, y: 40 }}
@@ -77,6 +77,10 @@ export default function Pricing({
                     duration: 0.6,
                     delay: index * 0.15,
                     ease: "easeOut",
+                  }}
+                  whileHover={{ 
+                    y: -8,
+                    transition: { duration: 0.3 }
                   }}
                 >
                   {/* Popular badge */}
@@ -91,97 +95,128 @@ export default function Pricing({
                     </div>
                   )}
 
-                  {/* Card */}
-                  <div
-                    className={cn(
-                      "relative h-full bg-card/50 backdrop-blur-sm rounded-xl p-6 transition-all duration-300",
-                      "border border-border/50 shadow-lg hover:shadow-2xl",
-                      "group-hover:border-primary/30 group-hover:-translate-y-1",
-                      plan.popular &&
-                        "border-primary/30 bg-gradient-to-br from-card to-primary/5"
-                    )}
+                  {/* 3D Transform Wrapper */}
+                  <motion.div
+                    whileHover={{
+                      rotateY: 5,
+                      rotateX: -5,
+                      scale: 1.02,
+                    }}
+                    transition={{ duration: 0.3 }}
+                    style={{ transformStyle: "preserve-3d" }}
+                    className="h-full"
                   >
-                    {/* Plan header */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <div>
-                        <h3 className="text-lg font-bold text-foreground">
-                          {plan.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          {plan.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Pricing */}
-                    <div className="mb-6">
-                      <div className="flex items-baseline gap-1 mb-1">
-                        <span className="text-3xl font-bold text-foreground">
-                          {plan.currencySymbol}
-                          {plan.price}
-                        </span>
-                        <span className="text-muted-foreground text-sm font-medium">
-                          /{plan.billingCycle}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Billed {plan.billingCycle}ly
-                      </p>
-                    </div>
-
-                    {/* Features */}
-                    <div className="mb-6 flex-grow">
-                      <ul className="space-y-3">
-                        {plan.features.map((feature, idx) => (
-                          <li
-                            key={`${plan.id}-feature-${idx}`}
-                            className="flex items-start gap-2 group/feature"
-                          >
-                            <div
-                              className={cn(
-                                "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
-                                feature.active
-                                  ? "bg-primary/10 text-primary"
-                                  : "bg-muted text-muted-foreground"
-                              )}
-                            >
-                              {feature.active ? (
-                                <Check className="w-2.5 h-2.5" />
-                              ) : (
-                                <X className="w-2.5 h-2.5" />
-                              )}
-                            </div>
-                            <span
-                              className={cn(
-                                "text-xs leading-relaxed transition-colors",
-                                feature.active
-                                  ? "text-foreground group-hover/feature:text-primary"
-                                  : "text-muted-foreground line-through"
-                              )}
-                            >
-                              {feature.title}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* CTA Button */}
-                    <button
-                      onClick={() => window.open(WAITLIST_FORM_URL, "_blank", "noopener,noreferrer")}
+                    {/* Card */}
+                    <div
                       className={cn(
-                        "w-full py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200",
-                        "hover:scale-105 hover:shadow-lg active:scale-95",
-                        plan.popular
-                          ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
-                          : "bg-muted hover:bg-muted/80 text-foreground border border-border hover:border-primary/30"
+                        "relative h-full bg-card/50 backdrop-blur-sm rounded-xl p-6 transition-all duration-300 overflow-hidden",
+                        "border border-border/50",
+                        "shadow-[0_8px_30px_rgb(0,0,0,0.12)]",
+                        "dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)]",
+                        "hover:shadow-[0_12px_40px_rgb(0,0,0,0.15)]",
+                        "dark:hover:shadow-[0_12px_40px_rgb(0,0,0,0.4)]",
+                        "group-hover:border-primary/30",
+                        plan.popular &&
+                          "border-primary/30 bg-gradient-to-br from-card to-primary/5"
                       )}
                     >
-                      {plan.trial
-                        ? `Free Trial (${plan.trial} days)`
-                        : plan.displayButtonName}
-                    </button>
-                  </div>
+                      {/* Embedded inset shadow effect */}
+                      <div className="absolute inset-0 
+                        shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]
+                        dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]
+                        pointer-events-none" />
+                      
+                      {/* Gradient overlay on hover */}
+                      <div className="absolute inset-0 
+                        bg-gradient-to-br from-white/10 via-transparent to-transparent 
+                        opacity-0 group-hover:opacity-100
+                        transition-opacity duration-300
+                        pointer-events-none" />
+                      
+                      <div className="relative z-10">
+                        {/* Plan header */}
+                        <div className="flex items-center gap-2 mb-4">
+                          <div>
+                            <h3 className="text-lg font-bold text-foreground">
+                              {plan.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                              {plan.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Pricing */}
+                        <div className="mb-6">
+                          <div className="flex items-baseline gap-1 mb-1">
+                            <span className="text-3xl font-bold text-foreground">
+                              {plan.currencySymbol}
+                              {plan.price}
+                            </span>
+                            <span className="text-muted-foreground text-sm font-medium">
+                              /{plan.billingCycle}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Billed {plan.billingCycle}ly
+                          </p>
+                        </div>
+
+                        {/* Features */}
+                        <div className="mb-6 flex-grow">
+                          <ul className="space-y-3">
+                            {plan.features.map((feature, idx) => (
+                              <li
+                                key={`${plan.id}-feature-${idx}`}
+                                className="flex items-start gap-2 group/feature"
+                              >
+                                <div
+                                  className={cn(
+                                    "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
+                                    feature.active
+                                      ? "bg-primary/10 text-primary"
+                                      : "bg-muted text-muted-foreground"
+                                  )}
+                                >
+                                  {feature.active ? (
+                                    <Check className="w-2.5 h-2.5" />
+                                  ) : (
+                                    <X className="w-2.5 h-2.5" />
+                                  )}
+                                </div>
+                                <span
+                                  className={cn(
+                                    "text-xs leading-relaxed transition-colors",
+                                    feature.active
+                                      ? "text-foreground group-hover/feature:text-primary"
+                                      : "text-muted-foreground line-through"
+                                  )}
+                                >
+                                  {feature.title}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* CTA Button */}
+                        <button
+                          onClick={() => window.open(WAITLIST_FORM_URL, "_blank", "noopener,noreferrer")}
+                          className={cn(
+                            "w-full py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200",
+                            "hover:scale-105 hover:shadow-lg active:scale-95",
+                            plan.popular
+                              ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
+                              : "bg-muted hover:bg-muted/80 text-foreground border border-border hover:border-primary/30"
+                          )}
+                        >
+                          {plan.trial
+                            ? `Free Trial (${plan.trial} days)`
+                            : plan.displayButtonName}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
                 </motion.div>
               );
             })}

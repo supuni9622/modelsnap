@@ -52,7 +52,7 @@ export function ProblemModelSnap() {
           Challenges Fashion Brands Deal With Every Day
         </motion.h2>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ perspective: "1000px" }}>
           {problems.map((problem, i) => {
             const Icon = problem.icon;
             return (
@@ -62,20 +62,57 @@ export function ProblemModelSnap() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
+                whileHover={{ 
+                  y: -8,
+                  transition: { duration: 0.3 }
+                }}
+                className="h-full"
               >
-                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="rounded-lg bg-[#356DFF]/10 p-3 flex-shrink-0">
-                        <Icon className="h-6 w-6 text-[#356DFF]" />
+                <motion.div
+                  whileHover={{
+                    rotateY: 5,
+                    rotateX: -5,
+                    scale: 1.02,
+                  }}
+                  transition={{ duration: 0.3 }}
+                  style={{ transformStyle: "preserve-3d" }}
+                  className="h-full"
+                >
+                  <Card className="h-full cursor-pointer relative overflow-hidden
+                    bg-card/50 backdrop-blur-sm
+                    border border-border/50
+                    shadow-[0_8px_30px_rgb(0,0,0,0.12)]
+                    dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)]
+                    hover:shadow-[0_12px_40px_rgb(0,0,0,0.15)]
+                    dark:hover:shadow-[0_12px_40px_rgb(0,0,0,0.4)]
+                    transition-all duration-300
+                    group">
+                    {/* Embedded inset shadow effect */}
+                    <div className="absolute inset-0 
+                      shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]
+                      dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]
+                      pointer-events-none" />
+                    
+                    {/* Gradient overlay on hover */}
+                    <div className="absolute inset-0 
+                      bg-gradient-to-br from-white/10 via-transparent to-transparent 
+                      opacity-0 group-hover:opacity-100
+                      transition-opacity duration-300
+                      pointer-events-none" />
+                    
+                    <CardContent className="p-6 relative z-10">
+                      <div className="flex items-start gap-4">
+                        <div className="rounded-lg bg-[#356DFF]/10 p-3 flex-shrink-0">
+                          <Icon className="h-6 w-6 text-[#356DFF]" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg mb-2">{problem.title}</h3>
+                          <p className="text-muted-foreground text-sm">{problem.description}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg mb-2">{problem.title}</h3>
-                        <p className="text-muted-foreground text-sm">{problem.description}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </motion.div>
             );
           })}
