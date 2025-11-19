@@ -51,7 +51,7 @@ export function DemoModelSnap() {
           </Card>
         </motion.div>
 
-        <motion.div
+        {/* <motion.div
           className="mt-8 text-center"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -65,7 +65,7 @@ export function DemoModelSnap() {
           >
             <Link href="/app">Try Demo</Link>
           </Button>
-        </motion.div>
+        </motion.div> */}
       </div>
     </section>
   );
