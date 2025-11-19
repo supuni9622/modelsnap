@@ -61,8 +61,8 @@ export default function Footer1() {
             Modelsnap
           </Button>
         </div>
-
-        {FooterContent.map((data, idx) => (
+{/* Footer content is hidden for now */}
+        {/* {FooterContent.map((data, idx) => (
           <motion.div
             key={idx}
             className="text-center md:text-left"
@@ -79,9 +79,10 @@ export default function Footer1() {
               ))}
             </nav>
           </motion.div>
-        ))}
+        ))} */}
       </div>
-      <div className="mx-auto lg:px-10 md:px-5 2xl:px-0 max-w-screen-xl mt-[55px] md:mt-[120px] flex md:flex-row justify-between space-y-3 md:space-y-0 flex-col md:text-left items-center">
+      {/* Footer bottom text and locale selector is hidden for now */}
+      {/* <div className="mx-auto lg:px-10 md:px-5 2xl:px-0 max-w-screen-xl mt-[55px] md:mt-[120px] flex md:flex-row justify-between space-y-3 md:space-y-0 flex-col md:text-left items-center">
         <p className="text-xs opacity-80">{t("BottomText")}</p>
         <Select onValueChange={handleLocaleChange} defaultValue={locale}>
           <SelectTrigger className="w-[180px]">
@@ -95,7 +96,7 @@ export default function Footer1() {
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </div> */}
     </motion.footer>
   );
 }

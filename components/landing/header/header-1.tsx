@@ -98,8 +98,8 @@ export default function Header1() {
               </Link>
             </div>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex md:items-center md:space-x-6">
+            {/* Desktop Navigation - Hidden for now */}
+            {/* <nav className="hidden md:flex md:items-center md:space-x-6">
               {navItems.map(({ title, href }) => (
                 <button
                   key={href}
@@ -112,13 +112,13 @@ export default function Header1() {
                   {t(title)}
                 </button>
               ))}
-            </nav>
+            </nav> */}
 
             {/* Right Actions */}
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-
-              {isSignedIn ? (
+          {/* Sign in and sign up buttons are hidden for now */}
+              {/* {isSignedIn ? (
                 <AccountButton />
               ) : isLoaded ? (
                 <>
@@ -135,7 +135,7 @@ export default function Header1() {
                     </Link>
                   </div>
                 </>
-              ) : null}
+              ) : null} */}
 
               {/* Mobile Menu Toggle */}
               <div className="flex md:hidden">
