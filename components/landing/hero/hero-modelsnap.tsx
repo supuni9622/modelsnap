@@ -81,7 +81,7 @@ export function HeroModelSnap() {
           >
             <span className="block">ModelSnap.ai</span>
             <span className="block mt-2 text-[#4BE4C1]">
-              Sri Lankan AI Models.
+            AI Models + Human Models Marketplace
             </span>
             <span className="block mt-2">
               Realistic Fits. Zero Photoshoots.
@@ -95,7 +95,7 @@ export function HeroModelSnap() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Upload clothing → Choose AI/Human model → Get studio-quality photos in minutes
+             Create Fashion Model Photos 10× Faster with AI
           </motion.p>
 
           {/* CTA Buttons */}
