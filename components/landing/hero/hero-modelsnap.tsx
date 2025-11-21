@@ -24,7 +24,7 @@ const HERO_AVATARS: Avatar[] = [
   { _id: "6", gender: "male", bodyType: "dad-bod", skinTone: "SL-02", imageUrl: "/avatars/male/dad-bod/SL-02.jpg" },
 ];
 
-const WAITLIST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf4bHDv4PzMSW07HVhGYRP3DffXD_LZEGtVN7pkt1V3AR79WA/viewform?usp=publish-editor";
+const WAITLIST_FORM_URL = "https://tally.so/r/kddz1e";
 
 export function HeroModelSnap() {
   return (
