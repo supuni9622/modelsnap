@@ -21,7 +21,7 @@ export default function Pricing({
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
   
-  const WAITLIST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf4bHDv4PzMSW07HVhGYRP3DffXD_LZEGtVN7pkt1V3AR79WA/viewform?usp=publish-editor";
+  const WAITLIST_FORM_URL = "https://tally.so/r/kddz1e";
   return (
     <section
       id="pricing"
