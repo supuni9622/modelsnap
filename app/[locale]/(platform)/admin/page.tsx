@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, CreditCard, ArrowRight } from "lucide-react";
+import { Users, CreditCard, ArrowRight, Coins, FileCheck, BarChart3 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard | ModelSnap.ai",
@@ -19,7 +19,7 @@ export default function AdminPage() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -54,6 +54,66 @@ export default function AdminPage() {
             <Button asChild>
               <Link href="/admin/subscriptions">
                 Manage Subscriptions
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Coins className="h-5 w-5" />
+              <CardTitle>Credit Adjustment</CardTitle>
+            </div>
+            <CardDescription>
+              Manually adjust user credits with transaction history
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/admin/credits">
+                Adjust Credits
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <FileCheck className="h-5 w-5" />
+              <CardTitle>Consent Management</CardTitle>
+            </div>
+            <CardDescription>
+              View and manage all consent requests between businesses and models
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/admin/consent">
+                Manage Consent
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              <CardTitle>Analytics Dashboard</CardTitle>
+            </div>
+            <CardDescription>
+              View generation analytics, success rates, and revenue metrics
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/admin/analytics">
+                View Analytics
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>

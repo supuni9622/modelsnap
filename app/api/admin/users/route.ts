@@ -46,10 +46,22 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "10", 10)));
     const skip = (page - 1) * limit;
+    const search = searchParams.get("search");
+
+    // Build query
+    const query: any = {};
+    if (search) {
+      query.$or = [
+        { id: search },
+        { emailAddress: { $regex: search, $options: "i" } },
+        { firstName: { $regex: search, $options: "i" } },
+        { lastName: { $regex: search, $options: "i" } },
+      ];
+    }
 
     const [users, total] = await Promise.all([
-      User.find().sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-      User.countDocuments(),
+      User.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      User.countDocuments(query),
     ]);
 
     const totalPages = Math.ceil(total / limit);

@@ -1,8 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Download, Clock, CheckCircle2, XCircle, Loader2, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PreviewImageDialog } from "@/components/platform/preview-image-dialog";
 
 interface Render {
   _id: string;
@@ -119,10 +123,20 @@ function formatDate(dateString: string): string {
   });
 }
 
-export async function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHistoryProps) {
+export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHistoryProps) {
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewFileName, setPreviewFileName] = useState<string>("");
+
   const { renders, pagination } = initialRenders
     ? { renders: initialRenders, pagination: { page, limit, total: initialRenders.length, totalPages: 1, hasNextPage: false, hasPrevPage: false } }
-    : await fetchRenderHistory(page, limit);
+    : { renders: [] as Render[], pagination: { page: 1, limit: 10, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false } };
+
+  const handlePreview = (imageUrl: string, renderId: string) => {
+    setPreviewImage(imageUrl);
+    setPreviewFileName(`render-${renderId}.jpg`);
+    setPreviewOpen(true);
+  };
 
   if (renders.length === 0) {
     return (
@@ -141,97 +155,119 @@ export async function RenderHistory({ initialRenders, page = 1, limit = 10 }: Re
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Render History</CardTitle>
-        <CardDescription>
-          {pagination.total} render{pagination.total !== 1 ? "s" : ""} total
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {renders.map((render) => (
-            <div
-              key={render._id}
-              className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    {getStatusBadge(render.status)}
-                    <span className="text-sm text-muted-foreground">
-                      {formatDate(render.createdAt)}
-                    </span>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Render History</CardTitle>
+          <CardDescription>
+            {pagination.total} render{pagination.total !== 1 ? "s" : ""} total
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {renders.map((render) => (
+              <div
+                key={render._id}
+                className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      {getStatusBadge(render.status)}
+                      <span className="text-sm text-muted-foreground">
+                        {formatDate(render.createdAt)}
+                      </span>
+                    </div>
+                    {render.errorMessage && (
+                      <p className="text-sm text-destructive mt-2">{render.errorMessage}</p>
+                    )}
                   </div>
-                  {render.errorMessage && (
-                    <p className="text-sm text-destructive mt-2">{render.errorMessage}</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Credits used</p>
-                  <p className="font-semibold">{render.creditsUsed}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium mb-2">Garment</p>
-                  <div className="relative aspect-square rounded-lg border overflow-hidden">
-                    <img
-                      src={render.garmentImageUrl}
-                      alt="Garment"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Credits used</p>
+                    <p className="font-semibold">{render.creditsUsed}</p>
                   </div>
                 </div>
 
-                {render.renderedImageUrl && render.status === "completed" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium mb-2">Rendered Result</p>
+                    <p className="text-sm font-medium mb-2">Garment</p>
                     <div className="relative aspect-square rounded-lg border overflow-hidden">
                       <img
-                        src={render.renderedImageUrl}
-                        alt="Rendered result"
+                        src={render.garmentImageUrl}
+                        alt="Garment"
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <a
-                      href={render.renderedImageUrl}
-                      download={`render-${render._id}.jpg`}
-                      className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground mt-2 w-full"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download
-                    </a>
                   </div>
+
+                  {render.renderedImageUrl && render.status === "completed" && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">Rendered Result</p>
+                      <div className="relative aspect-square rounded-lg border overflow-hidden">
+                        <img
+                          src={render.renderedImageUrl}
+                          alt="Rendered result"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handlePreview(render.renderedImageUrl!, render._id)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Preview
+                        </Button>
+                        <a
+                          href={render.renderedImageUrl}
+                          download={`render-${render._id}.jpg`}
+                          className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground flex-1"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Page {pagination.page} of {pagination.totalPages}
+              </p>
+              <div className="flex gap-2">
+                {pagination.hasPrevPage && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`?page=${pagination.page - 1}`}>Previous</a>
+                  </Button>
+                )}
+                {pagination.hasNextPage && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`?page=${pagination.page + 1}`}>Next</a>
+                  </Button>
                 )}
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between mt-6 pt-4 border-t">
-            <p className="text-sm text-muted-foreground">
-              Page {pagination.page} of {pagination.totalPages}
-            </p>
-            <div className="flex gap-2">
-              {pagination.hasPrevPage && (
-                <Button variant="outline" size="sm" asChild>
-                  <a href={`?page=${pagination.page - 1}`}>Previous</a>
-                </Button>
-              )}
-              {pagination.hasNextPage && (
-                <Button variant="outline" size="sm" asChild>
-                  <a href={`?page=${pagination.page + 1}`}>Next</a>
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {previewImage && (
+        <PreviewImageDialog
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          imageUrl={previewImage}
+          imageTitle="Rendered Image Preview"
+          downloadFileName={previewFileName}
+        />
+      )}
+    </>
   );
 }
-

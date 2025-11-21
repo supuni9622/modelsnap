@@ -81,9 +81,29 @@ const ENV_CONFIG = {
         example: "re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
         required: true,
       },
+      {
+        name: "RESEND_FROM_EMAIL",
+        description: "Default 'from' email address (optional)",
+        example: "noreply@modelsnap.ai",
+        required: false,
+      },
     ],
   },
-  
+
+  // AWS CloudFront CDN (Optional)
+  CDN: {
+    name: "AWS CloudFront CDN",
+    description: "CDN for global image delivery (optional)",
+    variables: [
+      {
+        name: "AWS_CLOUDFRONT_DOMAIN",
+        description: "CloudFront distribution domain (without https://)",
+        example: "d1234567890.cloudfront.net",
+        required: false,
+      },
+    ],
+  },
+
   // FASHN AI API
   FASHN: {
     name: "FASHN AI API",
@@ -98,6 +118,44 @@ const ENV_CONFIG = {
     ],
   },
   
+  // AWS S3 Storage
+  S3: {
+    name: "AWS S3 Storage",
+    description: "Image storage and file uploads",
+    variables: [
+      {
+        name: "AWS_REGION",
+        description: "AWS region for S3 bucket",
+        example: "us-east-1",
+        required: true,
+      },
+      {
+        name: "AWS_S3_BUCKET_NAME",
+        description: "S3 bucket name for storing images",
+        example: "modelsnap-images",
+        required: true,
+      },
+      {
+        name: "AWS_ACCESS_KEY_ID",
+        description: "AWS access key ID for S3 access",
+        example: "AKIAIOSFODNN7EXAMPLE",
+        required: true,
+      },
+      {
+        name: "AWS_SECRET_ACCESS_KEY",
+        description: "AWS secret access key for S3 access",
+        example: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        required: true,
+      },
+      {
+        name: "AWS_S3_PUBLIC_URL",
+        description: "Optional: Custom public URL (e.g., CloudFront CDN)",
+        example: "https://cdn.modelsnap.ai",
+        required: false,
+      },
+    ],
+  },
+  
   // Admin Access
   ADMIN: {
     name: "Admin Access",
@@ -107,6 +165,20 @@ const ENV_CONFIG = {
         name: "ADMIN_EMAILS",
         description: "Comma-separated list of admin email addresses",
         example: "admin@example.com,another@example.com",
+        required: false,
+      },
+    ],
+  },
+
+  // Render Worker (Optional)
+  WORKER: {
+    name: "Render Worker",
+    description: "Background worker for batch processing (optional)",
+    variables: [
+      {
+        name: "RENDER_WORKER_SECRET",
+        description: "Secret key for render worker endpoint authentication",
+        example: "your_secure_worker_secret_here",
         required: false,
       },
     ],

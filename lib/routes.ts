@@ -4,6 +4,8 @@ export const publicRoutes = [
   "/sign-in(.*)",
   "/:locale/sign-up(.*)",
   "/sign-up(.*)",
+  "/:locale/onboarding(.*)",
+  "/onboarding(.*)",
 
   // Landing Page Routes
   "/:locale",

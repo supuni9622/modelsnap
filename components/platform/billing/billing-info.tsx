@@ -7,6 +7,7 @@ import Link from "next/link";
 import BillingPortalButton from "@/components/buttons/billing-portal";
 import BillingRefreshButton from "@/components/buttons/billing-refresh-button";
 import { isUsedCredits } from "@/lib/config/pricing";
+import { SubscriptionCancel } from "./subscription-cancel";
 
 export default function BillingInfo() {
   const { billing } = useAppContext();
@@ -53,3 +54,5 @@ export default function BillingInfo() {
     </Card>
   );
 }
+
+export { SubscriptionCancel };

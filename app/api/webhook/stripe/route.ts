@@ -13,8 +13,11 @@ import {
 import { createLogger } from "@/lib/utils/logger";
 import { withTransaction, withTransactionAndExternal } from "@/lib/transaction-utils";
 import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiter";
+import { createOrUpdateInvoiceFromStripe } from "@/lib/invoice-utils";
+import { sendInvoiceNotificationEmail } from "@/lib/email-notifications";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 // Create logger with context for this webhook handler
 const logger = createLogger({ component: "stripe-webhook" });
@@ -130,11 +133,78 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
         break;
       }
 
+      case "invoice.paid":
+      case "invoice.created":
+      case "invoice.updated": {
+        // Handle invoice events - create or update invoice record
+        const stripeInvoice = data.object as Stripe.Invoice;
+        
+        if (!stripeInvoice.customer) {
+          logger.warn("Invoice event missing customer ID", { invoiceId: stripeInvoice.id });
+          break;
+        }
+
+        const customer = await stripe.customers.retrieve(
+          stripeInvoice.customer as string
+        );
+        
+        if (!("email" in customer) || !customer.email) {
+          logger.warn("Customer record missing email for invoice", { 
+            invoiceId: stripeInvoice.id,
+            customerId: stripeInvoice.customer 
+          });
+          break;
+        }
+
+        const user = await User.findOne({ emailAddress: customer.email });
+        if (!user) {
+          logger.warn("User not found for invoice customer email", { 
+            invoiceId: stripeInvoice.id,
+            customerEmail: customer.email 
+          });
+          break;
+        }
+
+        try {
+          await createOrUpdateInvoiceFromStripe(stripeInvoice, user.id);
+          logger.info("Invoice synced successfully", {
+            invoiceId: stripeInvoice.id,
+            userId: user.id,
+            status: stripeInvoice.status,
+            eventType
+          });
+
+          // Send invoice notification email (only for created or paid invoices)
+          if (eventType === "invoice.created" || eventType === "invoice.paid") {
+            if (user.emailAddress?.[0]) {
+              const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
+              const invoiceUrl = stripeInvoice.hosted_invoice_url || `${APP_URL}/app/invoices/${stripeInvoice.id}`;
+              
+              sendInvoiceNotificationEmail(
+                user.emailAddress[0],
+                userName,
+                stripeInvoice.number || stripeInvoice.id,
+                stripeInvoice.amount_due / 100,
+                stripeInvoice.currency,
+                invoiceUrl,
+                stripeInvoice.invoice_pdf || undefined
+              ).catch((err) => logger.error("Failed to send invoice notification email", err as Error));
+            }
+          }
+        } catch (error) {
+          logger.error("Failed to sync invoice", error as Error, {
+            invoiceId: stripeInvoice.id,
+            userId: user.id
+          });
+        }
+        break;
+      }
+
       case "checkout.session.completed": {
         // Handle successful checkout sessions (one-time purchases or subscription starts)
         const session = await stripe.checkout.sessions.retrieve(
           (data.object as Stripe.Checkout.Session).id,
-          { expand: ["line_items"] }
+          { expand: ["line_items", "invoice"] }
         );
 
         if (session.payment_status !== "paid") {
@@ -161,6 +231,24 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
         if (!user) {
           logger.error("User not found for customer email in checkout session", undefined, { customerEmail: customer.email });
           return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        // If there's an invoice in the session, sync it
+        if (session.invoice && typeof session.invoice === "string") {
+          try {
+            const invoice = await stripe.invoices.retrieve(session.invoice);
+            await createOrUpdateInvoiceFromStripe(invoice, user.id);
+            logger.info("Invoice synced from checkout session", {
+              invoiceId: invoice.id,
+              sessionId: session.id,
+              userId: user.id
+            });
+          } catch (error) {
+            logger.error("Failed to sync invoice from checkout session", error as Error, {
+              invoiceId: session.invoice,
+              sessionId: session.id
+            });
+          }
         }
 
         const priceId = session.line_items?.data[0]?.price?.id;

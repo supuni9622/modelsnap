@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { AdminBankTransfer } from "@/components/admin/admin-bank-transfer";
 
 export const metadata: Metadata = {
   title: "Subscription Management | Admin | ModelSnap.ai",
@@ -135,28 +136,7 @@ export default async function AdminSubscriptionsPage({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Bank Transfer Workflow</CardTitle>
-          <CardDescription>
-            Manually approve bank transfer payments and update user subscriptions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 border rounded-lg">
-              <h3 className="font-semibold mb-2">Instructions:</h3>
-              <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                <li>Receive bank transfer payment notification</li>
-                <li>Verify payment in bank account</li>
-                <li>Find user by email in the subscriptions table above</li>
-                <li>Click "Update" to modify their plan and credits</li>
-                <li>Mark payment as processed</li>
-              </ol>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <AdminBankTransfer />
     </div>
   );
 }

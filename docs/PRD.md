@@ -25,6 +25,7 @@
 - Node.js  
 - MongoDB  
 - FASHN API integration for AI clothing renders  
+- AWS S3 for image store
 
 **Authentication:**  
 - Clerk  
@@ -55,7 +56,7 @@
 |------|------------|
 | Landing Page | Full functional MVP with hero carousel, gallery hover try-on preview, early access payment flow |
 | Business Owner View | Upload, AI render, download, history |
-| Human Model Marketplace | Skeleton only |
+| Human Model Marketplace | Create profile | See the concents request | Approve coonsent requests
 | Admin Dashboard | User list, subscription updates, simple bank transfer workflow |
 
 ---
@@ -72,8 +73,7 @@
 
 - First **Sri Lanka AI + Human Model Marketplace for Fashion Brands**  
 - Local skin tones & body types  
-- Ethical consent workflow  
-- WhatsApp delivery integration  
+- Ethical consent workflow   
 - Affordable pricing  
 - Pose packs relevant to local fashion  
 

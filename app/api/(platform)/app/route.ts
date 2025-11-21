@@ -3,6 +3,7 @@ import Feedback from "@/models/feedback";
 import User from "@/models/user";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
+import { Credits } from "@/lib/config/pricing";
 
 /**
  * GET endpoint to retrieve user data including billing, feedback and account info
@@ -17,10 +18,58 @@ export const GET = async (req: NextRequest) => {
     // Get authenticated user ID from Clerk
     const { userId } = await auth();
 
-    // Find user document in database
-    const user = await User.findOne({ id: userId });
+    // Return 401 if not authenticated
+    if (!userId) {
+      return Response.json(
+        {
+          status: "error",
+          message: "Unauthorized",
+          code: "UNAUTHORIZED",
+        },
+        { status: 401 }
+      );
+    }
 
-    // Return 404 if user not found
+    // Find user document in database
+    let user = await User.findOne({ id: userId });
+
+    // If user not found, try to create them (fallback if webhook failed)
+    if (!user) {
+      console.log(`⚠️ User ${userId} not found in database, attempting fallback creation`);
+      
+      try {
+        // Fetch user from Clerk
+        const { clerkClient } = await import("@clerk/nextjs/server");
+        const clerkUser = await (await clerkClient()).users.getUser(userId);
+        
+        if (clerkUser) {
+          // Get role from metadata or default
+          const role = 
+            clerkUser.publicMetadata?.role || 
+            clerkUser.privateMetadata?.role || 
+            "BUSINESS";
+          
+          // Create user in MongoDB
+          user = await User.create({
+            id: userId,
+            firstName: clerkUser.firstName || "",
+            lastName: clerkUser.lastName || "",
+            emailAddress: clerkUser.emailAddresses.map((email) => email.emailAddress),
+            picture: clerkUser.imageUrl || "",
+            role,
+            plan: { planType: "free", id: "free" },
+            credits: Credits.freeCredits,
+          });
+          
+          console.log(`✅ Fallback: User created in MongoDB: ${userId}`);
+        }
+      } catch (fallbackError) {
+        console.error("❌ Fallback user creation failed:", fallbackError);
+        // Continue to return 404 if fallback fails
+      }
+    }
+
+    // Return 404 if user still not found
     if (!user) {
       return Response.json(
         {
@@ -28,7 +77,7 @@ export const GET = async (req: NextRequest) => {
           message: "User Not Found",
           code: "USER_NOT_FOUND",
         },
-        { status: 401 }
+        { status: 404 }
       );
     }
 

@@ -49,33 +49,50 @@ Copy the example environment file and update with your credentials:
 cp .env.example .env.local
 ```
 
-Required environment variables:
+**📚 For complete setup instructions, see:**
+- **Quick Setup**: `docs/LOCAL_SETUP_GUIDE.md`
+- **Environment Variables**: `docs/ENVIRONMENT_VARIABLES.md`
+
+**Required environment variables:**
 
 ```env
-# Database
-MONGO_URI=mongodb://localhost:27017/modelsnap
+# Application
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Clerk Authentication
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
 
+# Database
+MONGO_URI=mongodb://localhost:27017/modelsnap
+
 # FASHN AI API
 FASHN_API_KEY=your_fashn_api_key
 
-# Payments (Stripe or Lemon Squeezy)
+# Stripe Payments
 STRIPE_SECRET_KEY=sk_test_...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
 # Email
 RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=noreply@modelsnap.ai
+
+# AWS S3 Storage
+AWS_REGION=us-east-1
+AWS_S3_BUCKET_NAME=your-bucket-name
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
 
 # Admin Access
-ADMIN_EMAILS=admin@example.com,another@example.com
+ADMIN_EMAILS=admin@example.com
 
-# Optional
-NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX
+# Optional - CDN (for production)
+AWS_CLOUDFRONT_DOMAIN=d1234567890.cloudfront.net
+
+# Optional - Render Worker
+RENDER_WORKER_SECRET=your_secure_secret
 ```
 
 ### 4. Generate Avatar Gallery
