@@ -212,51 +212,43 @@ async function handleUserCreated(data: any) {
       return;
     }
 
-    // Update Clerk user and create MongoDB user atomically
-    await withTransactionAndExternal(
-      // Database operations
-      async (session) => {
-        console.log("📝 Creating user in MongoDB:", id);
-        
-        // Create new user document in MongoDB
-        // Explicitly set role to null for new users (unless they're admin)
-        const userData: any = {
-          id,
-          firstName: first_name || "",
-          lastName: last_name || "",
-          emailAddress: email_addresses.map((mail: any) => mail.email_address),
-          picture: image_url || "",
+    console.log("📝 Creating user in MongoDB:", id);
+    
+    // Create new user document in MongoDB
+    // CRITICAL: Only set role if ADMIN, otherwise explicitly set to null for onboarding
+    const userData: any = {
+      id,
+      firstName: first_name || "",
+      lastName: last_name || "",
+      emailAddress: email_addresses.map((mail: any) => mail.email_address),
+      picture: image_url || "",
+      stripeCustomerId,
+      lemonsqueezyCustomerId: lemonCustomerId,
+      role: role === "ADMIN" ? "ADMIN" : null, // Explicitly null for non-admins
+      plan: { planType: "free", id: "free" },
+      credits: Credits.freeCredits,
+    };
+    
+    console.log("📝 Creating user with role:", userData.role);
+    
+    // Create user directly (simplified - no transaction to avoid rollback issues)
+    const newUser = await User.create(userData);
+    console.log("✅ User created in MongoDB:", newUser._id, "with role:", newUser.role);
+    
+    // Update Clerk user metadata separately (don't fail user creation if this fails)
+    try {
+      await (await clerkClient()).users.updateUser(id, {
+        privateMetadata: {
           stripeCustomerId,
-          lemonsqueezyCustomerId: lemonCustomerId,
-          role: role || null, // Explicitly set to null if not admin
-          plan: { planType: "free", id: "free" },
-          credits: Credits.freeCredits,
-        };
-        
-        const newUser = await User.create([userData], { session });
-        console.log("✅ User created in MongoDB:", newUser[0]?._id, "with role:", newUser[0]?.role);
-        return { id, stripeCustomerId, lemonCustomerId };
-      },
-      // External API operations
-      async (dbResult) => {
-        try {
-          // Update Clerk user with Stripe or LemonSqueezy customer ID and initial plan
-          await (
-            await clerkClient()
-          ).users.updateUser(dbResult.id, {
-            privateMetadata: {
-              stripeCustomerId: dbResult.stripeCustomerId,
-              lemonCustomerId: dbResult.lemonCustomerId,
-              plan: "free",
-            },
-          });
-          console.log("✅ Clerk user metadata updated");
-        } catch (clerkError) {
-          console.error("❌ Error updating Clerk user metadata:", clerkError);
-          // Don't throw - user is already created in DB
-        }
-      }
-    );
+          lemonCustomerId,
+          plan: "free",
+        },
+      });
+      console.log("✅ Clerk user metadata updated");
+    } catch (clerkError) {
+      console.error("❌ Error updating Clerk user metadata (non-fatal):", clerkError);
+      // Don't throw - user is already created in DB
+    }
 
     console.log(
       `✅ User created successfully: ${id} | Stripe ID: ${stripeCustomerId || "Not configured"} | LemonSqueezy ID: ${lemonCustomerId || "Not configured"}`

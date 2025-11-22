@@ -55,20 +55,28 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (req: NextReques
       );
     }
 
-    // Get role from metadata or default to BUSINESS
-    const role = 
-      clerkUser.publicMetadata?.role || 
-      clerkUser.privateMetadata?.role || 
-      "BUSINESS";
+    // Get role from metadata - check if admin, otherwise null for onboarding
+    let role = clerkUser.publicMetadata?.role || clerkUser.privateMetadata?.role;
+    
+    // Check if admin via ADMIN_EMAILS
+    if (!role) {
+      const email = clerkUser.emailAddresses[0]?.emailAddress;
+      if (email) {
+        const adminEmails = process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) || [];
+        if (adminEmails.includes(email)) {
+          role = "ADMIN";
+        }
+      }
+    }
 
-    // Create user in MongoDB
+    // Create user in MongoDB - role is null for new users (unless admin)
     const newUser = await User.create({
       id: userId,
       firstName: clerkUser.firstName || "",
       lastName: clerkUser.lastName || "",
       emailAddress: clerkUser.emailAddresses.map((email) => email.emailAddress),
       picture: clerkUser.imageUrl || "",
-      role,
+      role: role === "ADMIN" ? "ADMIN" : null, // Explicitly null for non-admins
       plan: { planType: "free", id: "free" },
       credits: Credits.freeCredits,
     });

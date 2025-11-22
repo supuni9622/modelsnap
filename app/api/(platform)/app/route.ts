@@ -43,20 +43,28 @@ export const GET = async (req: NextRequest) => {
         const clerkUser = await (await clerkClient()).users.getUser(userId);
         
         if (clerkUser) {
-          // Get role from metadata or default
-          const role = 
-            clerkUser.publicMetadata?.role || 
-            clerkUser.privateMetadata?.role || 
-            "BUSINESS";
+          // Get role from metadata - check if admin, otherwise null for onboarding
+          let role = clerkUser.publicMetadata?.role || clerkUser.privateMetadata?.role;
           
-          // Create user in MongoDB
+          // Check if admin via ADMIN_EMAILS
+          if (!role) {
+            const email = clerkUser.emailAddresses[0]?.emailAddress;
+            if (email) {
+              const adminEmails = process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) || [];
+              if (adminEmails.includes(email)) {
+                role = "ADMIN";
+              }
+            }
+          }
+          
+          // Create user in MongoDB - role is null for new users (unless admin)
           user = await User.create({
             id: userId,
             firstName: clerkUser.firstName || "",
             lastName: clerkUser.lastName || "",
             emailAddress: clerkUser.emailAddresses.map((email) => email.emailAddress),
             picture: clerkUser.imageUrl || "",
-            role,
+            role: role === "ADMIN" ? "ADMIN" : null, // Explicitly null for non-admins
             plan: { planType: "free", id: "free" },
             credits: Credits.freeCredits,
           });
