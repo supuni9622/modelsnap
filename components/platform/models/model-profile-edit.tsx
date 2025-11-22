@@ -78,12 +78,12 @@ export function ModelProfileEdit() {
         );
       } else {
         toast.error(data.message || "Failed to load model profile");
-        router.push("/app/model/dashboard");
+        router.push("/[locale]/dashboard/model/profile");
       }
     } catch (error) {
       toast.error("Failed to load model profile");
       console.error(error);
-      router.push("/app/model/dashboard");
+      router.push("/[locale]/dashboard/model/profile");
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +119,7 @@ export function ModelProfileEdit() {
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("/api/upload", {
+        const response = await fetch("/api/upload?type=model-reference", {
           method: "POST",
           body: formData,
         });
@@ -243,7 +243,7 @@ export function ModelProfileEdit() {
 
       if (data.status === "success") {
         toast.success("Model profile updated successfully!");
-        router.push("/app/model/dashboard");
+        router.push("/[locale]/dashboard/model/profile");
       } else {
         setError(data.message || "Failed to update model profile");
         toast.error(data.message || "Failed to update model profile");
@@ -273,7 +273,7 @@ export function ModelProfileEdit() {
 
       if (data.status === "success") {
         toast.success("Model profile deactivated successfully");
-        router.push("/app/model/dashboard");
+        router.push("/[locale]/dashboard/model/profile");
       } else {
         toast.error(data.message || "Failed to deactivate model profile");
       }

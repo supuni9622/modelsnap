@@ -20,16 +20,20 @@ export default function ModelProfilePage() {
 
     const checkProfile = async () => {
       try {
-        const response = await fetch("/api/models?userId=" + userId);
+        // Use the correct endpoint to get current user's profile
+        const response = await fetch("/api/model/profile");
         const data = await response.json();
         
-        if (data.status === "success" && data.data.models?.length > 0) {
+        // If profile exists (even if empty), show edit form
+        if (data.status === "success" && data.data) {
           setHasProfile(true);
         } else {
+          // Profile not found - show create form
           setHasProfile(false);
         }
       } catch (error) {
         console.error("Failed to check profile:", error);
+        // On error, assume no profile exists
         setHasProfile(false);
       } finally {
         setLoading(false);

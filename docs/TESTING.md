@@ -300,12 +300,17 @@ This document tracks the testing status of all features as we verify the platfor
   - Expected: Generated images are stored in S3
   - **Prerequisites:** ✅ AWS S3 credentials configured
 
-- [ ] **S3 Upload Functionality**
-  - Status: ⏳ Pending Test
-  - Expected: Garment images can be uploaded to S3
-  - Expected: Model reference images can be uploaded to S3
-  - Expected: Generated images are saved to S3
+- [x] **S3 Upload Functionality**
+  - Status: ✅ Working
+  - Notes: Image uploads working correctly
+  - **Issue Found:** Model reference images were being stored under `/garments/` instead of `/model-references/`
+  - **Fix Applied:** Updated `/api/upload` to accept `type` parameter and model profile components to pass `type=model-reference`
+  - **Folder Structure:**
+    - `garments/*` → Product uploads ✅
+    - `model-references/*` → Model reference images ✅
+    - `generated/*` → Final generations ✅
   - **Prerequisites:** ✅ AWS S3 credentials configured
+  - **Test Date:** 2025-11-22
 
 - [ ] **CDN Integration** (if configured)
   - Status: ⏳ Pending Test

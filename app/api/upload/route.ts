@@ -13,7 +13,10 @@ import { existsSync, mkdirSync } from "fs";
 
 /**
  * POST /api/upload
- * Handle file uploads for garment images
+ * Handle file uploads for different image types (garments, model-references, etc.)
+ * 
+ * Query parameters:
+ * - type: "garment" | "model-reference" | "generated" | "avatar" (default: "garment")
  * 
  * If S3 is configured: Returns pre-signed URL for direct client upload
  * If S3 is not configured: Falls back to local filesystem storage
@@ -33,8 +36,27 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       );
     }
 
+    // Get upload type from query parameter or form data (default: "garment")
+    const { searchParams } = new URL(req.url);
     const formData = await req.formData();
     const file = formData.get("file") as File;
+    
+    // Get type from query param, form data, or default to "garment"
+    const uploadType = (searchParams.get("type") || formData.get("type") || "garment") as 
+      "garment" | "generated" | "model-reference" | "avatar";
+    
+    // Validate upload type
+    const validTypes = ["garment", "generated", "model-reference", "avatar"];
+    if (!validTypes.includes(uploadType)) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message: `Invalid upload type. Must be one of: ${validTypes.join(", ")}`,
+          code: "INVALID_UPLOAD_TYPE",
+        },
+        { status: 400 }
+      );
+    }
 
     if (!file) {
       return NextResponse.json(
@@ -75,9 +97,9 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
 
     // Check if S3 is configured
     if (isS3Configured()) {
-      // Generate S3 key
+      // Generate S3 key based on upload type
       const fileExtension = file.name.split(".").pop() || "jpg";
-      const s3Key = generateS3Key("garment", userId, file.name);
+      const s3Key = generateS3Key(uploadType, userId, file.name);
 
       // Generate pre-signed URL for direct client upload
       const uploadUrl = await generatePresignedUploadUrl(s3Key, file.type, 300); // 5 minutes

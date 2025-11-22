@@ -56,7 +56,7 @@ export function ModelProfileCreate() {
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("/api/upload", {
+        const response = await fetch("/api/upload?type=model-reference", {
           method: "POST",
           body: formData,
         });
@@ -185,7 +185,11 @@ export function ModelProfileCreate() {
 
       if (data.status === "success") {
         toast.success("Model profile created successfully!");
-        router.push("/app/model/dashboard");
+        router.refresh(); // Refresh to show edit form
+      } else if (data.code === "PROFILE_EXISTS") {
+        // Profile already exists - redirect to edit or refresh page
+        toast.info("Profile already exists. Redirecting to edit...");
+        router.refresh(); // Refresh to show edit form
       } else {
         setError(data.message || "Failed to create model profile");
         toast.error(data.message || "Failed to create model profile");
