@@ -214,9 +214,11 @@ This document tracks the testing status of all features as we verify the platfor
   - **Fix Applied:** Created `/dashboard/model/consent/[id]/page.tsx` route and `/api/consent/[id]/route.ts` API endpoint
   - **Test Date:** 2025-11-22
 
-- [ ] **Consent Approval/Rejection**
-  - Status: ⏳ Pending Test
-  - Expected: Models can approve or reject consent requests
+- [x] **Consent Approval/Rejection**
+  - Status: ✅ Working
+  - Notes: Models can approve or reject consent requests. Approval updates status on both model and business sides.
+  - **UI Enhancement:** Replaced native browser confirm() with beautiful AlertDialog components
+  - **Test Date:** 2025-11-22
 
 ### Earnings Page (`/dashboard/model/earnings`)
 - [ ] **Earnings Display**
@@ -471,14 +473,14 @@ This document tracks the testing status of all features as we verify the platfor
 - **Authentication:** 6/6 features tested (100%) ✅
 - **Onboarding:** 5/5 features tested (100%) ✅
 - **Business Dashboard:** 2/15 features tested (13%)
-- **Model Dashboard:** 5/8 features tested (63%)
+- **Model Dashboard:** 6/8 features tested (75%)
 - **Admin Dashboard:** 0/10 features tested (0%)
 - **Payment Integration:** 2/6 features tested (33%)
 - **Image Generation:** 0/5 features tested (0%)
 - **Webhooks:** 1/5 features tested (20%)
 - **Database Operations:** 3/3 features tested (100%) ✅
 
-**Overall Progress:** 24/58 features tested (41%)
+**Overall Progress:** 25/58 features tested (43%)
 
 ---
 
