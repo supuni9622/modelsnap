@@ -9,7 +9,6 @@ AI-powered fashion photography platform for Sri Lankan fashion brands. Upload cl
 - **Credit System**: Pay-per-render with subscription plans
 - **Render History**: Track all your renders with download links
 - **Admin Dashboard**: User management and subscription handling
-- **Bank Transfer Support**: Manual payment processing for local customers
 - **Landing Page**: Complete marketing site with hero, gallery, pricing, and more
 
 ## 📦 Tech Stack
@@ -20,11 +19,12 @@ AI-powered fashion photography platform for Sri Lankan fashion brands. Upload cl
 - **UI Components**: Radix UI
 - **Database**: MongoDB with Mongoose
 - **Authentication**: Clerk
-- **Payments**: Stripe & Lemon Squeezy
+- **Payments**: Stripe
 - **AI API**: FASHN.ai for virtual try-on
 - **Email**: Resend
 - **Testing**: Playwright
 - **Deployment**: Vercel ready
+-**AWS S3** : Image storage
 
 ## 🛠️ Quick Start
 
@@ -123,8 +123,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 │   ├── [locale]/                # Internationalized routes
 │   │   ├── (guest)/            # Public routes (landing page)
 │   │   ├── (platform)/        # Authenticated routes
-│   │   │   ├── app/           # Main app dashboard
-│   │   │   └── admin/         # Admin dashboard
 │   │   └── (auth)/            # Authentication pages
 │   └── api/                    # API routes
 │       ├── render/             # Render API (server-side)
@@ -166,7 +164,7 @@ All rendering logic runs server-side for security and consistency.
 
 ## 💳 Pricing Plans
 
-- **Free**: 10 watermarked renders
+- **Free**: 3 watermarked renders
 - **Starter** (LKR 2,000/mo): 50 renders per month
 - **Growth** (LKR 4,500/mo): 150 renders per month
 
@@ -224,7 +222,6 @@ Admins can:
 - View and manage all users
 - Adjust user credits
 - Update subscription plans
-- Process bank transfer payments
 
 ## 🤝 Support
 

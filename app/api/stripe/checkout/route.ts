@@ -93,8 +93,8 @@ export async function POST(req: Request) {
           line_items: [{ price: priceId, quantity: 1 }],
           mode: "subscription",
           subscription_data: { trial_period_days: trial },
-          success_url: `${publicUrl}/app/billing/success-payment`,
-          cancel_url: `${publicUrl}/app/billing/cancel-payment`,
+          success_url: `${publicUrl}/dashboard/business/billing/success-payment`,
+          cancel_url: `${publicUrl}/dashboard/business/billing/cancel-payment`,
         });
       } else {
         // Create regular subscription checkout session
@@ -102,8 +102,8 @@ export async function POST(req: Request) {
           customer: user.stripeCustomerId,
           line_items: [{ price: priceId, quantity: 1 }],
           mode: "subscription",
-          success_url: `${publicUrl}/app/billing/success-payment`,
-          cancel_url: `${publicUrl}/app/billing/cancel-payment`,
+          success_url: `${publicUrl}/dashboard/business/billing/success-payment`,
+          cancel_url: `${publicUrl}/dashboard/business/billing/cancel-payment`,
         });
       }
     } else {
@@ -112,8 +112,8 @@ export async function POST(req: Request) {
         customer: user.stripeCustomerId,
         line_items: [{ price: priceId, quantity: 1 }],
         mode: "payment",
-        success_url: `${publicUrl}/app/billing/success-payment`,
-        cancel_url: `${publicUrl}/app/billing/cancel-payment`,
+        success_url: `${publicUrl}/dashboard/business/billing/success-payment`,
+        cancel_url: `${publicUrl}/dashboard/business/billing/cancel-payment`,
       });
     }
 

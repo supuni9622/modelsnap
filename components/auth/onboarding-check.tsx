@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 
@@ -19,6 +19,7 @@ export function OnboardingCheck({ children }: { children: React.ReactNode }) {
   // Skip onboarding check for these routes
   const skipRoutes = [
     "/onboarding",
+    "/redirect",
     "/sign-in",
     "/sign-up",
     "/api",
@@ -59,16 +60,22 @@ export function OnboardingCheck({ children }: { children: React.ReactNode }) {
             const profileResponse = await fetch("/api/models?userId=" + userId);
             const profileData = await profileResponse.json();
 
-            // If model has no profile and not already on create page, redirect
+            // If model has no profile and not already on profile page, redirect
             if (
               profileData.status === "success" &&
               (!profileData.data.models || profileData.data.models.length === 0) &&
-              !pathname?.includes("/model/create") &&
+              !pathname?.includes("/dashboard/model/profile") &&
               !pathname?.includes("/onboarding")
             ) {
-              router.push("/app/model/create");
+              router.push("/dashboard/model/profile");
               return;
             }
+          }
+
+          // Check if ADMIN and redirect to admin dashboard
+          if (role === "ADMIN" && !pathname?.includes("/dashboard/admin")) {
+            router.push("/dashboard/admin/analytics");
+            return;
           }
 
           // User has role, allow access

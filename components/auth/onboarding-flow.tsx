@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,14 +48,14 @@ export function OnboardingFlow() {
           
           if (profileData.status === "success" && profileData.data.models?.length > 0) {
             // Model profile exists, go to dashboard
-            router.push("/app/model/dashboard");
+            router.push("/dashboard/model/profile");
           } else {
             // No profile, redirect to create profile
-            router.push("/app/model/create");
+            router.push("/dashboard/model/profile");
           }
         } else {
           // Business user - go to main dashboard
-          router.push("/app");
+          router.push("/dashboard/business/generate");
         }
       } else {
         toast.error(data.message || "Failed to set role");

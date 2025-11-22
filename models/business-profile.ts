@@ -21,6 +21,11 @@ const BusinessProfileSchema = new Schema(
       required: true,
     },
 
+    description: {
+      type: String,
+      default: "",
+    },
+
     // Credits and subscription
     aiCredits: {
       type: Number,

@@ -181,8 +181,28 @@ async function handleUserCreated(data: any) {
     }
   }
 
-  // Get role from metadata if provided (for future use with role selection)
-  const role = data.public_metadata?.role || data.privateMetadata?.role || "BUSINESS";
+  // Check if user is admin via ADMIN_EMAILS
+  let role = data.public_metadata?.role || data.privateMetadata?.role;
+  
+  if (!role) {
+    // Check if email is in ADMIN_EMAILS
+    const email = email_addresses[0]?.email_address;
+    if (email) {
+      const adminEmails = process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) || [];
+      if (adminEmails.includes(email)) {
+        role = "ADMIN";
+        console.log("🔑 User is admin via ADMIN_EMAILS:", email);
+      } else {
+        console.log("👤 Regular user signup, role will be null for onboarding:", email);
+      }
+    } else {
+      console.log("👤 Regular user signup (no email), role will be null for onboarding");
+    }
+    // Don't set default role - let user choose in onboarding
+    // role will be null/undefined, which will trigger onboarding flow
+  } else {
+    console.log("👤 User has existing role in metadata:", role);
+  }
 
   try {
     // Check if user already exists (prevent duplicates)
@@ -199,7 +219,8 @@ async function handleUserCreated(data: any) {
         console.log("📝 Creating user in MongoDB:", id);
         
         // Create new user document in MongoDB
-        const newUser = await User.create([{
+        // Explicitly set role to null for new users (unless they're admin)
+        const userData: any = {
           id,
           firstName: first_name || "",
           lastName: last_name || "",
@@ -207,12 +228,13 @@ async function handleUserCreated(data: any) {
           picture: image_url || "",
           stripeCustomerId,
           lemonsqueezyCustomerId: lemonCustomerId,
-          role, // Set role from metadata or default to BUSINESS
+          role: role || null, // Explicitly set to null if not admin
           plan: { planType: "free", id: "free" },
           credits: Credits.freeCredits,
-        }], { session });
-
-        console.log("✅ User created in MongoDB:", newUser[0]?._id);
+        };
+        
+        const newUser = await User.create([userData], { session });
+        console.log("✅ User created in MongoDB:", newUser[0]?._id, "with role:", newUser[0]?.role);
         return { id, stripeCustomerId, lemonCustomerId };
       },
       // External API operations

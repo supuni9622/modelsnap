@@ -26,8 +26,14 @@ const UserSchema = new Schema(
     // Role-based access control
     role: {
       type: String,
-      enum: ["BUSINESS", "MODEL", "ADMIN"],
-      default: "BUSINESS",
+      default: null, // No default - user must choose role in onboarding
+      validate: {
+        validator: function(v: string | null | undefined) {
+          // Allow null/undefined or valid role values
+          return v === null || v === undefined || ["BUSINESS", "MODEL", "ADMIN"].includes(v);
+        },
+        message: "{VALUE} is not a valid role",
+      },
       // Don't use index: true here - we define it separately below
     },
 

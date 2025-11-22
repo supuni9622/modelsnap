@@ -1,5 +1,7 @@
 import { connectDB } from "@/lib/db";
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
+import ModelProfile from "@/models/model-profile";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiter";
@@ -75,6 +77,42 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       );
     }
 
+    // Create profile document based on role (as per UI_FLOW.md requirements)
+    if (role === "BUSINESS") {
+      // Check if business profile already exists
+      const existingBusinessProfile = await BusinessProfile.findOne({ userId: updatedUser._id });
+      if (!existingBusinessProfile) {
+        // Create business profile automatically
+        await BusinessProfile.create({
+          userId: updatedUser._id,
+          businessName: `${updatedUser.firstName || ""} ${updatedUser.lastName || ""}`.trim() || "My Business",
+          description: "",
+          aiCredits: updatedUser.credits || 0,
+          subscriptionStatus: updatedUser.plan?.type === "free" ? "FREE" : "STARTER",
+          approvedModels: [],
+        });
+        console.log("✅ Business profile created automatically for user:", userId);
+      }
+    } else if (role === "MODEL") {
+      // Check if model profile already exists
+      const existingModelProfile = await ModelProfile.findOne({ userId: updatedUser._id });
+      if (!existingModelProfile) {
+        // Note: Model profile requires reference images, so we create a placeholder
+        // The user will need to complete their profile with images
+        // But we create the document as per requirements
+        await ModelProfile.create({
+          userId: updatedUser._id,
+          name: `${updatedUser.firstName || ""} ${updatedUser.lastName || ""}`.trim() || "Model",
+          referenceImages: [], // User will add these later
+          consentSigned: false,
+          status: "active",
+          royaltyBalance: 0,
+          approvedBusinesses: [],
+        });
+        console.log("✅ Model profile created automatically for user:", userId);
+      }
+    }
+
     return NextResponse.json(
       {
         status: "success",
@@ -133,11 +171,28 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
       );
     }
 
+    // Check if admin via ADMIN_EMAILS (even if not in DB)
+    const clerkUser = await (await import("@clerk/nextjs/server")).currentUser();
+    if (clerkUser?.emailAddresses?.[0]?.emailAddress) {
+      const adminEmails = process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) || [];
+      if (adminEmails.includes(clerkUser.emailAddresses[0].emailAddress)) {
+        return NextResponse.json(
+          {
+            status: "success",
+            data: {
+              role: "ADMIN",
+            },
+          },
+          { status: 200 }
+        );
+      }
+    }
+
     return NextResponse.json(
       {
         status: "success",
         data: {
-          role: user.role || "BUSINESS",
+          role: user.role || null,
         },
       },
       { status: 200 }

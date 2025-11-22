@@ -107,6 +107,7 @@ ModelSnap.ai is an AI-powered fashion photography platform designed specifically
 | _id | ObjectId | Primary Key | Default | Unique model profile ID. |
 | userId | ObjectId | Foreign Key | Unique | Links to user in **users** collection. |
 | name | String |  |  | Public display name. |
+|paidAmount |Number| Charge for the model | 
 | royaltyBalance | Number |  |  | Accumulated earnings. **CRITICAL**. Default: 0. |
 | referenceImages | Array<String> (S3 URLs) |  |  | 3–4 likeness reference images stored in S3. |
 | approvedBusinesses | Array<ObjectId> | Foreign Key |  | Allowed business IDs (refs `business_profiles.userId`). |
@@ -236,80 +237,9 @@ ModelSnap.ai is an AI-powered fashion photography platform designed specifically
 
 ---
 
-## User Flow Diagrams
 
-### 🧩 Business User Flow
 
-#### 1. Signup & Setup
-
-```mermaid
-graph TD
-A[Business Sign Up via Clerk] --> B[Create Business Profile]
-B --> C[Select Package / Free Tier]
-C --> D[Receive AI Credits]
-D --> E[Dashboard Access]
-```
-
-#### 2. Choose Image Creation Path
-
-```mermaid
-graph TD
-A[Dashboard] --> B{Choose Model Type}
-B --> C[AI Avatar]
-B --> D[Human Model]
-```
-
-#### 3A. AI Avatar Workflow
-
-```mermaid
-graph TD
-A[Choose AI Avatar] --> B[Upload Garment Image]
-B --> C[Validate Image]
-C --> D{Has Credits?}
-D -->|Yes| E[Generate Preview]
-D -->|No| F[Show Upgrade Prompt]
-E --> G[Consumes 1 AI Credit]
-G --> H[Deliver Final Image]
-H --> I[Download / Preview]
-```
-
-#### 3B. Human Model Workflow
-
-##### Step 1 — Model Browsing
-
-```mermaid
-graph TB
-A[Browse Human Model Marketplace] --> B[View Model Profile]
-B --> C{Do We Have Consent?}
-C -- Yes --> D[Upload Garment]
-C -- No --> E[Request Consent]
-```
-
-##### Step 2 — Consent Request
-
-```mermaid
-graph TD
-E[Request Consent] --> F[Create Consent Request Record]
-F --> G[Model Receives Email Notification]
-G --> H[Wait for Model Response]
-H -->|Approved| I[Consent Stored in DB]
-H -->|Rejected| J[Stop - Cannot Use Model]
-I --> K[Business Added to Approved List]
-```
-
-##### Step 3 — Post-Consent Flow
-
-```mermaid
-graph TD
-K[Consent Approved Once] --> L[Upload Garment]
-L --> M[Validate & Process Payment]
-M --> N[Generate Image via FASHN API]
-N --> O[Pay Royalty to Model $2.00]
-O --> P[Final Image Delivered]
-P --> Q[Download / Preview]
-```
-
-> **Critical Rule:** Consent is one-time per business per model. After approval, the business can continue using the model without asking again.
+ **Critical Rule:** Consent is one-time per business per model. After approval, the business can continue using the model without asking again.
 
 ---
 
@@ -339,28 +269,8 @@ D -- Reject --> G[Request Closed]
 G --> H[Business Cannot Use Model]
 ```
 
-#### 3. Human Model Usage → Earning Royalties
 
-```mermaid
-graph TD
-A[Business Uses Approved Model] --> B[Image Generation Requested]
-B --> C[FASHN API Generates Image]
-C --> D[Royalty $2.00 Added to Balance]
-D --> E[Royalty Balance Updates]
-E --> F[Model Can View Earnings]
-```
 
-#### 4. Payout Flow
-
-```mermaid
-graph TD
-A[Model Requests Payout] --> B[Admin Review]
-B --> C{Minimum Threshold Met?}
-C -->|Yes| D[Process Payout]
-C -->|No| E[Show Minimum Threshold Message]
-D --> F[Transfer via Stripe/Bank]
-F --> G[Royalty Balance Reset to 0]
-G --> H[Payout Confirmation Email]
 ```
 
 ---
@@ -423,7 +333,7 @@ sequenceDiagram
         FASHN-->>API: Generated Image URL
         API->>S3: Store Generated Image
         S3-->>API: S3 URL Confirmed
-        API->>DB: Add Royalty to Model ($2.00)
+        API->>DB: Payout model's charge with 10% commision to platform
         API->>DB: Save Generation Record
         API-->>UI: Return Rendered Image URL
     end
@@ -464,44 +374,7 @@ sequenceDiagram
 
 ### High-Level Architecture
 
-```mermaid
-flowchart TD
-    %% Tiers Definition
-    subgraph Client_Tier_1 [1. Client Tier - Browser/User]
-        A[Business Owner / Model]
-    end
 
-    subgraph Edge_Application_Tier_2 [2. Edge / Application Tier - Next.js 15, Vercel]
-        B[Next.js Server Components]
-        C[Next.js Server Actions - Mutation]
-        D[Next.js Middleware]
-        E[Next.js Route Handlers - Webhooks]
-    end
-
-    subgraph Data_Storage_Tier_3 [3. Data & Storage Tier]
-        F[AWS S3 - Image Storage]
-        G[MongoDB - Data, Credits, Consent, Usage Logs]
-    end
-
-    subgraph External_Services_Tier_4 [4. External Services Tier - APIs]
-        H[Clerk - Auth & User Management]
-        I[Fashn AI - Virtual Try-On API]
-        J[Stripe - Payments, Subscriptions]
-        K[Resend - Email/Notifications]
-        L[Google Analytics - Tag Manager]
-        M[Grafana - Vercel Logs]
-    end
-
-    %% Flow Connections
-
-    %% Authentication & Edge
-    A -- Authenticates --> D
-    D -- Auth Check --> H
-    H -- User Data Sync --> G
-
-    %% Data Fetching & UI (Fast Path)
-    B -- Fetch (RSC) --> G
-    B -- Fetch (RSC) --> F
 
     %% 1. Image Upload Flow (Secure & Efficient)
     A -- Initiate Upload --> C
@@ -689,33 +562,6 @@ flowchart LR
 
 ## Consent Logic State Machine
 
-```mermaid
-stateDiagram-v2
-    [*] --> NoRequest: Initial State
-
-    NoRequest --> Pending : Business Sends Request
-    Pending --> Approved : Model Accepts
-    Pending --> Rejected : Model Rejects
-    Pending --> Expired : Timeout (Optional)
-
-    Approved --> ActiveConsent: Consent Active
-    Rejected --> NoRequest: Request Closed
-    Expired --> NoRequest: Request Expired
-
-    ActiveConsent --> Revoked : Model Revokes
-    Revoked --> NoRequest: Consent Removed
-
-    note right of ActiveConsent
-        Business can use model
-        indefinitely after approval
-    end note
-
-    note right of NoRequest
-        Business must request
-        consent again
-    end note
-```
-
 ### Consent States
 
 - **NoRequest**: No consent request exists
@@ -764,7 +610,7 @@ flowchart TD
     D -->|No| E[Create Consent Request]
     E --> F[Send Email to Model]
     F --> G[Wait for Approval]
-    D -->|Yes| H[Process Payment $2.00]
+    D -->|Yes| H[Charge model's amount for one time from business with 10% commition to platform, add that business to charged business numbers of that model, if the same business use the model here after should not be charged again]
     H --> I[Call FASHN API]
     I --> J[Receive Generated Image]
     J --> K[Add Royalty to Model]
@@ -787,7 +633,7 @@ flowchart LR
 
     B -->|Human Model| F[Check Consent]
     F -->|No Consent| G[Send Consent Request]
-    F -->|Consent Approved| H[Charge $2.00]
+    F -->|Consent Approved| H[Charge]
     H --> D[Generate]
 
     D --> I[Store in S3]

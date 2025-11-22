@@ -18,7 +18,12 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      signUpUrl="/sign-up"
+      signInUrl="/sign-in"
+      afterSignUpUrl="/redirect"
+      afterSignInUrl="/redirect"
+    >
       <html lang="en" suppressHydrationWarning>
         <head>
           <meta charSet="utf-8" />

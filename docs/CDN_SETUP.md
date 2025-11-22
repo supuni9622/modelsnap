@@ -1,4 +1,4 @@
-# CDN Setup Guide for ModelSnap.ai
+@# CDN Setup Guide for ModelSnap.ai
 
 This guide explains how to set up CloudFront CDN for optimized image delivery.
 
