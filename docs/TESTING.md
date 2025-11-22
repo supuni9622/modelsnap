@@ -25,14 +25,26 @@ This document tracks the testing status of all features as we verify the platfor
   - Notes: New signups are correctly redirected to `/en/onboarding` when role is null
   - Test Date: 2025-11-22
 
-### Sign In Flow
-- [ ] **User Sign In via Clerk**
-  - Status: ⏳ Pending Test
-  - Expected: Users should sign in and be redirected based on their role
+- [x] **Complete Signup Flow**
+  - Status: ✅ Working
+  - Notes: Signup → Onboarding → Dashboard flow works correctly
+  - Tested for both BUSINESS and MODEL roles
+  - Test Date: 2025-11-22
 
-- [ ] **Existing User Redirect**
-  - Status: ⏳ Pending Test
-  - Expected: Users with existing roles should go to their dashboard (not onboarding)
+### Sign In Flow
+- [x] **User Sign In via Clerk**
+  - Status: ✅ Working
+  - Notes: Users can sign in successfully via Clerk authentication
+  - **Issue Found:** Existing users were being redirected to onboarding instead of dashboard
+  - **Fix Applied:** Updated redirect logic to check for existing user role before fallback creation, and fixed redirect error handling
+  - **Test Date:** 2025-11-22
+
+- [x] **Existing User Redirect**
+  - Status: ✅ Working
+  - Notes: Users with existing roles correctly go to their dashboard (not onboarding)
+  - **Fix Applied:** Redirect page now checks for existing user role first and redirects immediately. Fixed NEXT_REDIRECT error handling.
+  - **Tested:** Both BUSINESS and MODEL users redirect correctly to their dashboards
+  - **Test Date:** 2025-11-22
 
 ---
 
@@ -160,6 +172,7 @@ This document tracks the testing status of all features as we verify the platfor
 - [ ] **Reference Images Upload**
   - Status: ⏳ Pending Test
   - Expected: Models can upload 3-4 reference images to S3
+  - **Prerequisites:** ✅ AWS S3 credentials configured
 
 ### Requests Page (`/dashboard/model/requests`)
 - [ ] **Consent Request List**
@@ -285,6 +298,19 @@ This document tracks the testing status of all features as we verify the platfor
 - [ ] **Image Storage**
   - Status: ⏳ Pending Test
   - Expected: Generated images are stored in S3
+  - **Prerequisites:** ✅ AWS S3 credentials configured
+
+- [ ] **S3 Upload Functionality**
+  - Status: ⏳ Pending Test
+  - Expected: Garment images can be uploaded to S3
+  - Expected: Model reference images can be uploaded to S3
+  - Expected: Generated images are saved to S3
+  - **Prerequisites:** ✅ AWS S3 credentials configured
+
+- [ ] **CDN Integration** (if configured)
+  - Status: ⏳ Pending Test
+  - Expected: Images are served via CloudFront CDN
+  - **Prerequisites:** ✅ AWS_CLOUDFRONT_DOMAIN configured (optional)
 
 - [ ] **Database Storage**
   - Status: ⏳ Pending Test
@@ -368,10 +394,17 @@ This document tracks the testing status of all features as we verify the platfor
 ### Test Environment
 - **Next.js Version:** 15.5.6
 - **Database:** MongoDB (model_snap_local)
-- **Authentication:** Clerk
-- **Payment:** Stripe
-- **Image Storage:** AWS S3
-- **Image Generation:** Fashn.ai API
+- **Authentication:** Clerk ✅ Configured
+- **Payment:** Stripe ✅ Configured
+- **Image Storage:** AWS S3 ✅ Configured
+- **CDN:** AWS CloudFront (if configured)
+- **Image Generation:** Fashn.ai API ✅ Configured
+- **Email:** Resend ✅ Configured
+
+### Configured Services
+- ✅ AWS S3 Storage (AWS_REGION, AWS_S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+- ✅ AWS CloudFront CDN (AWS_CLOUDFRONT_DOMAIN) - if configured
+- ✅ All core services ready for testing
 
 ### Test Accounts
 - **Business User:** [To be created during testing]
@@ -395,7 +428,7 @@ This document tracks the testing status of all features as we verify the platfor
 
 ## 📊 Test Coverage Summary
 
-- **Authentication:** 4/6 features tested (67%)
+- **Authentication:** 6/6 features tested (100%) ✅
 - **Onboarding:** 5/5 features tested (100%) ✅
 - **Business Dashboard:** 0/15 features tested (0%)
 - **Model Dashboard:** 0/8 features tested (0%)
@@ -405,7 +438,7 @@ This document tracks the testing status of all features as we verify the platfor
 - **Webhooks:** 1/5 features tested (20%)
 - **Database Operations:** 3/3 features tested (100%) ✅
 
-**Overall Progress:** 15/58 features tested (26%)
+**Overall Progress:** 17/58 features tested (29%)
 
 ---
 
