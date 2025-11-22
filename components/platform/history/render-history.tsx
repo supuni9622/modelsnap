@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ interface Render {
   garmentImageUrl: string;
   avatarId: string;
   renderedImageUrl?: string;
+  outputS3Url?: string;
+  outputUrl?: string;
   status: "pending" | "processing" | "completed" | "failed";
   creditsUsed: number;
   errorMessage?: string;
@@ -127,16 +129,83 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFileName, setPreviewFileName] = useState<string>("");
+  const [renders, setRenders] = useState<Render[]>(initialRenders || []);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+  const [loading, setLoading] = useState(!initialRenders);
+  const [currentPage, setCurrentPage] = useState(page);
 
-  const { renders, pagination } = initialRenders
-    ? { renders: initialRenders, pagination: { page, limit, total: initialRenders.length, totalPages: 1, hasNextPage: false, hasPrevPage: false } }
-    : { renders: [] as Render[], pagination: { page: 1, limit: 10, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false } };
+  // Fetch render history on mount if not provided via props
+  useEffect(() => {
+    if (!initialRenders) {
+      const loadHistory = async () => {
+        setLoading(true);
+        try {
+          const data = await fetchRenderHistory(currentPage, limit);
+          setRenders(data.renders);
+          setPagination(data.pagination);
+        } catch (error) {
+          console.error("Failed to load render history:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadHistory();
+    } else {
+      setRenders(initialRenders);
+      setPagination({
+        page,
+        limit,
+        total: initialRenders.length,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      });
+    }
+  }, [initialRenders, currentPage, limit]);
 
   const handlePreview = (imageUrl: string, renderId: string) => {
     setPreviewImage(imageUrl);
     setPreviewFileName(`render-${renderId}.jpg`);
     setPreviewOpen(true);
   };
+
+  const handlePageChange = async (newPage: number) => {
+    setCurrentPage(newPage);
+    setLoading(true);
+    try {
+      const data = await fetchRenderHistory(newPage, limit);
+      setRenders(data.renders);
+      setPagination(data.pagination);
+    } catch (error) {
+      console.error("Failed to load render history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Render History</CardTitle>
+          <CardDescription>Your past clothing renders</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Loading render history...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (renders.length === 0) {
     return (
@@ -200,12 +269,12 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                     </div>
                   </div>
 
-                  {render.renderedImageUrl && render.status === "completed" && (
+                  {(render.outputS3Url || render.renderedImageUrl || render.outputUrl) && render.status === "completed" && (
                     <div>
                       <p className="text-sm font-medium mb-2">Rendered Result</p>
                       <div className="relative aspect-square rounded-lg border overflow-hidden">
                         <img
-                          src={render.renderedImageUrl}
+                          src={render.outputS3Url || render.renderedImageUrl || render.outputUrl}
                           alt="Rendered result"
                           className="w-full h-full object-cover"
                         />
@@ -215,19 +284,28 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                           variant="outline"
                           size="sm"
                           className="flex-1"
-                          onClick={() => handlePreview(render.renderedImageUrl!, render._id)}
+                          onClick={() => handlePreview(render.outputS3Url || render.renderedImageUrl || render.outputUrl || "", render._id)}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Preview
                         </Button>
-                        <a
-                          href={render.renderedImageUrl}
-                          download={`render-${render._id}.jpg`}
-                          className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground flex-1"
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={async () => {
+                            const downloadUrl = `/api/render/download?id=${render._id}&type=ai`;
+                            const link = document.createElement("a");
+                            link.href = downloadUrl;
+                            link.download = `render-${render._id}.jpg`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
                         >
-                          <Download className="h-4 w-4" />
+                          <Download className="h-4 w-4 mr-2" />
                           Download
-                        </a>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -244,13 +322,23 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
               </p>
               <div className="flex gap-2">
                 {pagination.hasPrevPage && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`?page=${pagination.page - 1}`}>Previous</a>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                    disabled={loading}
+                  >
+                    Previous
                   </Button>
                 )}
                 {pagination.hasNextPage && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`?page=${pagination.page + 1}`}>Next</a>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                    disabled={loading}
+                  >
+                    Next
                   </Button>
                 )}
               </div>

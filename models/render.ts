@@ -19,7 +19,9 @@ const RenderSchema = new Schema(
     avatarId: { type: String, required: true }, // Reference to Avatar model
     
     // Output
-    renderedImageUrl: { type: String }, // URL to rendered result
+    renderedImageUrl: { type: String }, // URL to rendered result (legacy)
+    outputS3Url: { type: String }, // S3 URL to rendered result (for frontend compatibility)
+    outputUrl: { type: String }, // Alternative output URL field
     
     // Status tracking
     status: {

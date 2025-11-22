@@ -33,6 +33,9 @@ export function GenerateForm() {
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [modelType, setModelType] = useState<"ai" | "human">("ai");
   const [isUploading, setIsUploading] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [generationId, setGenerationId] = useState<string | null>(null);
+  const [generationType, setGenerationType] = useState<"ai" | "human">("ai");
 
   // Fetch AI avatars
   const { data: avatarsData, isLoading: avatarsLoading } = useQuery({
@@ -79,13 +82,24 @@ export function GenerateForm() {
       }
       return data;
     },
-    onSuccess: () => {
-      toast.success("Generation started! Check history for results.");
-      // Reset form
-      setStep(1);
-      setGarmentImageUrl(null);
-      setSelectedAvatar(null);
-      setSelectedModel(null);
+    onSuccess: (data) => {
+      // Display the generated image immediately
+      // Prioritize S3 URL (watermarked) for free users, or FASHN URL
+      const imageUrl = data.data?.renderedImageUrl || data.data?.outputS3Url || data.data?.fashnImageUrl;
+      if (imageUrl) {
+        setGeneratedImageUrl(imageUrl);
+        setGenerationId(data.data?.generationId);
+        setGenerationType(data.data?.type === "HUMAN_MODEL" ? "human" : "ai");
+        setStep(3); // Show result step
+        toast.success("Generation completed! Image is ready.");
+      } else {
+        toast.success("Generation started! Check history for results.");
+        // Reset form
+        setStep(1);
+        setGarmentImageUrl(null);
+        setSelectedAvatar(null);
+        setSelectedModel(null);
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to start generation");
@@ -379,63 +393,135 @@ export function GenerateForm() {
         </Card>
       )}
 
-      {/* Step 3: Generate */}
+      {/* Step 3: Generate / Result */}
       {step === 3 && (
         <Card>
           <CardHeader>
-            <CardTitle>Step 3: Generate</CardTitle>
-            <CardDescription>Review your selection and generate the image</CardDescription>
+            <CardTitle>
+              {generatedImageUrl ? "Generation Complete!" : "Step 3: Generate"}
+            </CardTitle>
+            <CardDescription>
+              {generatedImageUrl
+                ? "Your generated image is ready"
+                : "Review your selection and generate the image"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {garmentImageUrl && (
-              <div>
-                <p className="text-sm font-medium mb-2">Garment Image:</p>
-                <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                  <Image src={garmentImageUrl} alt="Garment" fill className="object-contain" />
+            {generatedImageUrl ? (
+              // Show generated image result
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium mb-2">Generated Image:</p>
+                  <div className="relative w-full aspect-square rounded-lg overflow-hidden border bg-muted">
+                    <Image
+                      src={generatedImageUrl}
+                      alt="Generated fashion image"
+                      fill
+                      className="object-contain"
+                      unoptimized // FASHN CDN URLs may not be optimized
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      // Download image via proxy to avoid CORS issues
+                      if (!generationId) {
+                        toast.error("Generation ID not found");
+                        return;
+                      }
+                      try {
+                        const downloadUrl = `/api/render/download?id=${generationId}&type=${generationType === "human" ? "human" : "ai"}`;
+                        const link = document.createElement("a");
+                        link.href = downloadUrl;
+                        link.download = `generated-${generationId || Date.now()}.jpg`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        toast.success("Download started");
+                      } catch (error) {
+                        console.error("Download error:", error);
+                        toast.error("Failed to download image");
+                      }
+                    }}
+                  >
+                    Download
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      // Reset and start over
+                      setGeneratedImageUrl(null);
+                      setGenerationId(null);
+                      setGenerationType("ai");
+                      setStep(1);
+                      setGarmentImageUrl(null);
+                      setSelectedAvatar(null);
+                      setSelectedModel(null);
+                    }}
+                  >
+                    Generate Another
+                  </Button>
+                  <Button asChild className="flex-1">
+                    <Link href="/dashboard/business/history">View History</Link>
+                  </Button>
                 </div>
               </div>
-            )}
-
-            {modelType === "ai" && selectedAvatar && (
-              <div>
-                <p className="text-sm font-medium mb-2">Selected AI Avatar:</p>
-                <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
-                  <Image
-                    src={selectedAvatar.imageUrl}
-                    alt={selectedAvatar.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-            )}
-
-            {modelType === "human" && selectedModel && (
-              <div>
-                <p className="text-sm font-medium mb-2">Selected Human Model:</p>
-                <p className="text-lg">{selectedModel.name}</p>
-              </div>
-            )}
-
-            <div className="flex gap-4 pt-4">
-              <Button variant="outline" onClick={() => setStep(2)}>
-                Back
-              </Button>
-              <Button
-                onClick={handleGenerate}
-                disabled={renderMutation.isPending}
-                className="flex-1"
-              >
-                {renderMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  "Generate"
+            ) : (
+              // Show preview before generation
+              <>
+                {garmentImageUrl && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Garment Image:</p>
+                    <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                      <Image src={garmentImageUrl} alt="Garment" fill className="object-contain" />
+                    </div>
+                  </div>
                 )}
-              </Button>
-            </div>
+
+                {modelType === "ai" && selectedAvatar && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Selected AI Avatar:</p>
+                    <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
+                      <Image
+                        src={selectedAvatar.imageUrl}
+                        alt={selectedAvatar.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {modelType === "human" && selectedModel && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Selected Human Model:</p>
+                    <p className="text-lg">{selectedModel.name}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-4 pt-4">
+                  <Button variant="outline" onClick={() => setStep(2)}>
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={renderMutation.isPending}
+                    className="flex-1"
+                  >
+                    {renderMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      "Generate"
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

@@ -79,6 +79,21 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
       Render.countDocuments(query),
     ]);
 
+    // Debug logging
+    console.log("Render history query:", {
+      userId,
+      query,
+      total,
+      rendersCount: renders.length,
+      sampleRender: renders[0] ? {
+        _id: renders[0]._id,
+        userId: renders[0].userId,
+        status: renders[0].status,
+        outputS3Url: renders[0].outputS3Url,
+        renderedImageUrl: renders[0].renderedImageUrl,
+      } : null,
+    });
+
     // Calculate pagination metadata
     const totalPages = Math.ceil(total / limit);
     const hasNextPage = page < totalPages;

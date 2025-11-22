@@ -12,7 +12,7 @@ const BusinessProfileSchema = new Schema(
       ref: "User",
       required: true,
       unique: true,
-      index: true,
+      // Indexed below
     },
 
     // Business information
@@ -37,7 +37,7 @@ const BusinessProfileSchema = new Schema(
       type: String,
       enum: ["FREE", "STARTER", "GROWTH", "CANCELLED"],
       default: "FREE",
-      index: true,
+      // Indexed below
     },
 
     // Human model access
@@ -51,7 +51,7 @@ const BusinessProfileSchema = new Schema(
     // Payment integration
     stripeCustomerId: {
       type: String,
-      index: true,
+      // Indexed below
     },
 
     lemonsqueezyCustomerId: {
@@ -72,7 +72,7 @@ const BusinessProfileSchema = new Schema(
 );
 
 // Indexes for efficient queries
-BusinessProfileSchema.index({ userId: 1 });
+// Note: userId already has a unique index from unique: true, so we don't need to define it again
 BusinessProfileSchema.index({ subscriptionStatus: 1 });
 BusinessProfileSchema.index({ stripeCustomerId: 1 });
 

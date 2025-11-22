@@ -1,9 +1,10 @@
 import { connectDB } from "@/lib/db";
-import { fashnClient } from "@/lib/fashn";
+import { fashnClient, FashnVirtualTryOnResponse } from "@/lib/fashn";
 import Render from "@/models/render";
 import Generation from "@/models/generation";
 import ModelProfile from "@/models/model-profile";
 import User from "@/models/user";
+import Avatar from "@/models/avatar";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiter";
@@ -163,6 +164,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
     let generation: InstanceType<typeof Generation> | InstanceType<typeof Render>;
     let renderedImageUrl: string;
     let modelImageUrl: string;
+    let fashnResponse: FashnVirtualTryOnResponse | null = null;
+    let s3UploadSucceeded = false; // Track if S3 upload succeeded
 
     try {
       if (isHumanModel) {
@@ -247,16 +250,36 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
         });
 
         generation = result;
-        modelImageUrl = avatarImageUrl || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${avatarId}`;
+        
+        // Fetch avatar from database to get S3 URL (publicly accessible for FASHN API)
+        if (avatarId) {
+          const avatar = await Avatar.findById(avatarId);
+          if (avatar && avatar.imageUrl) {
+            // Use S3 URL if available (starts with http/https), otherwise fallback
+            if (avatar.imageUrl.startsWith("http")) {
+              modelImageUrl = avatar.imageUrl; // S3 URL - publicly accessible
+            } else {
+              // Legacy: relative path - use provided avatarImageUrl or construct URL
+              modelImageUrl = avatarImageUrl || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${avatar.imageUrl}`;
+              logger.warn("Avatar using relative path - should be uploaded to S3", { avatarId, imageUrl: avatar.imageUrl });
+            }
+          } else {
+            // Fallback to provided avatarImageUrl or construct from avatarId
+            modelImageUrl = avatarImageUrl || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${avatarId}`;
+          }
+        } else {
+          // Use provided avatarImageUrl directly (should be S3 URL)
+          modelImageUrl = avatarImageUrl || "";
+        }
       }
 
       // Step 3: Call FASHN API (outside transaction for external API call)
       try {
-        const fashnResponse = await fashnClient.virtualTryOn({
+        fashnResponse = await fashnClient.virtualTryOn({
           garment_image: garmentImageUrl,
           model_image: modelImageUrl,
-          prompt: "photo-realistic fit, natural shadows",
-          resolution: 768,
+          // Optional: mode, category, etc. (see https://docs.fashn.ai/api-reference/tryon-v1-6)
+          mode: "balanced", // performance | balanced | quality
         });
 
         const fashnImageUrl = fashnResponse.image_url;
@@ -313,9 +336,11 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                 url: finalImageUrl,
                 watermarked: shouldApplyWatermark(user.plan?.id, user.plan?.isPremium),
               });
+              s3UploadSucceeded = true; // Mark S3 upload as successful
             }
           } catch (s3Error) {
             logger.error("Failed to store image in S3, using original URL", s3Error as Error);
+            s3UploadSucceeded = false;
           }
         } else {
           // If S3 is not configured, still apply watermark for free users
@@ -361,25 +386,59 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
 
         // Update generation with success
         if (isHumanModel) {
-          await Generation.findByIdAndUpdate(generation._id, {
-            status: "completed",
-            outputS3Url: finalImageUrl,
-            fashnRequestId: fashnResponse.request_id,
-            updatedAt: new Date(),
-          });
+          const updated = await Generation.findByIdAndUpdate(
+            generation._id,
+            {
+              status: "completed",
+              outputS3Url: finalImageUrl,
+              fashnRequestId: fashnResponse.request_id,
+              updatedAt: new Date(),
+            },
+            { new: true } // Return updated document
+          );
+          
+          if (!updated) {
+            logger.error("Failed to update Generation record", new Error("Update returned null"), {
+              generationId: generation._id,
+            });
+          } else {
+            logger.info("Generation record updated successfully", {
+              generationId: generation._id,
+              outputS3Url: updated.outputS3Url,
+            });
+          }
         } else {
-          await Render.findByIdAndUpdate(generation._id, {
-            status: "completed",
-            renderedImageUrl: finalImageUrl,
-            fashnRequestId: fashnResponse.request_id,
-            updatedAt: new Date(),
-          });
+          const updated = await Render.findByIdAndUpdate(
+            generation._id,
+            {
+              status: "completed",
+              renderedImageUrl: finalImageUrl,
+              outputS3Url: finalImageUrl, // Also set outputS3Url for frontend compatibility
+              outputUrl: finalImageUrl, // Legacy field support
+              fashnRequestId: fashnResponse.request_id,
+              updatedAt: new Date(),
+            },
+            { new: true } // Return updated document
+          );
+          
+          if (!updated) {
+            logger.error("Failed to update Render record", new Error("Update returned null"), {
+              renderId: generation._id,
+            });
+          } else {
+            logger.info("Render record updated successfully", {
+              renderId: generation._id,
+              outputS3Url: updated.outputS3Url,
+              renderedImageUrl: updated.renderedImageUrl,
+            });
+          }
         }
 
         logger.info("Generation completed successfully", {
           generationId: generation._id,
           userId,
           type: isHumanModel ? "HUMAN_MODEL" : "AI_AVATAR",
+          finalImageUrl,
         });
 
         // Send render completion email (outside transaction)
@@ -568,15 +627,29 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
     }
 
     // Step 6: Return rendered image URL
+    // Prioritize S3 URL (watermarked) for free users, FASHN URL for premium users
+    const { shouldApplyWatermark } = await import("@/lib/watermark");
+    const needsWatermark = shouldApplyWatermark(user.plan?.id, user.plan?.isPremium);
+    
+    // For free users, use S3 URL (watermarked) if upload succeeded, otherwise FASHN URL
+    // For premium users, prefer S3 URL but fallback to FASHN URL
+    const displayImageUrl = needsWatermark && s3UploadSucceeded
+      ? renderedImageUrl // S3 URL with watermark
+      : (s3UploadSucceeded ? renderedImageUrl : fashnResponse?.image_url); // S3 URL or FASHN URL
+    
     return NextResponse.json(
       {
         status: "success",
         message: "Generation completed",
         data: {
           generationId: generation._id,
-          renderedImageUrl,
+          renderedImageUrl: displayImageUrl, // Primary URL for display
+          outputS3Url: renderedImageUrl !== fashnResponse?.image_url ? renderedImageUrl : undefined, // S3 URL if different from FASHN
+          fashnImageUrl: fashnResponse?.image_url, // Original FASHN URL
+          fashnRequestId: fashnResponse?.request_id,
           status: "completed",
           type: isHumanModel ? "HUMAN_MODEL" : "AI_AVATAR",
+          watermarked: needsWatermark && renderedImageUrl !== fashnResponse?.image_url,
           ...(isHumanModel
             ? { royaltyPaid: ROYALTY_AMOUNT }
             : { creditsUsed: 1, creditsRemaining: user.credits - 1 }),

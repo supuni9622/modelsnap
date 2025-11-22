@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/db";
 import Generation from "@/models/generation";
+import Render from "@/models/render";
 import User from "@/models/user";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
@@ -45,20 +46,60 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (req: NextRequest
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    // Build date query
-    const dateQuery: any = {};
+    // Build date query for Generation model
+    const generationDateQuery: any = {};
     if (startDate || endDate) {
-      dateQuery.generatedAt = {};
+      generationDateQuery.generatedAt = {};
       if (startDate) {
-        dateQuery.generatedAt.$gte = new Date(startDate);
+        generationDateQuery.generatedAt.$gte = new Date(startDate);
       }
       if (endDate) {
-        dateQuery.generatedAt.$lte = new Date(endDate);
+        generationDateQuery.generatedAt.$lte = new Date(endDate);
       }
     }
 
-    // Get all generations
-    const allGenerations = await Generation.find(dateQuery).lean();
+    // Build date query for Render model
+    const renderDateQuery: any = {};
+    if (startDate || endDate) {
+      renderDateQuery.createdAt = {};
+      if (startDate) {
+        renderDateQuery.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        renderDateQuery.createdAt.$lte = new Date(endDate);
+      }
+    }
+
+    // Get all generations (both Generation and Render models)
+    const [generations, renders] = await Promise.all([
+      Generation.find(generationDateQuery).lean(),
+      Render.find(renderDateQuery).lean(),
+    ]);
+
+    console.log("Admin Analytics - Data fetched:", {
+      generationsCount: generations.length,
+      rendersCount: renders.length,
+    });
+
+    // Map Render records to match Generation format for unified processing
+    const mappedRenders = renders.map((render: any) => ({
+      _id: render._id,
+      modelType: "AI_AVATAR" as const,
+      status: render.status,
+      creditsUsed: render.creditsUsed || 1,
+      royaltyPaid: 0, // AI avatars don't pay royalties
+      generatedAt: render.createdAt || render.updatedAt, // Use createdAt as generatedAt
+      createdAt: render.createdAt,
+    }));
+
+    // Combine both collections
+    const allGenerations = [
+      ...generations.map((g: any) => ({
+        ...g,
+        generatedAt: g.generatedAt || g.createdAt,
+      })),
+      ...mappedRenders,
+    ];
 
     // Calculate statistics
     const totalGenerations = allGenerations.length;
@@ -78,7 +119,7 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (req: NextRequest
 
     // Get generations by date (for charts)
     const generationsByDate = allGenerations.reduce((acc: Record<string, number>, gen) => {
-      const date = new Date(gen.generatedAt).toISOString().split("T")[0];
+      const date = new Date(gen.generatedAt || gen.createdAt).toISOString().split("T")[0];
       acc[date] = (acc[date] || 0) + 1;
       return acc;
     }, {});
