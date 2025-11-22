@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, CheckCircle2, Clock, XCircle, Eye } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 interface Model {
   _id: string;
@@ -220,7 +220,7 @@ export function ModelMarketplace() {
                   <span className="font-semibold text-green-600">$2.00</span>
                 </div>
                 <Button asChild className="w-full" variant={model.consentStatus?.hasConsent ? "default" : "outline"}>
-                  <Link href={`/app/models/${model._id}`}>
+                  <Link href={`/dashboard/business/models/${model._id}`}>
                     <Eye className="h-4 w-4 mr-2" />
                     {model.consentStatus?.hasConsent ? "View Profile" : "View & Request Consent"}
                   </Link>

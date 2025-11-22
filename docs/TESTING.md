@@ -117,9 +117,19 @@ This document tracks the testing status of all features as we verify the platfor
   - Status: ⏳ Pending Test
   - Expected: Shows available AI avatars
 
-- [ ] **Human Models Display**
-  - Status: ⏳ Pending Test
-  - Expected: Shows human models with consent request functionality
+- [x] **Human Models Display**
+  - Status: ✅ Working
+  - Notes: All active models are now listed in the marketplace
+  - **Issue Found:** API was filtering out models with `consentSigned: false`
+  - **Fix Applied:** Removed `consentSigned` filter from GET `/api/models` endpoint
+  - **Test Date:** 2025-11-22
+
+- [x] **Model Profile View**
+  - Status: ✅ Working
+  - Notes: Model detail page now accessible from marketplace
+  - **Issue Found:** 404 error when clicking "View Profile" - route didn't exist
+  - **Fix Applied:** Created `/dashboard/business/models/[id]/page.tsx` route and updated marketplace Link to use correct path with i18n navigation
+  - **Test Date:** 2025-11-22
 
 - [ ] **Consent Request**
   - Status: ⏳ Pending Test
@@ -161,23 +171,48 @@ This document tracks the testing status of all features as we verify the platfor
   - Expected: Model users see model-specific navigation items
 
 ### Profile Page (`/dashboard/model/profile`)
-- [ ] **Profile Creation**
-  - Status: ⏳ Pending Test
-  - Expected: Models can create their profile with reference images
+- [x] **Profile Creation**
+  - Status: ✅ Working
+  - Notes: Models can create their profile with reference images
+  - **Issue Found:** Profile page was using wrong endpoint to check for existing profile
+  - **Fix Applied:** Updated page to use `/api/model/profile` instead of `/api/models?userId=...`
+  - **Test Date:** 2025-11-22
 
-- [ ] **Profile Editing**
-  - Status: ⏳ Pending Test
-  - Expected: Models can edit their existing profile
+- [x] **Profile Editing**
+  - Status: ✅ Working
+  - Notes: Models can edit their existing profile, including name and reference images
+  - **Issue Found:** Profile auto-created during redirect caused confusion between create/edit flows
+  - **Fix Applied:** Page now correctly detects existing profiles and shows edit form
+  - **Test Date:** 2025-11-22
 
-- [ ] **Reference Images Upload**
-  - Status: ⏳ Pending Test
-  - Expected: Models can upload 3-4 reference images to S3
+- [x] **Reference Images Upload**
+  - Status: ✅ Working
+  - Notes: Models can upload 3-4 reference images to S3
+  - **Issue Found:** Model reference images were being stored under `/garments/` instead of `/model-references/`
+  - **Fix Applied:** Updated upload API to accept `type` parameter, model components now pass `type=model-reference`
+  - **Folder Structure:** Images now correctly stored in `model-references/user_xxx/...`
   - **Prerequisites:** ✅ AWS S3 credentials configured
+  - **Test Date:** 2025-11-22
 
 ### Requests Page (`/dashboard/model/requests`)
-- [ ] **Consent Request List**
-  - Status: ⏳ Pending Test
-  - Expected: Models can view consent requests from businesses
+- [x] **Page Navigation**
+  - Status: ✅ Working
+  - Notes: Requests page is accessible and doesn't redirect to profile page
+  - **Issue Found:** OnboardingCheck component was redirecting MODEL users from requests page to profile page
+  - **Fix Applied:** Updated OnboardingCheck to use correct API endpoint and allow access to all model pages
+  - **Test Date:** 2025-11-22
+
+- [x] **Consent Request List**
+  - Status: ✅ Working
+  - Notes: Models can view consent requests from businesses
+  - **Test Date:** 2025-11-22
+
+- [x] **Consent Request Detail View**
+  - Status: ✅ Working
+  - Notes: Models can view business profile before approving consent
+  - **Issue Found:** 404 error when clicking "Review Request" - route didn't exist
+  - **Fix Applied:** Created `/dashboard/model/consent/[id]/page.tsx` route and `/api/consent/[id]/route.ts` API endpoint
+  - **Test Date:** 2025-11-22
 
 - [ ] **Consent Approval/Rejection**
   - Status: ⏳ Pending Test
@@ -435,15 +470,15 @@ This document tracks the testing status of all features as we verify the platfor
 
 - **Authentication:** 6/6 features tested (100%) ✅
 - **Onboarding:** 5/5 features tested (100%) ✅
-- **Business Dashboard:** 0/15 features tested (0%)
-- **Model Dashboard:** 0/8 features tested (0%)
+- **Business Dashboard:** 2/15 features tested (13%)
+- **Model Dashboard:** 5/8 features tested (63%)
 - **Admin Dashboard:** 0/10 features tested (0%)
 - **Payment Integration:** 2/6 features tested (33%)
 - **Image Generation:** 0/5 features tested (0%)
 - **Webhooks:** 1/5 features tested (20%)
 - **Database Operations:** 3/3 features tested (100%) ✅
 
-**Overall Progress:** 17/58 features tested (29%)
+**Overall Progress:** 24/58 features tested (41%)
 
 ---
 

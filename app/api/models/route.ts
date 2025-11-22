@@ -22,10 +22,9 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
     // Build query
     const query: any = { status };
     
-    // Only show active models in marketplace
-    if (status === "active") {
-      query.consentSigned = true; // Only show models who have signed consent
-    }
+    // Show all active models in marketplace
+    // Businesses can request consent from any model they see
+    // The consentSigned field is for general consent agreement, not marketplace visibility
 
     // Fetch models with pagination
     const models = await ModelProfile.find(query)

@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Clock, CheckCircle2, XCircle, Building2, Eye } from "lucide-react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { formatDistanceToNow } from "date-fns";
 
 interface ConsentRequest {
@@ -119,9 +119,8 @@ export function ConsentRequestList() {
                   <Button
                     asChild
                     variant="outline"
-                    onClick={() => router.push(`/app/model/consent/${request._id}`)}
                   >
-                    <Link href={`/app/model/consent/${request._id}`}>
+                    <Link href={`/dashboard/model/consent/${request._id}`}>
                       <Eye className="h-4 w-4 mr-2" />
                       Review Request
                     </Link>
@@ -158,9 +157,8 @@ export function ConsentRequestList() {
                 <Button
                   asChild
                   variant="outline"
-                  onClick={() => router.push(`/app/model/consent/${request._id}`)}
                 >
-                  <Link href={`/app/model/consent/${request._id}`}>
+                  <Link href={`/dashboard/model/consent/${request._id}`}>
                     <Eye className="h-4 w-4 mr-2" />
                     View Details
                   </Link>

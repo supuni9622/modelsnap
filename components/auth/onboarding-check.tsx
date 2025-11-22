@@ -57,19 +57,26 @@ export function OnboardingCheck({ children }: { children: React.ReactNode }) {
 
           // Check if model needs profile creation
           if (role === "MODEL") {
-            const profileResponse = await fetch("/api/models?userId=" + userId);
+            // Use the correct endpoint to get current user's profile
+            const profileResponse = await fetch("/api/model/profile");
             const profileData = await profileResponse.json();
 
-            // If model has no profile and not already on profile page, redirect
+            // If model has no profile and not already on a model page, redirect to profile
+            // Allow access to all model pages (profile, requests, earnings) even if profile is incomplete
+            const isOnModelPage = pathname?.includes("/dashboard/model/");
+            const isOnProfilePage = pathname?.includes("/dashboard/model/profile");
+            
             if (
-              profileData.status === "success" &&
-              (!profileData.data.models || profileData.data.models.length === 0) &&
-              !pathname?.includes("/dashboard/model/profile") &&
+              profileData.status !== "success" &&
+              !isOnModelPage &&
               !pathname?.includes("/onboarding")
             ) {
+              // Only redirect to profile if profile doesn't exist AND user is not on any model page
               router.push("/dashboard/model/profile");
               return;
             }
+            
+            // If profile exists or user is on a model page, allow access
           }
 
           // Check if ADMIN and redirect to admin dashboard

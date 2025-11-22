@@ -13,16 +13,17 @@ import {
 
 /**
  * GET /api/consent/[id]
- * Get a specific consent request by ID
+ * Get a single consent request by ID
+ * Only the business or model involved can view the request
  */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   return withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequest) => {
-    const { id } = await params;
     try {
       await connectDB();
+      const { id } = await params;
 
       const { userId } = await auth();
       if (!userId) {
@@ -36,68 +37,84 @@ export async function GET(
         );
       }
 
-      const requestId = id;
-    const user = await User.findOne({ id: userId });
-
-    const consentRequestRaw = await ConsentRequest.findById(requestId)
-      .populate("businessId", "businessName")
-      .populate("modelId", "name referenceImages")
-      .lean()
-      .exec();
-
-    if (!consentRequestRaw) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message: "Consent request not found",
-          code: "NOT_FOUND",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Type assertion - findById returns a single document, not an array
-    const consentRequest = consentRequestRaw as any;
-
-    // Check authorization - user must be the business or model owner
-    if (user) {
-      const businessProfile = await BusinessProfile.findOne({ userId: user._id });
-      const modelProfile = await ModelProfile.findOne({ userId: user._id });
-      const isBusinessOwner =
-        businessProfile &&
-        consentRequest.businessId?.toString() === businessProfile._id.toString();
-      const isModelOwner =
-        modelProfile && consentRequest.modelId?.toString() === modelProfile._id.toString();
-      const isAdmin = user.role === "ADMIN";
-
-      if (!isBusinessOwner && !isModelOwner && !isAdmin) {
+      const user = await User.findOne({ id: userId });
+      if (!user) {
         return NextResponse.json(
           {
             status: "error",
-            message: "Forbidden",
-            code: "FORBIDDEN",
+            message: "User not found",
+            code: "USER_NOT_FOUND",
+          },
+          { status: 404 }
+        );
+      }
+
+      // Fetch consent request with populated fields
+      const consentRequest = await ConsentRequest.findById(id)
+        .populate("businessId", "businessName businessType website description")
+        .populate("modelId", "name referenceImages")
+        .lean();
+
+      if (!consentRequest) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Consent request not found",
+            code: "NOT_FOUND",
+          },
+          { status: 404 }
+        );
+      }
+
+      // Verify user has permission to view this request
+      let hasPermission = false;
+
+      // Type assertion for populated fields
+      const request = consentRequest as any;
+
+      if (user.role === "MODEL") {
+        const modelProfile = await ModelProfile.findOne({ userId: user._id });
+        const modelId = request.modelId?._id || request.modelId;
+        if (modelProfile && modelId && modelProfile._id.toString() === modelId.toString()) {
+          hasPermission = true;
+        }
+      } else if (user.role === "BUSINESS") {
+        const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        const businessId = request.businessId?._id || request.businessId;
+        if (businessProfile && businessId && businessProfile._id.toString() === businessId.toString()) {
+          hasPermission = true;
+        }
+      } else if (user.role === "ADMIN") {
+        hasPermission = true;
+      }
+
+      if (!hasPermission) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Unauthorized to view this consent request",
+            code: "UNAUTHORIZED",
           },
           { status: 403 }
         );
       }
-    }
 
-    return NextResponse.json(
-      {
-        status: "success",
-        data: consentRequest,
-      },
-      { status: 200 }
-    );
-  } catch (err) {
-    console.error("Error fetching consent request:", err);
-    return NextResponse.json(
-      {
-        status: "error",
-        message: "Failed to fetch consent request",
-        code: "SERVER_ERROR",
-      },
-      { status: 500 }
+      return NextResponse.json(
+        {
+          status: "success",
+          data: consentRequest,
+        },
+        { status: 200 }
+      );
+    } catch (err) {
+      console.error("Error fetching consent request:", err);
+      return NextResponse.json(
+        {
+          status: "error",
+          message: "Failed to fetch consent request",
+          code: "SERVER_ERROR",
+        },
+        { status: 500 }
       );
     }
   })(req);
@@ -106,16 +123,16 @@ export async function GET(
 /**
  * PUT /api/consent/[id]
  * Update consent request status (approve/reject)
- * Only the model owner can approve/reject
+ * Only models can approve/reject requests
  */
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   return withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequest) => {
-    const { id } = await params;
     try {
       await connectDB();
+      const { id } = await params;
 
       const { userId } = await auth();
       if (!userId) {
@@ -129,164 +146,162 @@ export async function PUT(
         );
       }
 
-      const requestId = id;
-    const user = await User.findOne({ id: userId });
-    if (!user) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message: "User not found",
-          code: "USER_NOT_FOUND",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Find consent request
-    const consentRequest = await ConsentRequest.findById(requestId);
-    if (!consentRequest) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message: "Consent request not found",
-          code: "NOT_FOUND",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Check if user is the model owner
-    const modelProfile = await ModelProfile.findOne({ userId: user._id });
-    if (!modelProfile) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message: "Model profile not found",
-          code: "MODEL_PROFILE_NOT_FOUND",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Verify this request is for this model
-    if (consentRequest.modelId.toString() !== modelProfile._id.toString()) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message: "Forbidden - This request is not for your model",
-          code: "FORBIDDEN",
-        },
-        { status: 403 }
-      );
-    }
-
-    // Parse request body
-    const body = await req.json();
-    const { status } = body;
-
-    if (!status || !["APPROVED", "REJECTED"].includes(status)) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message: "Status must be 'APPROVED' or 'REJECTED'",
-          code: "VALIDATION_ERROR",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check if request is already processed
-    if (consentRequest.status !== "PENDING") {
-      return NextResponse.json(
-        {
-          status: "error",
-          message: `Consent request is already ${consentRequest.status}`,
-          code: "ALREADY_PROCESSED",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Update consent request
-    const updateData: any = {
-      status,
-    };
-
-    if (status === "APPROVED") {
-      updateData.grantedAt = new Date();
-    } else if (status === "REJECTED") {
-      updateData.rejectedAt = new Date();
-    }
-
-    const updatedRequest = await ConsentRequest.findByIdAndUpdate(
-      requestId,
-      updateData,
-      { new: true }
-    )
-      .populate("businessId", "businessName")
-      .populate("modelId", "name referenceImages")
-      .lean();
-
-    // If approved, add business to model's approved businesses list
-    if (status === "APPROVED") {
-      await ModelProfile.findByIdAndUpdate(modelProfile._id, {
-        $addToSet: { approvedBusinesses: consentRequest.businessId },
-      });
-
-      // Add model to business's approved models list
-      await BusinessProfile.findByIdAndUpdate(consentRequest.businessId, {
-        $addToSet: { approvedModels: modelProfile._id },
-      });
-    }
-
-    // Send email notification to business
-    try {
-      const businessProfileDoc = await BusinessProfile.findById(
-        consentRequest.businessId
-      );
-      const businessUser = businessProfileDoc
-        ? await User.findById(businessProfileDoc.userId)
-        : null;
-
-      if (businessUser && businessUser.emailAddress && businessUser.emailAddress[0]) {
-        if (status === "APPROVED") {
-          await sendConsentApprovedEmail(
-            businessUser.emailAddress[0],
-            businessProfileDoc?.businessName || "Business",
-            modelProfile.name
-          );
-        } else {
-          await sendConsentRejectedEmail(
-            businessUser.emailAddress[0],
-            businessProfileDoc?.businessName || "Business",
-            modelProfile.name
-          );
-        }
+      const user = await User.findOne({ id: userId });
+      if (!user) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "User not found",
+            code: "USER_NOT_FOUND",
+          },
+          { status: 404 }
+        );
       }
-    } catch (emailError) {
-      console.error("Failed to send consent status email:", emailError);
-      // Don't fail the request if email fails
-    }
 
-    return NextResponse.json(
-      {
-        status: "success",
-        message: `Consent request ${status.toLowerCase()} successfully`,
-        data: updatedRequest,
-      },
-      { status: 200 }
-    );
-  } catch (err) {
-    console.error("Error updating consent request:", err);
-    return NextResponse.json(
-      {
-        status: "error",
-        message: "Failed to update consent request",
-        code: "SERVER_ERROR",
-      },
-      { status: 500 }
+      // Only models can approve/reject consent requests
+      if (user.role !== "MODEL") {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Only models can approve or reject consent requests",
+            code: "INVALID_ROLE",
+          },
+          { status: 403 }
+        );
+      }
+
+      const modelProfile = await ModelProfile.findOne({ userId: user._id });
+      if (!modelProfile) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Model profile not found",
+            code: "MODEL_PROFILE_NOT_FOUND",
+          },
+          { status: 404 }
+        );
+      }
+
+      // Verify this request belongs to this model
+      const consentRequest = await ConsentRequest.findById(id);
+      if (!consentRequest) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Consent request not found",
+            code: "NOT_FOUND",
+          },
+          { status: 404 }
+        );
+      }
+
+      if (consentRequest.modelId.toString() !== modelProfile._id.toString()) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Unauthorized to modify this consent request",
+            code: "UNAUTHORIZED",
+          },
+          { status: 403 }
+        );
+      }
+
+      // Parse request body
+      const body = await req.json();
+      const { status } = body;
+
+      if (!status || !["APPROVED", "REJECTED"].includes(status)) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Invalid status. Must be APPROVED or REJECTED",
+            code: "VALIDATION_ERROR",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Check if request is already processed
+      if (consentRequest.status !== "PENDING") {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Consent request has already been processed",
+            code: "ALREADY_PROCESSED",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Update consent request
+      const updateData: any = {
+        status,
+      };
+
+      if (status === "APPROVED") {
+        updateData.grantedAt = new Date();
+      } else if (status === "REJECTED") {
+        updateData.rejectedAt = new Date();
+      }
+
+      const updatedRequest = await ConsentRequest.findByIdAndUpdate(id, updateData, {
+        new: true,
+      })
+        .populate("businessId", "businessName businessType website description userId")
+        .populate("modelId", "name referenceImages")
+        .lean();
+
+      // If approved, add business to model's approved businesses list
+      if (status === "APPROVED") {
+        await ModelProfile.findByIdAndUpdate(modelProfile._id, {
+          $addToSet: { approvedBusinesses: consentRequest.businessId },
+        });
+      }
+
+      // Send email notification
+      try {
+        const businessProfile = await BusinessProfile.findById(consentRequest.businessId);
+        if (businessProfile) {
+          const businessUser = await User.findById(businessProfile.userId);
+          if (businessUser && businessUser.emailAddress && businessUser.emailAddress[0]) {
+            if (status === "APPROVED") {
+              await sendConsentApprovedEmail(
+                businessUser.emailAddress[0],
+                businessProfile.businessName,
+                modelProfile.name
+              );
+            } else {
+              await sendConsentRejectedEmail(
+                businessUser.emailAddress[0],
+                businessProfile.businessName,
+                modelProfile.name
+              );
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error("Failed to send consent status email:", emailError);
+        // Don't fail the request if email fails
+      }
+
+      return NextResponse.json(
+        {
+          status: "success",
+          message: `Consent request ${status.toLowerCase()} successfully`,
+          data: updatedRequest,
+        },
+        { status: 200 }
+      );
+    } catch (err) {
+      console.error("Error updating consent request:", err);
+      return NextResponse.json(
+        {
+          status: "error",
+          message: "Failed to update consent request",
+          code: "SERVER_ERROR",
+        },
+        { status: 500 }
       );
     }
   })(req);
 }
-

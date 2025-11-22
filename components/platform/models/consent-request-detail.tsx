@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,16 @@ import { Loader2, ArrowLeft, CheckCircle2, XCircle, Clock, Building2, Mail, Glob
 import { BusinessProfileView } from "./business-profile-view";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ConsentRequest {
   _id: string;
@@ -35,6 +45,8 @@ export function ConsentRequestDetail({ requestId }: { requestId: string }) {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [showBusinessProfile, setShowBusinessProfile] = useState(false);
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
 
   useEffect(() => {
     fetchRequest();
@@ -59,10 +71,7 @@ export function ConsentRequestDetail({ requestId }: { requestId: string }) {
   };
 
   const handleApprove = async () => {
-    if (!confirm("Are you sure you want to approve this consent request? Once approved, this business can use your model profile.")) {
-      return;
-    }
-
+    setShowApproveDialog(false);
     setProcessing(true);
     try {
       const response = await fetch(`/api/consent/${requestId}`, {
@@ -79,7 +88,7 @@ export function ConsentRequestDetail({ requestId }: { requestId: string }) {
         toast.success("Consent request approved!");
         fetchRequest();
         setTimeout(() => {
-          router.push("/app/model/consent");
+          router.push("/dashboard/model/requests");
         }, 2000);
       } else {
         toast.error(data.message || "Failed to approve request");
@@ -93,10 +102,7 @@ export function ConsentRequestDetail({ requestId }: { requestId: string }) {
   };
 
   const handleReject = async () => {
-    if (!confirm("Are you sure you want to reject this consent request? This business will not be able to use your model profile.")) {
-      return;
-    }
-
+    setShowRejectDialog(false);
     setProcessing(true);
     try {
       const response = await fetch(`/api/consent/${requestId}`, {
@@ -113,7 +119,7 @@ export function ConsentRequestDetail({ requestId }: { requestId: string }) {
         toast.success("Consent request rejected");
         fetchRequest();
         setTimeout(() => {
-          router.push("/app/model/consent");
+          router.push("/dashboard/model/requests");
         }, 2000);
       } else {
         toast.error(data.message || "Failed to reject request");
@@ -264,40 +270,129 @@ export function ConsentRequestDetail({ requestId }: { requestId: string }) {
 
             {request.status === "PENDING" && (
               <div className="pt-4 space-y-2">
+                <AlertDialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+                  <AlertDialogContent className="sm:max-w-[500px]">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                        <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+                      </div>
+                      <AlertDialogHeader className="space-y-2">
+                        <AlertDialogTitle className="text-2xl font-bold">
+                          Approve Consent Request?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-base leading-relaxed">
+                          Once approved, <strong className="text-foreground">{request.businessId.businessName}</strong> will be able to use your model profile for generating fashion images.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      
+                      <div className="w-full space-y-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4">
+                        <div className="flex items-center gap-2 text-sm font-medium text-green-900 dark:text-green-100">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>Royalty Information</span>
+                        </div>
+                        <div className="text-left space-y-1.5 text-sm text-green-800 dark:text-green-200">
+                          <div className="flex items-center justify-between">
+                            <span>Royalty per generation:</span>
+                            <span className="font-semibold text-green-900 dark:text-green-100">$2.00</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>Payment:</span>
+                            <span className="font-semibold text-green-900 dark:text-green-100">Automatic</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                      <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleApprove}
+                        disabled={processing}
+                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all"
+                      >
+                        {processing ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Approve Request
+                          </>
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+                  <AlertDialogContent className="sm:max-w-[500px]">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                        <XCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+                      </div>
+                      <AlertDialogHeader className="space-y-2">
+                        <AlertDialogTitle className="text-2xl font-bold">
+                          Reject Consent Request?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-base leading-relaxed">
+                          <strong className="text-foreground">{request.businessId.businessName}</strong> will not be able to use your model profile. This action cannot be undone, but they can send a new request in the future.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      
+                      <div className="w-full space-y-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
+                        <div className="flex items-center gap-2 text-sm font-medium text-amber-900 dark:text-amber-100">
+                          <Clock className="h-4 w-4" />
+                          <span>What happens next?</span>
+                        </div>
+                        <div className="text-left space-y-1.5 text-sm text-amber-800 dark:text-amber-200">
+                          <p>• The business will be notified of your decision</p>
+                          <p>• They can send a new request at any time</p>
+                          <p>• Your decision is final for this request</p>
+                        </div>
+                      </div>
+                    </div>
+                    <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                      <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleReject}
+                        disabled={processing}
+                        className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md hover:shadow-lg transition-all"
+                      >
+                        {processing ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Reject Request
+                          </>
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
                 <Button
-                  onClick={handleApprove}
+                  onClick={() => setShowApproveDialog(true)}
                   disabled={processing}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all h-11 text-base font-medium"
+                  size="lg"
                 >
-                  {processing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Approve Request
-                    </>
-                  )}
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  Approve Request
                 </Button>
                 <Button
-                  onClick={handleReject}
+                  onClick={() => setShowRejectDialog(true)}
                   disabled={processing}
                   variant="destructive"
-                  className="w-full"
+                  className="w-full shadow-md hover:shadow-lg transition-all h-11 text-base font-medium"
+                  size="lg"
                 >
-                  {processing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Reject Request
-                    </>
-                  )}
+                  <XCircle className="h-5 w-5 mr-2" />
+                  Reject Request
                 </Button>
               </div>
             )}
