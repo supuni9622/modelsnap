@@ -3,6 +3,7 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import AccountButton from "@/components/buttons/account-button";
 import MyCreditsButton from "@/components/buttons/my-credits-button";
+import SubscriptionBadge from "@/components/buttons/subscription-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import type { UserRole } from "@/lib/auth-utils";
@@ -32,7 +33,12 @@ export function DashboardTopBar({ role }: DashboardTopBarProps) {
         <Badge variant="secondary" className="hidden sm:flex">
           {getRoleLabel()}
         </Badge>
-        {role === "BUSINESS" && <MyCreditsButton />}
+        {role === "BUSINESS" && (
+          <>
+            <SubscriptionBadge />
+            <MyCreditsButton />
+          </>
+        )}
         <ThemeToggle />
         <AccountButton />
       </div>

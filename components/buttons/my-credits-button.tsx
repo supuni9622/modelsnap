@@ -30,21 +30,24 @@ export default function MyCreditsButton() {
     <>
       {/* Desktop: Always show credits prominently */}
       <div className="hidden md:flex items-center gap-2">
-        <Badge variant="outline" className="gap-1.5 px-3 py-1.5">
+        <Badge className="gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#356DFF] to-[#5B8AFF] text-white border-0 shadow-md shadow-[#356DFF]/20 hover:shadow-lg hover:shadow-[#356DFF]/30 transition-all duration-300 hover:scale-105">
           <CoinsIcon className="h-4 w-4" />
           <span className="font-semibold">{credits}</span>
-          <span className="text-muted-foreground">Credits</span>
+          <span className="text-white/90">Credits</span>
         </Badge>
         {isFreePlan ? (
           <Link href="/dashboard/business/billing">
-            <Button size="sm" variant="default">
+            <Button 
+              size="sm" 
+              className="bg-gradient-to-r from-[#4BE4C1] to-[#5BFFD9] text-[#015064] hover:from-[#5BFFD9] hover:to-[#4BE4C1] border-0 shadow-md shadow-[#4BE4C1]/20 hover:shadow-lg transition-all duration-300 font-semibold"
+            >
               Upgrade Plan
             </Button>
           </Link>
         ) : (
           <Button
             size="sm"
-            variant="outline"
+            className="bg-gradient-to-r from-[#4BE4C1] to-[#5BFFD9] text-[#015064] hover:from-[#5BFFD9] hover:to-[#4BE4C1] border-0 shadow-md shadow-[#4BE4C1]/20 hover:shadow-lg transition-all duration-300 font-semibold"
             onClick={() => setShowDialog(true)}
           >
             Top Up
@@ -55,7 +58,7 @@ export default function MyCreditsButton() {
       {/* Mobile: Show credits in popover */}
       <Popover>
         <PopoverTrigger className="flex md:hidden">
-          <Badge variant="outline" className="gap-1.5 px-2 py-1">
+          <Badge className="gap-1.5 px-2 py-1 bg-gradient-to-r from-[#356DFF] to-[#5B8AFF] text-white border-0 shadow-md shadow-[#356DFF]/20 hover:shadow-lg transition-all duration-300">
             <CoinsIcon className="h-4 w-4" />
             <span className="font-semibold">{credits}</span>
           </Badge>
@@ -64,19 +67,23 @@ export default function MyCreditsButton() {
           <div className="space-y-3">
             <div>
               <p className="text-sm font-medium mb-1">Available Credits</p>
-              <p className="text-2xl font-bold">{credits}</p>
+              <p className="text-2xl font-bold bg-gradient-to-r from-[#356DFF] to-[#5B8AFF] bg-clip-text text-transparent">
+                {credits}
+              </p>
             </div>
             {isFreePlan ? (
               <Link href="/dashboard/business/billing" className="block">
-                <Button size="sm" variant="default" className="w-full">
+                <Button 
+                  size="sm" 
+                  className="w-full bg-gradient-to-r from-[#4BE4C1] to-[#5BFFD9] text-[#015064] hover:from-[#5BFFD9] hover:to-[#4BE4C1] border-0 shadow-md shadow-[#4BE4C1]/20 hover:shadow-lg transition-all duration-300 font-semibold"
+                >
                   Upgrade Plan
                 </Button>
               </Link>
             ) : (
               <Button
                 size="sm"
-                variant="outline"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-[#4BE4C1] to-[#5BFFD9] text-[#015064] hover:from-[#5BFFD9] hover:to-[#4BE4C1] border-0 shadow-md shadow-[#4BE4C1]/20 hover:shadow-lg transition-all duration-300 font-semibold"
                 onClick={() => {
                   setShowDialog(true);
                 }}
