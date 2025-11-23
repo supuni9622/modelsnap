@@ -17,6 +17,8 @@ interface ModelProfile {
   referenceImages: string[];
   status: string;
   royaltyBalance: number;
+  price?: number;
+  consentRequired?: boolean;
   userId: {
     firstName?: string;
     lastName?: string;
@@ -36,10 +38,12 @@ export function ModelProfileView({ modelId }: { modelId: string }) {
   const [loading, setLoading] = useState(true);
   const [consentStatus, setConsentStatus] = useState<ConsentStatus | null>(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [purchaseStatus, setPurchaseStatus] = useState<{ isPurchased: boolean; price?: number } | null>(null);
 
   useEffect(() => {
     fetchModelProfile();
     checkConsentStatus();
+    checkPurchaseStatus();
   }, [modelId]);
 
   const fetchModelProfile = async () => {
@@ -92,6 +96,40 @@ export function ModelProfileView({ modelId }: { modelId: string }) {
     checkConsentStatus();
     setShowDialog(false);
     toast.success("Consent request sent successfully!");
+  };
+
+  const checkPurchaseStatus = async () => {
+    try {
+      const response = await fetch(`/api/models/${modelId}/purchase-status`);
+      const data = await response.json();
+      if (data.status === "success") {
+        setPurchaseStatus({
+          isPurchased: data.data?.isPurchased || false,
+          price: data.data?.price,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to check purchase status:", error);
+    }
+  };
+
+  const handlePurchase = async () => {
+    try {
+      const res = await fetch(`/api/models/purchase/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelId }),
+      });
+      const data = await res.json();
+      if (data.status === "success" && data.data?.checkoutUrl) {
+        window.location.href = data.data.checkoutUrl;
+      } else {
+        toast.error(data.message || "Failed to start purchase");
+      }
+    } catch (error) {
+      toast.error("Failed to start purchase");
+      console.error(error);
+    }
   };
 
   if (loading) {
@@ -213,6 +251,12 @@ export function ModelProfileView({ modelId }: { modelId: string }) {
                 <span className="text-muted-foreground">Royalty Balance:</span>
                 <span className="font-semibold">${model.royaltyBalance.toFixed(2)}</span>
               </div>
+              {model.price && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Purchase Price:</span>
+                  <span className="font-semibold">${(model.price / 100).toFixed(2)}</span>
+                </div>
+              )}
             </div>
 
             {/* Consent Status */}
@@ -230,10 +274,57 @@ export function ModelProfileView({ modelId }: { modelId: string }) {
               )}
 
               {consentStatus?.status === "APPROVED" && (
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg mb-4">
                   <p className="text-sm text-green-700 dark:text-green-400">
-                    You have consent to use this model. Each generation costs $2.00.
+                    You have consent to use this model.
                   </p>
+                </div>
+              )}
+
+              {/* Purchase Status */}
+              {purchaseStatus && (
+                <div className="pt-4 border-t">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-medium">Purchase Status:</span>
+                    {purchaseStatus.isPurchased ? (
+                      <Badge className="bg-green-500">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Purchased
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">Not Purchased</Badge>
+                    )}
+                  </div>
+
+                  {!purchaseStatus.isPurchased && model.price && (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p className="text-sm text-blue-700 dark:text-blue-400 mb-2">
+                          Purchase this model to download non-watermarked images.
+                        </p>
+                        <p className="text-sm font-semibold">
+                          Price: ${(model.price / 100).toFixed(2)}
+                        </p>
+                      </div>
+                      {(!model.consentRequired || consentStatus?.status === "APPROVED") ? (
+                        <Button onClick={handlePurchase} className="w-full">
+                          Purchase Model Access
+                        </Button>
+                      ) : (
+                        <Button disabled className="w-full" variant="outline">
+                          Request Consent First
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {purchaseStatus.isPurchased && (
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <p className="text-sm text-green-700 dark:text-green-400">
+                        You have purchased access to this model. You can download non-watermarked images.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 

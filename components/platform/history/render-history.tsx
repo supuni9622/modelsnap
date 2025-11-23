@@ -16,6 +16,7 @@ interface Render {
   renderedImageUrl?: string;
   outputS3Url?: string;
   outputUrl?: string;
+  previewImageUrl?: string;
   status: "pending" | "processing" | "completed" | "failed";
   creditsUsed: number;
   errorMessage?: string;
@@ -129,6 +130,7 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFileName, setPreviewFileName] = useState<string>("");
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [renders, setRenders] = useState<Render[]>(initialRenders || []);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -173,6 +175,7 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
   const handlePreview = (imageUrl: string, renderId: string) => {
     setPreviewImage(imageUrl);
     setPreviewFileName(`render-${renderId}.jpg`);
+    setPreviewId(renderId);
     setPreviewOpen(true);
   };
 
@@ -269,12 +272,12 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                     </div>
                   </div>
 
-                  {(render.outputS3Url || render.renderedImageUrl || render.outputUrl) && render.status === "completed" && (
+                  {(render.previewImageUrl || render.outputS3Url || render.renderedImageUrl || render.outputUrl) && render.status === "completed" && (
                     <div>
                       <p className="text-sm font-medium mb-2">Rendered Result</p>
                       <div className="relative aspect-square rounded-lg border overflow-hidden">
                         <img
-                          src={render.outputS3Url || render.renderedImageUrl || render.outputUrl}
+                          src={render.previewImageUrl || render.outputS3Url || render.renderedImageUrl || render.outputUrl}
                           alt="Rendered result"
                           className="w-full h-full object-cover"
                         />
@@ -284,7 +287,7 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                           variant="outline"
                           size="sm"
                           className="flex-1"
-                          onClick={() => handlePreview(render.outputS3Url || render.renderedImageUrl || render.outputUrl || "", render._id)}
+                          onClick={() => handlePreview(render.previewImageUrl || render.outputS3Url || render.renderedImageUrl || render.outputUrl || "", render._id)}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Preview
@@ -294,13 +297,26 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                           size="sm"
                           className="flex-1"
                           onClick={async () => {
-                            const downloadUrl = `/api/render/download?id=${render._id}&type=ai`;
-                            const link = document.createElement("a");
-                            link.href = downloadUrl;
-                            link.download = `render-${render._id}.jpg`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            try {
+                              const downloadUrl = `/api/render/download?id=${render._id}&type=ai`;
+                              const response = await fetch(downloadUrl);
+                              if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.message || "Download failed");
+                              }
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.download = `render-${render._id}.jpg`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              window.URL.revokeObjectURL(url);
+                            } catch (error) {
+                              console.error("Download error:", error);
+                              alert((error as Error).message || "Failed to download image");
+                            }
                           }}
                         >
                           <Download className="h-4 w-4 mr-2" />
@@ -354,6 +370,8 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
           imageUrl={previewImage}
           imageTitle="Rendered Image Preview"
           downloadFileName={previewFileName}
+          generationId={previewId || undefined}
+          type="ai"
         />
       )}
     </>

@@ -36,6 +36,8 @@ export function GenerateForm() {
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<string | null>(null);
   const [generationType, setGenerationType] = useState<"ai" | "human">("ai");
+  const [modelId, setModelId] = useState<string | null>(null);
+  const [isPurchased, setIsPurchased] = useState<boolean | null>(null);
 
   // Fetch AI avatars
   const { data: avatarsData, isLoading: avatarsLoading } = useQuery({
@@ -82,14 +84,33 @@ export function GenerateForm() {
       }
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // Display the generated image immediately
-      // Prioritize S3 URL (watermarked) for free users, or FASHN URL
-      const imageUrl = data.data?.renderedImageUrl || data.data?.outputS3Url || data.data?.fashnImageUrl;
+      // Use previewImageUrl (watermarked) for display, or fallback to other URLs
+      const imageUrl = data.data?.previewImageUrl || data.data?.renderedImageUrl || data.data?.outputS3Url || data.data?.fashnImageUrl;
       if (imageUrl) {
         setGeneratedImageUrl(imageUrl);
         setGenerationId(data.data?.generationId);
-        setGenerationType(data.data?.type === "HUMAN_MODEL" ? "human" : "ai");
+        const isHuman = data.data?.type === "HUMAN_MODEL";
+        setGenerationType(isHuman ? "human" : "ai");
+        
+        // Check purchase status for human models
+        if (isHuman && selectedModel?._id) {
+          setModelId(selectedModel._id);
+          try {
+            const purchaseRes = await fetch(`/api/models/${selectedModel._id}/purchase-status`);
+            const purchaseData = await purchaseRes.json();
+            if (purchaseData.status === "success") {
+              setIsPurchased(purchaseData.data?.isPurchased || false);
+            }
+          } catch (error) {
+            console.error("Failed to check purchase status:", error);
+            setIsPurchased(false);
+          }
+        } else {
+          setIsPurchased(null);
+        }
+        
         setStep(3); // Show result step
         toast.success("Generation completed! Image is ready.");
       } else {
@@ -423,31 +444,80 @@ export function GenerateForm() {
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      // Download image via proxy to avoid CORS issues
-                      if (!generationId) {
-                        toast.error("Generation ID not found");
-                        return;
-                      }
-                      try {
-                        const downloadUrl = `/api/render/download?id=${generationId}&type=${generationType === "human" ? "human" : "ai"}`;
-                        const link = document.createElement("a");
-                        link.href = downloadUrl;
-                        link.download = `generated-${generationId || Date.now()}.jpg`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        toast.success("Download started");
-                      } catch (error) {
-                        console.error("Download error:", error);
-                        toast.error("Failed to download image");
-                      }
-                    }}
-                  >
-                    Download
-                  </Button>
+                  {/* Download button - disabled for unpurchased human models */}
+                  {generationType === "human" && isPurchased === false ? (
+                    <Button
+                      variant="outline"
+                      disabled
+                      title="Purchase model access to download"
+                    >
+                      Download (Purchase Required)
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        // Download image via proxy to avoid CORS issues
+                        if (!generationId) {
+                          toast.error("Generation ID not found");
+                          return;
+                        }
+                        try {
+                          const downloadUrl = `/api/render/download?id=${generationId}&type=${generationType === "human" ? "human" : "ai"}`;
+                          const response = await fetch(downloadUrl);
+                          if (!response.ok) {
+                            const errorData = await response.json();
+                            if (errorData.code === "PURCHASE_REQUIRED") {
+                              toast.error(errorData.message || "Purchase model access to download");
+                              return;
+                            }
+                            throw new Error(errorData.message || "Download failed");
+                          }
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `generated-${generationId || Date.now()}.jpg`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          window.URL.revokeObjectURL(url);
+                          toast.success("Download started");
+                        } catch (error) {
+                          console.error("Download error:", error);
+                          toast.error((error as Error).message || "Failed to download image");
+                        }
+                      }}
+                    >
+                      Download
+                    </Button>
+                  )}
+                  
+                  {/* Purchase button for unpurchased human models */}
+                  {generationType === "human" && isPurchased === false && modelId && (
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`/api/models/purchase/checkout`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ modelId }),
+                          });
+                          const data = await res.json();
+                          if (data.status === "success" && data.data?.checkoutUrl) {
+                            window.location.href = data.data.checkoutUrl;
+                          } else {
+                            toast.error(data.message || "Failed to start purchase");
+                          }
+                        } catch (error) {
+                          toast.error("Failed to start purchase");
+                          console.error(error);
+                        }
+                      }}
+                    >
+                      Purchase Model Access
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => {
