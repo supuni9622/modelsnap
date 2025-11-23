@@ -94,29 +94,44 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
     ]);
 
     // Combine and format results
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const allGenerations = [
-      ...renders.map((r: any) => ({
-        _id: r._id.toString(),
-        type: "AI_AVATAR" as const,
-        garmentImageUrl: r.garmentImageUrl,
-        outputS3Url: r.outputS3Url || r.outputUrl,
-        status: r.status,
-        creditsUsed: r.creditsUsed || 1,
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
-      })),
-      ...generations.map((g: any) => ({
-        _id: g._id.toString(),
-        type: "HUMAN_MODEL" as const,
-        garmentImageUrl: g.garmentImageUrl,
-        outputS3Url: g.outputS3Url,
-        status: g.status,
-        royaltyPaid: g.royaltyPaid || 0,
-        modelId: g.modelId?._id?.toString(),
-        modelName: g.modelId?.name,
-        createdAt: g.createdAt,
-        updatedAt: g.updatedAt,
-      })),
+      ...renders.map((r: any) => {
+        const renderId = r._id.toString();
+        const outputS3Url = r.outputS3Url || r.outputUrl;
+        return {
+          _id: renderId,
+          type: "AI_AVATAR" as const,
+          garmentImageUrl: r.garmentImageUrl,
+          outputS3Url: outputS3Url, // Original non-watermarked S3 URL (for download)
+          previewImageUrl: outputS3Url 
+            ? `${baseUrl}/api/images/${renderId}/watermarked?type=ai`
+            : undefined, // Watermarked preview URL
+          status: r.status,
+          creditsUsed: r.creditsUsed || 1,
+          createdAt: r.createdAt,
+          updatedAt: r.updatedAt,
+        };
+      }),
+      ...generations.map((g: any) => {
+        const generationId = g._id.toString();
+        const outputS3Url = g.outputS3Url;
+        return {
+          _id: generationId,
+          type: "HUMAN_MODEL" as const,
+          garmentImageUrl: g.garmentImageUrl,
+          outputS3Url: outputS3Url, // Original non-watermarked S3 URL (for download)
+          previewImageUrl: outputS3Url
+            ? `${baseUrl}/api/images/${generationId}/watermarked?type=human`
+            : undefined, // Watermarked preview URL
+          status: g.status,
+          royaltyPaid: g.royaltyPaid || 0,
+          modelId: g.modelId?._id?.toString(),
+          modelName: g.modelId?.name,
+          createdAt: g.createdAt,
+          updatedAt: g.updatedAt,
+        };
+      }),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const total = renderCount + generationCount;

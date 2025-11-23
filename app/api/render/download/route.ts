@@ -5,6 +5,8 @@ import { connectDB } from "@/lib/db";
 import Render from "@/models/render";
 import Generation from "@/models/generation";
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
+import { applyWatermark } from "@/lib/watermark";
 
 /**
  * GET /api/render/download
@@ -73,6 +75,7 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
       const generation = generationDoc as unknown as {
         _id: any;
         userId: any;
+        modelId?: any;
         outputS3Url?: string;
       };
 
@@ -90,6 +93,31 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
 
       // Generation model has outputS3Url field
       imageUrl = generation.outputS3Url || null;
+      
+      // Track if this is a human model and if it's purchased (for watermark logic)
+      const isHumanModel = !!generation.modelId;
+      let isPurchased = false;
+      
+      if (isHumanModel && generation.modelId) {
+        const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        if (businessProfile) {
+          isPurchased = businessProfile.purchasedModels.some(
+            (id: any) => id.toString() === generation.modelId?.toString()
+          );
+        }
+        
+        // Human models require purchase for download
+        if (!isPurchased) {
+          return NextResponse.json(
+            {
+              status: "error",
+              message: "Model must be purchased before downloading. Please purchase access to this model first.",
+              code: "PURCHASE_REQUIRED",
+            },
+            { status: 403 }
+          );
+        }
+      }
     } else {
       const renderDoc = await Render.findById(renderId).lean();
       if (!renderDoc) {
@@ -156,11 +184,36 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
         );
       }
 
-      const imageBuffer = await imageResponse.arrayBuffer();
+      const arrayBuffer = await imageResponse.arrayBuffer();
+      let imageBuffer: Buffer = Buffer.from(arrayBuffer);
       const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
 
+      // Determine if watermark should be applied based on permissions
+      let needsWatermark = false;
+      
+      if (type === "human") {
+        // Human models: watermark if not purchased (but we already blocked download if not purchased)
+        // So if we reach here, it's purchased = no watermark
+        needsWatermark = false;
+      } else {
+        // AI models: check subscription tier - watermark if free tier
+        const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        const isPaidTier = businessProfile?.subscriptionTier && businessProfile.subscriptionTier !== "free";
+        needsWatermark = !isPaidTier;
+      }
+
+      // Apply watermark if needed
+      if (needsWatermark) {
+        try {
+          imageBuffer = await applyWatermark(imageBuffer, "ModelSnap.ai");
+        } catch (watermarkError) {
+          console.error("Failed to apply watermark during download:", watermarkError);
+          // Continue with original if watermarking fails
+        }
+      }
+
       // Return the image with appropriate headers for download
-      return new NextResponse(imageBuffer, {
+      return new NextResponse(imageBuffer as any, {
         headers: {
           "Content-Type": contentType,
           "Content-Disposition": `attachment; filename="generated-${renderId}.${contentType.includes("png") ? "png" : "jpg"}"`,

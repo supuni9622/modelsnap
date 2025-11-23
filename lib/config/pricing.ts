@@ -3,7 +3,7 @@
  * Choose your preferred payment provider: "stripe", "lemonsqueezy", or "webxpay"
  * Make sure to configure the corresponding environment variables
  */
-export const paymentProvider: "stripe" | "lemonsqueezy" | "webxpay" = "lemonsqueezy";
+export const paymentProvider: "stripe" | "lemonsqueezy" | "webxpay" = "stripe";
 
 /**
  * CURRENCY CONFIGURATION

@@ -48,11 +48,8 @@ export async function processRenderRequest(
         return { success: false, error: "Model profile not found" };
       }
 
-      // Check consent
-      const hasConsent = await checkConsentStatus(userId, modelId);
-      if (!hasConsent) {
-        return { success: false, error: "Consent not granted for this model" };
-      }
+      // No consent required for generation (preview only)
+      // Consent is only required for purchase
 
       // Use first reference image
       modelImageUrl = modelProfile.referenceImages?.[0] || "";
@@ -70,8 +67,7 @@ export async function processRenderRequest(
     const fashnResponse = await fashnClient.virtualTryOn({
       garment_image: garmentImageUrl,
       model_image: modelImageUrl,
-      prompt: "photo-realistic fit, natural shadows",
-      resolution: 768,
+      mode: "balanced", // performance | balanced | quality
     });
 
     const fashnImageUrl = fashnResponse.image_url;
@@ -91,14 +87,8 @@ export async function processRenderRequest(
           const arrayBuffer = await imageResponse.arrayBuffer();
           let imageBuffer: Buffer = Buffer.from(arrayBuffer);
 
-          // Apply watermark for free users
-          if (shouldApplyWatermark(user.plan?.id, user.plan?.isPremium)) {
-            try {
-              imageBuffer = (await applyWatermark(imageBuffer, "ModelSnap.ai")) as Buffer;
-            } catch (watermarkError) {
-              logger.error("Failed to apply watermark", watermarkError as Error);
-            }
-          }
+          // Store original non-watermarked image in S3
+          // Watermarking will be applied on-the-fly when needed
 
           const s3Key = generateS3Key("generated", userId);
           
@@ -198,20 +188,23 @@ export async function processNextBatch(): Promise<boolean> {
       return false; // No batches to process
     }
 
+    // Type assertion: findOne().lean() returns a single document or null
+    const batchDoc = batch as any;
+
     // Mark batch as processing
-    await RenderQueue.findByIdAndUpdate(batch._id, {
+    await RenderQueue.findByIdAndUpdate(batchDoc._id, {
       status: "processing",
       startedAt: new Date(),
       processedBy: `worker-${Date.now()}`,
     });
 
-    logger.info("Processing render batch", { batchId: batch.batchId });
+    logger.info("Processing render batch", { batchId: batchDoc.batchId });
 
     // Process each request in the batch
     let completed = 0;
     let failed = 0;
 
-    for (const request of batch.requests) {
+    for (const request of batchDoc.requests) {
       if (request.status === "completed") {
         completed++;
         continue;
@@ -224,7 +217,7 @@ export async function processNextBatch(): Promise<boolean> {
 
       // Update request status to processing
       await RenderQueue.updateOne(
-        { _id: batch._id, "requests._id": request._id },
+        { _id: batchDoc._id, "requests._id": request._id },
         {
           $set: {
             "requests.$.status": "processing",
@@ -233,11 +226,11 @@ export async function processNextBatch(): Promise<boolean> {
       );
 
       // Process the request
-      const result = await processRenderRequest(request, batch.userId.toString(), batch.batchId);
+      const result = await processRenderRequest(request, batchDoc.userId.toString(), batchDoc.batchId);
 
       if (result.success) {
         await RenderQueue.updateOne(
-          { _id: batch._id, "requests._id": request._id },
+          { _id: batchDoc._id, "requests._id": request._id },
           {
             $set: {
               "requests.$.status": "completed",
@@ -251,7 +244,7 @@ export async function processNextBatch(): Promise<boolean> {
       } else {
         const newRetryCount = (request.retryCount || 0) + 1;
         await RenderQueue.updateOne(
-          { _id: batch._id, "requests._id": request._id },
+          { _id: batchDoc._id, "requests._id": request._id },
           {
             $set: {
               "requests.$.status": newRetryCount >= 3 ? "failed" : "pending",
@@ -270,8 +263,8 @@ export async function processNextBatch(): Promise<boolean> {
     }
 
     // Mark batch as completed or failed
-    const finalStatus = failed === batch.totalRequests ? "failed" : "completed";
-    await RenderQueue.findByIdAndUpdate(batch._id, {
+    const finalStatus = failed === batchDoc.totalRequests ? "failed" : "completed";
+    await RenderQueue.findByIdAndUpdate(batchDoc._id, {
       status: finalStatus,
       completedAt: new Date(),
       completedCount: completed,
@@ -279,7 +272,7 @@ export async function processNextBatch(): Promise<boolean> {
     });
 
     logger.info("Render batch processing complete", {
-      batchId: batch.batchId,
+      batchId: batchDoc.batchId,
       status: finalStatus,
       completed,
       failed,

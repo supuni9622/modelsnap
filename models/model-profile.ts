@@ -21,10 +21,33 @@ const ModelProfileSchema = new Schema(
       required: true,
     },
 
-    // Royalty tracking
+    // Royalty tracking (deprecated - kept for backward compatibility)
     royaltyBalance: {
       type: Number,
       default: 0,
+      required: true,
+    },
+
+    // Model purchase price (in cents)
+    price: {
+      type: Number,
+      default: 0,
+      required: true,
+      // Model can set their purchase price
+    },
+
+    // Total earnings from purchases (90% of purchase price)
+    availableBalance: {
+      type: Number,
+      default: 0,
+      required: true,
+      // Accumulated from model purchases
+    },
+
+    // Whether consent is required before purchase
+    consentRequired: {
+      type: Boolean,
+      default: false,
       required: true,
     },
 

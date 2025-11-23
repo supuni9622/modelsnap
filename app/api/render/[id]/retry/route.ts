@@ -3,6 +3,7 @@ import Generation from "@/models/generation";
 import Render from "@/models/render";
 import User from "@/models/user";
 import ModelProfile from "@/models/model-profile";
+import BusinessProfile from "@/models/business-profile";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiter";
@@ -160,18 +161,8 @@ export async function POST(
           );
         }
 
-        // Check consent
-        const hasConsent = await checkConsentStatus(userId, modelProfile._id.toString());
-        if (!hasConsent) {
-          return NextResponse.json(
-            {
-              status: "error",
-              message: "Consent not granted for this model",
-              code: "CONSENT_REQUIRED",
-            },
-            { status: 403 }
-          );
-        }
+        // No consent required for generation (preview only)
+        // Consent is only required for purchase
 
         modelImageUrl = modelProfile.referenceImages?.[0] || "";
       } else if (render) {
@@ -231,8 +222,7 @@ export async function POST(
       const fashnResponse = await fashnClient.virtualTryOn({
         garment_image: garmentImageUrl,
         model_image: modelImageUrl,
-        prompt: "photo-realistic fit, natural shadows",
-        resolution: 768,
+        mode: "balanced", // performance | balanced | quality
       });
 
       const fashnImageUrl = fashnResponse.image_url;
@@ -252,14 +242,8 @@ export async function POST(
             const arrayBuffer = await imageResponse.arrayBuffer();
             let imageBuffer: Buffer = Buffer.from(arrayBuffer);
 
-            // Apply watermark for free users
-            if (shouldApplyWatermark(user.plan?.id, user.plan?.isPremium)) {
-              try {
-                imageBuffer = (await applyWatermark(imageBuffer, "ModelSnap.ai")) as Buffer;
-              } catch (watermarkError) {
-                logger.error("Failed to apply watermark", watermarkError as Error);
-              }
-            }
+            // Store original non-watermarked image in S3
+            // Watermarking will be applied on-the-fly when needed
 
             const s3Key = generateS3Key("generated", userId);
             

@@ -82,13 +82,19 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       // Check if business profile already exists
       const existingBusinessProfile = await BusinessProfile.findOne({ userId: updatedUser._id });
       if (!existingBusinessProfile) {
-        // Create business profile automatically
+        // Create business profile automatically with all new fields
+        const currentDate = new Date();
         await BusinessProfile.create({
           userId: updatedUser._id,
           businessName: `${updatedUser.firstName || ""} ${updatedUser.lastName || ""}`.trim() || "My Business",
           description: "",
-          aiCredits: updatedUser.credits || 0,
-          subscriptionStatus: updatedUser.plan?.type === "free" ? "FREE" : "STARTER",
+          aiCredits: updatedUser.credits || 0, // Legacy field
+          subscriptionTier: "free",
+          aiCreditsRemaining: 3,
+          aiCreditsTotal: 3,
+          subscriptionStatus: "active",
+          lastCreditReset: currentDate,
+          creditResetDay: currentDate.getDate(),
           approvedModels: [],
         });
         console.log("✅ Business profile created automatically for user:", userId);

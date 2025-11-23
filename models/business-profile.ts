@@ -33,15 +33,61 @@ const BusinessProfileSchema = new Schema(
       required: true,
     },
 
+    // New credit system fields
+    subscriptionTier: {
+      type: String,
+      enum: ["free", "starter", "growth"],
+      default: "free",
+      // Indexed below
+    },
+
+    aiCreditsRemaining: {
+      type: Number,
+      default: 3,
+      required: true,
+    },
+
+    aiCreditsTotal: {
+      type: Number,
+      default: 3,
+      required: true,
+    },
+
+    stripeSubscriptionId: {
+      type: String,
+      // Indexed below
+    },
+
+    subscriptionCurrentPeriodEnd: {
+      type: Date,
+    },
+
     subscriptionStatus: {
       type: String,
-      enum: ["FREE", "STARTER", "GROWTH", "CANCELLED"],
-      default: "FREE",
-      // Indexed below
+      enum: ["active", "past_due", "canceled", "trialing"],
+      default: "active",
+    },
+
+    // Free tier credit reset tracking
+    lastCreditReset: {
+      type: Date,
+      default: Date.now,
+    },
+
+    creditResetDay: {
+      type: Number,
+      default: new Date().getDate(), // Day of month (1-31)
     },
 
     // Human model access
     approvedModels: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "ModelProfile",
+      },
+    ],
+
+    purchasedModels: [
       {
         type: Schema.Types.ObjectId,
         ref: "ModelProfile",
@@ -73,8 +119,12 @@ const BusinessProfileSchema = new Schema(
 
 // Indexes for efficient queries
 // Note: userId already has a unique index from unique: true, so we don't need to define it again
-BusinessProfileSchema.index({ subscriptionStatus: 1 });
+BusinessProfileSchema.index({ subscriptionStatus: 1 }); // Legacy field
+BusinessProfileSchema.index({ subscriptionTier: 1 });
 BusinessProfileSchema.index({ stripeCustomerId: 1 });
+BusinessProfileSchema.index({ stripeSubscriptionId: 1 });
+BusinessProfileSchema.index({ subscriptionCurrentPeriodEnd: 1 });
+BusinessProfileSchema.index({ purchasedModels: 1 });
 
 const BusinessProfile =
   mongoose.models.BusinessProfile ||
