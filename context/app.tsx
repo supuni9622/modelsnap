@@ -18,6 +18,8 @@ interface Billing {
     priceId: string;
   };
   credits: number;
+  totalCredits?: number;
+  renewalDate?: string | null;
 }
 
 // Define the User interface

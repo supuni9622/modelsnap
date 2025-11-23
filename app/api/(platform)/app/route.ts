@@ -95,10 +95,14 @@ export const GET = async (req: NextRequest) => {
 
     // For business users, get credits from BusinessProfile
     let credits = user.credits || 0;
+    let totalCredits = credits;
+    let renewalDate: Date | null = null;
     if (user.role === "BUSINESS") {
       const businessProfile = await BusinessProfile.findOne({ userId: user._id });
       if (businessProfile) {
         credits = businessProfile.aiCreditsRemaining || 0;
+        totalCredits = businessProfile.aiCreditsTotal || credits;
+        renewalDate = businessProfile.subscriptionCurrentPeriodEnd || null;
       }
     }
 
@@ -112,6 +116,8 @@ export const GET = async (req: NextRequest) => {
           plan,
           details: user.plan,
           credits,
+          totalCredits,
+          renewalDate: renewalDate ? renewalDate.toISOString() : null,
         },
         myFeedback: {
           submited: feedback?.id ? true : false,
