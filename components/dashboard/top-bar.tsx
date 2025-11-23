@@ -7,6 +7,7 @@ import SubscriptionBadge from "@/components/buttons/subscription-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import type { UserRole } from "@/lib/auth-utils";
+import { motion } from "framer-motion";
 
 interface DashboardTopBarProps {
   role: UserRole;
@@ -16,33 +17,78 @@ export function DashboardTopBar({ role }: DashboardTopBarProps) {
   const getRoleLabel = () => {
     switch (role) {
       case "BUSINESS":
-        return "Business";
+        return { label: "Business", emoji: "💼" };
       case "MODEL":
-        return "Model";
+        return { label: "Model", emoji: "👤" };
       case "ADMIN":
-        return "Admin";
+        return { label: "Admin", emoji: "⚙️" };
       default:
-        return "";
+        return { label: "", emoji: "" };
     }
   };
 
+  const roleInfo = getRoleLabel();
+
   return (
-    <header className="w-full h-[55px] flex items-center px-4 md:px-6 sticky top-0 bg-background/70 backdrop-blur-md z-50 border-b">
-      <SidebarTrigger />
-      <div className="flex justify-end w-full items-center space-x-4">
-        <Badge variant="secondary" className="hidden sm:flex">
-          {getRoleLabel()}
-        </Badge>
+    <motion.header
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="w-full h-[60px] flex items-center px-3 md:px-6 sticky top-0 bg-background/80 backdrop-blur-lg z-50 border-b shadow-sm"
+    >
+      <div className="flex items-center gap-2 md:gap-3">
+        <SidebarTrigger />
+      </div>
+      <div className="flex justify-end w-full items-center gap-2 md:gap-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          className="hidden sm:flex"
+        >
+          <Badge
+            variant="secondary"
+            className="gap-1.5 px-3 py-1.5 font-medium text-xs md:text-sm"
+          >
+            <span className="text-base">{roleInfo.emoji}</span>
+            <span>{roleInfo.label}</span>
+          </Badge>
+        </motion.div>
         {role === "BUSINESS" && (
           <>
-            <SubscriptionBadge />
-            <MyCreditsButton />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.15 }}
+              className="hidden md:flex"
+            >
+              <SubscriptionBadge />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <MyCreditsButton />
+            </motion.div>
           </>
         )}
-        <ThemeToggle />
-        <AccountButton />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.25 }}
+        >
+          <ThemeToggle />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <AccountButton />
+        </motion.div>
       </div>
-    </header>
+    </motion.header>
   );
 }
 
