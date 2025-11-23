@@ -150,11 +150,19 @@ export async function PUT(
 
       // Parse request body
       const body = await req.json();
-      const { name, referenceImages, status, consentSigned } = body;
+      const { name, referenceImages, status, consentSigned, phoneNumber, paymentMethods, activeness } = body;
 
       // Build update object
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
+      
+      // Personal information fields
+      if (phoneNumber !== undefined) {
+        updateData.phoneNumber = phoneNumber && phoneNumber.trim() ? phoneNumber.trim() : undefined;
+      }
+      if (paymentMethods !== undefined) updateData.paymentMethods = paymentMethods;
+      if (activeness !== undefined) updateData.activeness = activeness;
+      
       // Allow owner to set status to paused or inactive, admin can set any status
       if (status !== undefined) {
         if (isAdmin) {

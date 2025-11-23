@@ -53,6 +53,11 @@ const modelNavItems = [
     path: "/dashboard/model/profile",
   },
   {
+    label: "Portfolio",
+    emoji: "📸",
+    path: "/dashboard/model/portfolio",
+  },
+  {
     label: "Requests",
     emoji: "📋",
     path: "/dashboard/model/requests",
