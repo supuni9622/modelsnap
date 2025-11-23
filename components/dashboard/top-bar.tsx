@@ -38,6 +38,19 @@ export function DashboardTopBar({ role }: DashboardTopBarProps) {
     >
       <div className="flex items-center gap-2 md:gap-3">
         <SidebarTrigger />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.05 }}
+          className="hidden sm:flex"
+        >
+          <Badge
+            variant="outline"
+            className="gap-1.5 px-2 py-1 font-semibold text-xs border-primary/30 text-primary bg-primary/5"
+          >
+            <span className="text-[10px]">BETA</span>
+          </Badge>
+        </motion.div>
       </div>
       <div className="flex justify-end w-full items-center gap-2 md:gap-4">
         <motion.div
