@@ -4,6 +4,12 @@
 **Last Updated**: November 23, 2025  
 **Status**: Ready for Testing
 
+**Recent Updates:**
+- ✅ Subscription upgrade/downgrade now updates existing subscription (no duplicates)
+- ✅ Duplicate customer prevention implemented
+- ✅ Success page redirect fixed (locale prefix added)
+- ✅ Invoice validation for upgrades (ensures no $0 invoices)
+
 ---
 
 ## ✅ Prerequisites
@@ -138,12 +144,13 @@ curl http://localhost:3000/api/render/download?id={generationId}&type=ai
 
 **Expected Result:**
 - ✅ Redirects to Stripe checkout page
-- ✅ After successful payment, redirects to success page
+- ✅ After successful payment, redirects to success page (`/en/dashboard/business/billing/success-payment`)
 - ✅ `subscriptionTier = "starter"`
 - ✅ `aiCreditsRemaining = 40`
 - ✅ `aiCreditsTotal = 40`
 - ✅ `stripeSubscriptionId` is set
 - ✅ `subscriptionStatus = "active"`
+- ✅ **No duplicate Stripe customers**: Reuses existing customer if found by email
 
 **Stripe Test Cards:**
 - Success: `4242 4242 4242 4242`
@@ -283,17 +290,37 @@ curl -X POST http://localhost:3000/api/cron/reset-free-credits
 
 ---
 
-### Test 10: Subscription Upgrade/Downgrade
+### Test 10: Subscription Upgrade/Downgrade ✅ TESTED & WORKING
 
 **Steps:**
-1. As Starter plan user, upgrade to Growth
-2. Verify credits immediately updated to 100
-3. Downgrade back to Starter
-4. Verify credits capped at 40 (if had more than 40, keep remaining up to 40)
+1. As Starter plan user, click "Upgrade" on Growth plan
+2. System detects existing subscription and updates it (no new subscription created)
+3. Verify in Stripe Dashboard: Only ONE subscription exists (not multiple)
+4. Verify credits immediately updated to 100
+5. Downgrade back to Starter
+6. Verify subscription updated (not new one created)
+7. Verify credits capped at 40 (if had more than 40, keep remaining up to 40)
+8. Check invoices: Should have proper amounts (not $0 for upgrades)
 
 **Expected Result:**
+- ✅ **No duplicate subscriptions**: Updates existing subscription instead of creating new one
+- ✅ **No duplicate customers**: Reuses existing Stripe customer
 - ✅ Upgrade: Credits jump to new tier limit immediately
 - ✅ Downgrade: Credits capped at new tier limit
+- ✅ **Invoices created correctly**: Upgrades have positive amounts, downgrades may have credits
+- ✅ **Success page redirects correctly**: After payment, redirects to `/en/dashboard/business/billing/success-payment`
+
+**Implementation Details:**
+- System checks `BusinessProfile.stripeSubscriptionId` first
+- Falls back to listing Stripe subscriptions if not in database
+- Updates subscription directly via `stripe.subscriptions.update()`
+- Creates prorated invoices automatically
+- Validates invoice amounts (upgrades should never be $0)
+
+**Stripe Dashboard Verification:**
+- Check customer page: Should show only ONE active subscription
+- Check subscription details: Price should update when plan changes
+- Check invoices: Should show prorated amounts for plan changes
 
 ---
 
@@ -424,6 +451,24 @@ curl http://localhost:3000/api/business/profile
    - Verify watermarking API endpoint is accessible
    - Check S3 image URLs are correct
 
+5. **Duplicate subscriptions created:**
+   - ✅ FIXED (November 23, 2025): System now checks for existing subscriptions before creating new ones
+   - ✅ FIXED: Updates existing subscription instead of creating duplicate
+   - Verify `BusinessProfile.stripeSubscriptionId` is set correctly
+   - Check Stripe Dashboard: Should only see ONE active subscription per customer
+   - If you see multiple subscriptions, check server logs for subscription detection
+
+6. **Duplicate customers in Stripe:**
+   - ✅ FIXED (November 23, 2025): System now checks for existing customers by email before creating new ones
+   - ✅ FIXED: Reuses existing Stripe customer if found
+   - Check Stripe Dashboard: Should only see ONE customer per email address
+
+7. **Success page not redirecting after payment:**
+   - ✅ FIXED (November 23, 2025): Success URLs now include locale prefix (`/en/`)
+   - Verify URL format: `${publicUrl}/en/dashboard/business/billing/success-payment`
+   - Check browser console for redirect errors
+   - Verify Stripe checkout session has correct `success_url` in logs
+
 ---
 
 ## 📊 Test Results Template
@@ -442,7 +487,12 @@ Test 6: Model Purchase (No Consent) [ ] Pass [ ] Fail
 Test 7: Model Purchase (Consent)  [ ] Pass [ ] Fail
 Test 8: Monthly Credit Reset     [ ] Pass [ ] Fail
 Test 9: Free Tier Reset           [ ] Pass [ ] Fail
-Test 10: Upgrade/Downgrade        [ ] Pass [ ] Fail
+Test 10: Upgrade/Downgrade        [x] Pass [ ] Fail
+- ✅ No duplicate subscriptions created
+- ✅ Existing subscription updated correctly
+- ✅ Credits updated immediately
+- ✅ Invoices created with proper amounts
+- ✅ Success page redirects correctly (fixed November 23, 2025)
 Test 11: Cancellation             [ ] Pass [ ] Fail
 Test 12: Payment Failure          [ ] Pass [ ] Fail
 Test 13: Watermarking System      [ ] Pass [ ] Fail
@@ -472,7 +522,10 @@ Test 13: Watermarking System      [ ] Pass [ ] Fail
 - [ ] Free tier credit reset after 30 days
 - [ ] Subscription cancellation downgrades to free
 - [ ] Payment failure blocks generation
-- [ ] Upgrade/downgrade handles credits correctly
+- [x] Upgrade/downgrade handles credits correctly ✅ (Fixed November 23, 2025)
+- [x] No duplicate subscriptions on upgrade/downgrade ✅ (Fixed November 23, 2025)
+- [x] No duplicate customers created ✅ (Fixed November 23, 2025)
+- [x] Success page redirects correctly after payment ✅ (Fixed November 23, 2025)
 
 ---
 
