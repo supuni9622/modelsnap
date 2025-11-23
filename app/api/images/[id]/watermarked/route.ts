@@ -132,6 +132,12 @@ export async function GET(
       });
 
       if (!imageResponse.ok) {
+        const fetchError = new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
+        logger.error("Failed to fetch image from S3", fetchError, {
+          imageUrl,
+          status: imageResponse.status,
+          statusText: imageResponse.statusText,
+        });
         return NextResponse.json(
           {
             status: "error",
@@ -143,20 +149,45 @@ export async function GET(
       }
 
       // Apply watermark on-the-fly
-      const arrayBuffer = await imageResponse.arrayBuffer();
-      const imageBuffer = Buffer.from(arrayBuffer);
-      const watermarkedBuffer = await applyWatermark(imageBuffer, "ModelSnap.ai");
+      try {
+        const arrayBuffer = await imageResponse.arrayBuffer();
+        const imageBuffer = Buffer.from(arrayBuffer);
+        const watermarkedBuffer = await applyWatermark(imageBuffer, "ModelSnap.ai");
+        
+        const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
 
-      const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
+        logger.info("Watermarked image served", {
+          id,
+          type,
+          imageUrl,
+          originalSize: imageBuffer.length,
+          watermarkedSize: watermarkedBuffer.length,
+        });
 
-      // Return watermarked image with cache headers
-      return new NextResponse(watermarkedBuffer as any, {
-        headers: {
-          "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable", // Cache for 1 year
-          "CDN-Cache-Control": "public, max-age=31536000, immutable",
-        },
-      });
+        // Return watermarked image with cache headers
+        return new NextResponse(watermarkedBuffer as any, {
+          headers: {
+            "Content-Type": contentType,
+            "Cache-Control": "public, max-age=31536000, immutable", // Cache for 1 year
+            "CDN-Cache-Control": "public, max-age=31536000, immutable",
+          },
+        });
+      } catch (watermarkError) {
+        logger.error("Failed to apply watermark", watermarkError as Error, {
+          id,
+          type,
+          imageUrl,
+        });
+        // Return error instead of original image to make the issue visible
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Failed to apply watermark",
+            code: "WATERMARK_ERROR",
+          },
+          { status: 500 }
+        );
+      }
     } catch (error) {
       logger.error("Error serving watermarked image", error as Error);
       return NextResponse.json(

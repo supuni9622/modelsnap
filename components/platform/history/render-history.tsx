@@ -277,9 +277,24 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                       <p className="text-sm font-medium mb-2">Rendered Result</p>
                       <div className="relative aspect-square rounded-lg border overflow-hidden">
                         <img
-                          src={render.previewImageUrl || render.outputS3Url || render.renderedImageUrl || render.outputUrl}
+                          src={(() => {
+                            // Always use watermarked preview URL for display
+                            // Never use original URLs directly (they're non-watermarked)
+                            if (render.previewImageUrl) {
+                              return render.previewImageUrl;
+                            }
+                            if (render.outputS3Url || render.renderedImageUrl || render.outputUrl) {
+                              // Construct watermarked URL from render ID
+                              // Use absolute URL to ensure it works correctly
+                              const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+                              // Add cache-busting parameter to ensure fresh watermarked image
+                              return `${baseUrl}/api/images/${render._id}/watermarked?type=ai&v=1`;
+                            }
+                            return "";
+                          })()}
                           alt="Rendered result"
                           className="w-full h-full object-cover"
+                          key={`watermarked-${render._id}`} // Force re-render to avoid cache
                         />
                       </div>
                       <div className="flex gap-2 mt-2">

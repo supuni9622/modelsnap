@@ -11,11 +11,12 @@
 - ✅ On-the-fly watermarking API (`/api/images/[id]/watermarked`)
 - ✅ Generation endpoints return preview URLs (watermarked) and original URLs
 
-**Frontend Status: ~0% Complete** ❌
-- ❌ Purchase button components
-- ❌ Download button updates
-- ❌ Purchase status displays
-- ❌ Update frontend to use `previewImageUrl` for display
+**Frontend Status: ~60% Complete** ✅
+- ⚠️ Purchase button components (partially complete)
+- ✅ Download button updates (purchase checks implemented)
+- ⚠️ Purchase status displays (partially complete)
+- ✅ Update frontend to use `previewImageUrl` for display
+- ✅ History views display watermarked images correctly
 
 **Payout System: Needs Update** ⚠️
 - ⚠️ Update to use `availableBalance` instead of `royaltyBalance`
@@ -183,14 +184,18 @@ Human Models:
   - Show "Purchase Required" tooltip/message
   - Show purchase button if not purchased
 
-- ❌ Update `components/dashboard/business/history-list.tsx`:
-  - Check purchase status for each human model generation
-  - Conditionally disable download button
-  - Show purchase prompt
+- ✅ Update `components/dashboard/business/history-list.tsx`:
+  - ✅ Uses `previewImageUrl` for displaying watermarked images
+  - ✅ Constructs watermarked URL if `previewImageUrl` not available
+  - ✅ Checks purchase status for each human model generation
+  - ✅ Conditionally disables download button
+  - ✅ Shows purchase prompt when needed
 
-- ❌ Update `components/platform/history/render-history.tsx`:
-  - Same download permission checks
-  - Conditional button rendering
+- ✅ Update `components/platform/history/render-history.tsx`:
+  - ✅ Uses `previewImageUrl` for displaying watermarked images
+  - ✅ Constructs watermarked URL if `previewImageUrl` not available
+  - ✅ Same download permission checks
+  - ✅ Conditional button rendering
 
 ### 2. Frontend Model Purchase UI
 
@@ -274,15 +279,17 @@ Human Models:
 - [ ] Download enabled for purchased models
 
 ### Watermarking
-- [ ] AI model + Free tier → Preview watermarked, download watermarked
-- [ ] AI model + Paid tier → Preview watermarked, download non-watermarked
-- [ ] Human model + Not purchased → Preview watermarked, download blocked
-- [ ] Human model + Purchased → Preview watermarked, download non-watermarked
-- [ ] On-the-fly watermarking API returns correct watermarked images
-- [ ] Download endpoint applies watermark correctly for free tier AI models
-- [ ] Download endpoint serves non-watermarked for paid tier AI models
-- [ ] Download endpoint blocks unpurchased human models
-- [ ] Download endpoint serves non-watermarked for purchased human models
+- [x] AI model + Free tier → Preview watermarked, download watermarked
+- [x] AI model + Paid tier → Preview watermarked, download non-watermarked
+- [x] Human model + Not purchased → Preview watermarked, download blocked
+- [x] Human model + Purchased → Preview watermarked, download non-watermarked
+- [x] On-the-fly watermarking API returns correct watermarked images
+- [x] Download endpoint applies watermark correctly for free tier AI models
+- [x] Download endpoint serves non-watermarked for paid tier AI models
+- [x] Download endpoint blocks unpurchased human models
+- [x] Download endpoint serves non-watermarked for purchased human models
+- [x] History view displays watermarked images correctly (fixed November 23, 2025)
+- [x] History view displays watermarked images correctly
 
 ---
 

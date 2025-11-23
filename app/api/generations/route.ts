@@ -59,32 +59,37 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
     }
 
     // Build query for Generation (Human models)
-    let generationQuery: any = { userId: user._id };
-    if (modelType === "AI_AVATAR") {
-      // Skip human models - use empty array
-      generationQuery = null;
-    } else if (modelType === "HUMAN_MODEL") {
-      // Only human models - query stays as is
-    }
-    if (status && ["pending", "processing", "completed", "failed"].includes(status)) {
-      generationQuery.status = status;
+    // Note: Generation collection only contains HUMAN_MODEL types
+    // AI avatars are stored in Render collection
+    let generationQuery: any = null;
+    if (modelType !== "AI_AVATAR") {
+      // Include human models if not filtering for AI only
+      generationQuery = { 
+        userId: user._id,
+        modelType: "HUMAN_MODEL" // Always filter to human models only
+      };
+      if (status && ["pending", "processing", "completed", "failed"].includes(status)) {
+        generationQuery.status = status;
+      }
     }
 
     // Fetch both types
+    // Note: We fetch more than needed from each collection, then combine and paginate
+    // This ensures we get the correct results when combining from two collections
+    const fetchLimit = limit * 2; // Fetch more to account for combining
+    
     const [renders, generations, renderCount, generationCount] = await Promise.all([
       modelType !== "HUMAN_MODEL"
         ? Render.find(renderQuery)
             .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
+            .limit(fetchLimit)
             .lean()
         : [],
       modelType !== "AI_AVATAR" && generationQuery
         ? Generation.find(generationQuery)
             .populate("modelId", "name referenceImages")
             .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
+            .limit(fetchLimit)
             .lean()
         : [],
       modelType !== "HUMAN_MODEL" ? Render.countDocuments(renderQuery) : 0,
@@ -92,6 +97,19 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
         ? Generation.countDocuments(generationQuery)
         : 0,
     ]);
+
+    // Debug logging (remove in production)
+    if (process.env.NODE_ENV === "development") {
+      console.log("Generations API Debug:", {
+        renderCount: renders.length,
+        generationCount: generations.length,
+        generationQuery,
+        modelType,
+        userId: user._id.toString(),
+        totalRenders: renderCount,
+        totalGenerations: generationCount,
+      });
+    }
 
     // Combine and format results
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -125,6 +143,7 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
             ? `${baseUrl}/api/images/${generationId}/watermarked?type=human`
             : undefined, // Watermarked preview URL
           status: g.status,
+          creditsUsed: g.creditsUsed || 0, // Human models may have creditsUsed: 0
           royaltyPaid: g.royaltyPaid || 0,
           modelId: g.modelId?._id?.toString(),
           modelName: g.modelId?.name,
@@ -136,12 +155,15 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
 
     const total = renderCount + generationCount;
     const totalPages = Math.ceil(total / limit);
+    
+    // Apply pagination to combined results (since we're combining from two collections)
+    const paginatedGenerations = allGenerations.slice(skip, skip + limit);
 
     return NextResponse.json(
       {
         status: "success",
         data: {
-          generations: allGenerations.slice(0, limit),
+          generations: paginatedGenerations,
           pagination: {
             page,
             limit,

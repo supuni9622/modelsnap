@@ -1,7 +1,8 @@
 # Payment & Credit System Implementation Summary
 
-**Date**: November 23,2025  
-**Status**: Backend ~98% Complete | Frontend ~0% Complete
+**Date**: November 23, 2025  
+**Last Updated**: November 23, 2025  
+**Status**: Backend ~98% Complete | Frontend ~60% Complete
 
 ---
 
@@ -154,14 +155,18 @@ We have successfully implemented a comprehensive payment and credit management s
   - Show "Purchase Required" message
   - Show purchase button if not purchased
 
-- ❌ Update `components/dashboard/business/history-list.tsx`:
-  - Check purchase status for each human model generation
-  - Conditionally disable download button
-  - Show purchase prompt
+- ✅ Update `components/dashboard/business/history-list.tsx`:
+  - ✅ Uses `previewImageUrl` for displaying watermarked images
+  - ✅ Constructs watermarked URL if `previewImageUrl` not available
+  - ✅ Checks purchase status for each human model generation
+  - ✅ Conditionally disables download button
+  - ✅ Shows purchase prompt when needed
 
-- ❌ Update `components/platform/history/render-history.tsx`:
-  - Same download permission checks
-  - Conditional button rendering
+- ✅ Update `components/platform/history/render-history.tsx`:
+  - ✅ Uses `previewImageUrl` for displaying watermarked images
+  - ✅ Constructs watermarked URL if `previewImageUrl` not available
+  - ✅ Same download permission checks
+  - ✅ Conditional button rendering
 
 #### 2. Model Purchase UI
 - ❌ **Purchase Button Component**:
@@ -176,8 +181,9 @@ We have successfully implemented a comprehensive payment and credit management s
   - Show consent request status if consent required
 
 #### 3. Frontend Image Display
-- ❌ Update frontend to use `previewImageUrl` for displaying generated images
-- ❌ Ensure all image previews use the watermarked endpoint
+- ✅ Update frontend to use `previewImageUrl` for displaying generated images
+- ✅ Ensure all image previews use the watermarked endpoint
+- ✅ History views now display watermarked images correctly
 
 ### Payout System Updates
 - ⚠️ Update payout system to use `availableBalance` instead of `royaltyBalance`
@@ -271,15 +277,17 @@ We have successfully implemented a comprehensive payment and credit management s
 - [ ] Download enabled for purchased models
 
 ### Watermarking
-- [ ] AI model + Free tier → Preview watermarked, download watermarked
-- [ ] AI model + Paid tier → Preview watermarked, download non-watermarked
-- [ ] Human model + Not purchased → Preview watermarked, download blocked
-- [ ] Human model + Purchased → Preview watermarked, download non-watermarked
-- [ ] On-the-fly watermarking API returns correct watermarked images
-- [ ] Download endpoint applies watermark correctly for free tier AI models
-- [ ] Download endpoint serves non-watermarked for paid tier AI models
-- [ ] Download endpoint blocks unpurchased human models
-- [ ] Download endpoint serves non-watermarked for purchased human models
+- [x] AI model + Free tier → Preview watermarked, download watermarked
+- [x] AI model + Paid tier → Preview watermarked, download non-watermarked
+- [x] Human model + Not purchased → Preview watermarked, download blocked
+- [x] Human model + Purchased → Preview watermarked, download non-watermarked
+- [x] On-the-fly watermarking API returns correct watermarked images
+- [x] Download endpoint applies watermark correctly for free tier AI models
+- [x] Download endpoint serves non-watermarked for paid tier AI models
+- [x] Download endpoint blocks unpurchased human models
+- [x] Download endpoint serves non-watermarked for purchased human models
+- [x] History view displays watermarked images correctly (fixed November 23, 2025)
+- [x] History view displays watermarked images correctly
 
 ---
 

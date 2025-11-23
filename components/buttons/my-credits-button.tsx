@@ -12,59 +12,86 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Link } from "@/i18n/navigation";
+import { Badge } from "@/components/ui/badge";
 
 export default function MyCreditsButton() {
   const { isSignedIn } = useAuth();
   const { billing } = useAppContext();
-  console.log(billing);
 
   const [showDialog, setShowDialog] = useState(false);
+  const credits = billing?.credits ?? 0;
+  const isFreePlan = billing?.plan === "free";
+
+  if (!isSignedIn) {
+    return null;
+  }
+
   return (
     <>
-      {!isSignedIn ? (
-        <></>
-      ) : (
-        <>
-          {billing?.plan === "free" ? (
-            <Link href="/app/billing/upgrade-plan">
-              <Button>Upgrade Plan</Button>
-            </Link>
-          ) : (
-            <>
-              <div className="hidden md:flex">
-                <Button
-                  onClick={() => setShowDialog(!showDialog)}
-                  variant="secondary"
-                >
-                  <CoinsIcon />
-                  {billing?.credits} Credits
+      {/* Desktop: Always show credits prominently */}
+      <div className="hidden md:flex items-center gap-2">
+        <Badge variant="outline" className="gap-1.5 px-3 py-1.5">
+          <CoinsIcon className="h-4 w-4" />
+          <span className="font-semibold">{credits}</span>
+          <span className="text-muted-foreground">Credits</span>
+        </Badge>
+        {isFreePlan ? (
+          <Link href="/app/billing/upgrade-plan">
+            <Button size="sm" variant="default">
+              Upgrade Plan
+            </Button>
+          </Link>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowDialog(true)}
+          >
+            Top Up
+          </Button>
+        )}
+      </div>
+
+      {/* Mobile: Show credits in popover */}
+      <Popover>
+        <PopoverTrigger className="flex md:hidden">
+          <Badge variant="outline" className="gap-1.5 px-2 py-1">
+            <CoinsIcon className="h-4 w-4" />
+            <span className="font-semibold">{credits}</span>
+          </Badge>
+        </PopoverTrigger>
+        <PopoverContent className="w-56">
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-medium mb-1">Available Credits</p>
+              <p className="text-2xl font-bold">{credits}</p>
+            </div>
+            {isFreePlan ? (
+              <Link href="/app/billing/upgrade-plan" className="block">
+                <Button size="sm" variant="default" className="w-full">
+                  Upgrade Plan
                 </Button>
-              </div>
+              </Link>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setShowDialog(true);
+                }}
+              >
+                <CoinsIcon className="h-4 w-4 mr-2" />
+                Top Up Credits
+              </Button>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
 
-              {showDialog && (
-                <CreditTopUpDialog open={showDialog} setOpen={setShowDialog} />
-              )}
-
-              <Popover>
-                <PopoverTrigger className="flex md:hidden">
-                  <CoinsIcon className="size-[18px]" />
-                </PopoverTrigger>
-                <PopoverContent>
-                  <div>
-                    <Button
-                      onClick={() => setShowDialog(!showDialog)}
-                      variant="secondary"
-                      className="w-full"
-                    >
-                      <CoinsIcon />
-                      {billing?.credits} Credits, Topup
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </>
-          )}
-        </>
+      {/* Credit Top Up Dialog */}
+      {showDialog && (
+        <CreditTopUpDialog open={showDialog} setOpen={setShowDialog} />
       )}
     </>
   );

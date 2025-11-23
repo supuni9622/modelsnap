@@ -1,6 +1,7 @@
 # Testing Guide - Payment & Credit System
 
 **Date**: November 23, 2025  
+**Last Updated**: November 23, 2025  
 **Status**: Ready for Testing
 
 ---
@@ -112,6 +113,7 @@ Open [http://localhost:3000](http://localhost:3000)
 **Expected Result:**
 - ✅ Credits deducted: `aiCreditsRemaining = 2`
 - ✅ Preview shows watermarked image (via `/api/images/[id]/watermarked?type=ai`)
+- ✅ History view displays watermarked image correctly
 - ✅ Download serves watermarked image
 
 **API Check:**
@@ -167,12 +169,17 @@ curl http://localhost:3000/api/render/download?id={generationId}&type=ai
 **Steps:**
 1. As any user, select a human model
 2. Generate an image with the human model
-3. View generated image: Should show watermarked preview
-4. Try to download: Should be blocked (if not purchased)
+3. Check credits: Should decrease by 1 (human models also use credits)
+4. View generated image: Should show watermarked preview
+5. Check history view: Should display the human model generation
+6. Try to download: Should be blocked (if not purchased)
 
 **Expected Result:**
 - ✅ Generation succeeds (no purchase required for preview)
-- ✅ Preview shows watermarked image
+- ✅ Credits deducted: `aiCreditsRemaining` decreases by 1
+- ✅ Preview shows watermarked image (via `/api/images/[id]/watermarked?type=human`)
+- ✅ History view displays the human model generation correctly
+- ✅ History view shows both AI avatar and human model generations combined
 - ✅ Download button disabled or shows "Purchase Required" message
 
 ---
@@ -324,12 +331,16 @@ curl -X POST http://localhost:3000/api/cron/reset-free-credits
 - Download: ❌ Non-watermarked
 
 #### C. Human Model + Not Purchased
-- Preview: ✅ Watermarked
-- Download: ❌ Blocked
+- ✅ Generation works (uses credits)
+- ✅ Preview shows watermarked image
+- ✅ History view displays the generation
+- ✅ Download is blocked (purchase required)
 
 #### D. Human Model + Purchased
-- Preview: ✅ Watermarked
-- Download: ❌ Non-watermarked
+- ✅ Generation works (uses credits)
+- ✅ Preview shows watermarked image
+- ✅ History view displays the generation
+- ✅ Download works (non-watermarked)
 
 **API Tests:**
 ```bash
@@ -415,7 +426,11 @@ Test 1: Free Tier Signup          [ ] Pass [ ] Fail
 Test 2: AI Generation (Free)      [ ] Pass [ ] Fail
 Test 3: Subscription Purchase     [ ] Pass [ ] Fail
 Test 4: AI Generation (Paid)      [ ] Pass [ ] Fail
-Test 5: Human Model Preview       [ ] Pass [ ] Fail
+Test 5: Human Model Preview       [x] Pass [ ] Fail
+- ✅ Human model generation works
+- ✅ Credits are deducted correctly
+- ✅ History view displays human model generations
+- ✅ History view combines AI and human model results (fixed November 23, 2025)
 Test 6: Model Purchase (No Consent) [ ] Pass [ ] Fail
 Test 7: Model Purchase (Consent)  [ ] Pass [ ] Fail
 Test 8: Monthly Credit Reset     [ ] Pass [ ] Fail

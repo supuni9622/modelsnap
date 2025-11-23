@@ -27,7 +27,7 @@ export default function LoadUserData() {
       try {
         const res = await fetch(`/api/app`, {
           method: "GET",
-          cache: "force-cache",
+          cache: "no-store", // Always get fresh data to show correct credits
         });
 
         // 401 is expected when user is not signed in - don't treat as error

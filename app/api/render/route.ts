@@ -24,15 +24,15 @@ const logger = createLogger({ component: "render-api" });
  * 
  * Supports both AI Avatar and Human Model rendering:
  * - AI Avatar: Uses credits (1 credit per render)
- * - Human Model: Requires consent, charges $2.00 royalty, no credits
+ * - Human Model: Uses credits (1 credit per render) - models earn from purchases only
  * 
  * Steps:
  * 1. Determine model type (AI Avatar or Human Model)
- * 2. Check consent (for human models) or credits (for AI avatars)
+ * 2. Check credits (both types use credits)
  * 3. Validate garment upload
  * 4. Call FASHN API
  * 5. Save generation to database
- * 6. Deduct credits (AI) or add royalty (Human Model) atomically
+ * 6. Deduct credits atomically (both types)
  * 7. Return rendered image URL
  */
 export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequest) => {
@@ -197,7 +197,41 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
           );
         }
 
-        // Create generation record (no credits or royalties for human models)
+        // Get BusinessProfile for credit deduction (human models also use credits)
+        const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        if (!businessProfile) {
+          return NextResponse.json(
+            {
+              status: "error",
+              message: "Business profile not found",
+              code: "PROFILE_NOT_FOUND",
+            },
+            { status: 404 }
+          );
+        }
+
+        // Check if user can generate (includes subscription status and credit checks)
+        const canGen = await canGenerate(businessProfile);
+        if (!canGen.can) {
+          return NextResponse.json(
+            {
+              status: "error",
+              message: canGen.reason || "Cannot generate",
+              code: "GENERATION_BLOCKED",
+              creditsAvailable: businessProfile.aiCreditsRemaining,
+            },
+            { status: 402 }
+          );
+        }
+
+        logger.info("Starting human model render", { 
+          userId, 
+          modelId, 
+          garmentImageUrl,
+          creditsRemaining: businessProfile.aiCreditsRemaining 
+        });
+
+        // Create generation record and deduct credits (human models also use credits)
         const result = await withTransaction(async (session) => {
           const gen = await Generation.create(
             [
@@ -207,10 +241,17 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                 modelType: "HUMAN_MODEL",
                 garmentImageUrl,
                 status: "processing",
-                creditsUsed: 0, // No credits for human models
+                creditsUsed: 1, // Human models also use credits
                 royaltyPaid: 0, // No royalties - models only earn from purchases
               },
             ],
+            { session }
+          );
+
+          // Deduct credits from BusinessProfile (same as AI avatars)
+          await BusinessProfile.findByIdAndUpdate(
+            businessProfile._id,
+            { $inc: { aiCreditsRemaining: -1 } },
             { session }
           );
 
@@ -624,6 +665,11 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       ? `${baseUrl}/api/images/${generation._id}/watermarked?type=${isHumanModel ? "human" : "ai"}`
       : fashnResponse?.image_url; // Fallback to FASHN URL if S3 upload failed
     
+    // Get updated credits for all renders (after deduction)
+    // Both AI avatars and human models use credits
+    const updatedBusinessProfile = await BusinessProfile.findOne({ userId: user._id });
+    const creditsRemaining = updatedBusinessProfile?.aiCreditsRemaining ?? 0;
+    
     return NextResponse.json(
       {
         status: "success",
@@ -638,9 +684,9 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
           status: "completed",
           type: isHumanModel ? "HUMAN_MODEL" : "AI_AVATAR",
           watermarked: true, // Preview is always watermarked
-          ...(isHumanModel
-            ? { royaltyPaid: 0 }
-            : { creditsUsed: 1, creditsRemaining: user.credits - 1 }),
+          creditsUsed: 1, // All generations use 1 credit
+          creditsRemaining, // Updated credits after deduction
+          ...(isHumanModel ? { royaltyPaid: 0 } : {}),
         },
       },
       { status: 200 }

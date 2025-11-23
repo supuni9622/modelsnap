@@ -156,19 +156,38 @@ export function HistoryList() {
               <Card key={gen._id} className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="relative aspect-square">
-                    {gen.previewImageUrl || gen.outputS3Url ? (
-                      <Image
-                        src={gen.previewImageUrl || gen.outputS3Url!}
-                        alt="Generated image"
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <p className="text-muted-foreground">No image</p>
-                      </div>
-                    )}
+                    {(() => {
+                      // Always use watermarked preview URL for display
+                      // Never use outputS3Url directly (it's non-watermarked)
+                      let imageUrl: string | null = null;
+                      
+                      // Priority 1: Use previewImageUrl from API (already includes full watermarked URL)
+                      if (gen.previewImageUrl) {
+                        imageUrl = gen.previewImageUrl;
+                      } 
+                      // Priority 2: Construct watermarked URL if outputS3Url exists
+                      else if (gen.outputS3Url) {
+                        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+                        const typeParam = gen.type === "HUMAN_MODEL" ? "human" : "ai";
+                        // Add cache-busting parameter to ensure fresh watermarked image
+                        imageUrl = `${baseUrl}/api/images/${gen._id}/watermarked?type=${typeParam}&v=1`;
+                      }
+                      
+                      return imageUrl ? (
+                        <Image
+                          src={imageUrl}
+                          alt="Generated image"
+                          fill
+                          className="object-cover"
+                          unoptimized
+                          key={`watermarked-${gen._id}`} // Force re-render to avoid cache
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <p className="text-muted-foreground">No image</p>
+                        </div>
+                      );
+                    })()}
                     <div className="absolute top-2 right-2 flex gap-2">
                       <Badge
                         variant={

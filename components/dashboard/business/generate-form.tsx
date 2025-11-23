@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { useAppContext } from "@/context/app";
 
 interface Avatar {
   _id: string;
@@ -27,6 +28,7 @@ interface Model {
 }
 
 export function GenerateForm() {
+  const { billing, setBilling, refreshBillingData } = useAppContext();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [garmentImageUrl, setGarmentImageUrl] = useState<string | null>(null);
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
@@ -85,6 +87,14 @@ export function GenerateForm() {
       return data;
     },
     onSuccess: async (data) => {
+      // Update credits immediately from API response (optimistic update)
+      if (data.data?.creditsRemaining !== undefined && billing) {
+        setBilling({
+          ...billing,
+          credits: data.data.creditsRemaining,
+        });
+      }
+
       // Display the generated image immediately
       // Use previewImageUrl (watermarked) for display, or fallback to other URLs
       const imageUrl = data.data?.previewImageUrl || data.data?.renderedImageUrl || data.data?.outputS3Url || data.data?.fashnImageUrl;
@@ -121,6 +131,12 @@ export function GenerateForm() {
         setSelectedAvatar(null);
         setSelectedModel(null);
       }
+
+      // Refresh billing data to ensure sync (runs in background)
+      refreshBillingData?.().catch((error) => {
+        console.error("Failed to refresh billing data:", error);
+        // Non-critical error, don't show to user
+      });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to start generation");

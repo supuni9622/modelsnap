@@ -1,4 +1,5 @@
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
 
@@ -33,9 +34,18 @@ export const GET = async (req: NextRequest) => {
     // Get user's plan type
     const plan = user.plan.planType;
 
+    // For business users, get credits from BusinessProfile
+    let credits = user.credits || 0;
+    if (user.role === "BUSINESS") {
+      const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+      if (businessProfile) {
+        credits = businessProfile.aiCreditsRemaining || 0;
+      }
+    }
+
     // Return plan details and credits
     return Response.json(
-      { plan, details: user.plan, credits: user.credits || 0 },
+      { plan, details: user.plan, credits },
       { status: 200 }
     );
   } catch (er) {

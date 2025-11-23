@@ -110,7 +110,7 @@ export const PricingPlans: PricingPlanTypes[] = [
     currency: "usd",
     currencySymbol: "$",
     billingCycle: "monthly",
-    priceId: "", // Replace with actual Stripe price ID
+    priceId: "prod_TTTDWBuOgkDwba", // Replace with actual Stripe price ID
     variantId: "", // Replace with actual Lemon Squeezy variant ID
     features: [
       {
@@ -151,7 +151,7 @@ export const PricingPlans: PricingPlanTypes[] = [
     currency: "usd",
     currencySymbol: "$",
     billingCycle: "monthly",
-    priceId: "", // Replace with actual Stripe price ID
+    priceId: "prod_TTTF9ImPLk57N7", // Replace with actual Stripe price ID
     variantId: "", // Replace with actual Lemon Squeezy variant ID
     features: [
       {
