@@ -6,6 +6,8 @@ import { motion, useInView } from "framer-motion";
 import { Check, X, Star, Zap, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PricingPlans } from "@/lib/config/pricing";
+import CheckoutButton from "@/components/buttons/checkout-button";
+import { useAppContext } from "@/context/app";
 
 // Mock data for demonstration
 
@@ -20,8 +22,12 @@ export default function Pricing({
 }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
+  const { billing } = useAppContext();
   
-  const WAITLIST_FORM_URL = "https://tally.so/r/kddz1e";
+  // Check if plan is already active
+  const isCurrentPlan = (planId: string) => {
+    return billing?.details?.id === planId;
+  };
   return (
     <section
       id="pricing"
@@ -198,20 +204,48 @@ export default function Pricing({
                         </div>
 
                         {/* CTA Button */}
-                        <button
-                          onClick={() => window.open(WAITLIST_FORM_URL, "_blank", "noopener,noreferrer")}
-                          className={cn(
-                            "w-full py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200",
-                            "hover:scale-105 hover:shadow-lg active:scale-95",
-                            plan.popular
-                              ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
-                              : "bg-muted hover:bg-muted/80 text-foreground border border-border hover:border-primary/30"
-                          )}
-                        >
-                          {plan.trial
-                            ? `Free Trial (${plan.trial} days)`
-                            : plan.displayButtonName}
-                        </button>
+                        {plan.id === "free" ? (
+                          <button
+                            disabled
+                            className={cn(
+                              "w-full py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200",
+                              "bg-muted text-muted-foreground border border-border cursor-not-allowed"
+                            )}
+                          >
+                            Current Plan
+                          </button>
+                        ) : isCurrentPlan(plan.id) ? (
+                          <button
+                            disabled
+                            className={cn(
+                              "w-full py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200",
+                              "bg-primary/20 text-primary border border-primary/30 cursor-not-allowed"
+                            )}
+                          >
+                            Current Plan
+                          </button>
+                        ) : (
+                          <CheckoutButton
+                            mode={plan.type === "subscription" ? "subscription" : "payment"}
+                            priceId={plan.priceId || ""}
+                            variantId={plan.variantId}
+                            trial={plan.trial}
+                            disabled={!plan.priceId}
+                            className={cn(
+                              "w-full py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200",
+                              "hover:scale-105 hover:shadow-lg active:scale-95",
+                              plan.popular
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
+                                : "bg-muted hover:bg-muted/80 text-foreground border border-border hover:border-primary/30"
+                            )}
+                          >
+                            {plan.trial
+                              ? `Free Trial (${plan.trial} days)`
+                              : plan.priceId
+                              ? "Subscribe"
+                              : plan.displayButtonName || "Join Waitlist"}
+                          </CheckoutButton>
+                        )}
                       </div>
                     </div>
                   </motion.div>

@@ -130,12 +130,15 @@ curl http://localhost:3000/api/render/download?id={generationId}&type=ai
 ### Test 3: Subscription Purchase (Starter Plan)
 
 **Steps:**
-1. As a free tier user, go to subscription page
-2. Click "Subscribe" for Starter plan
-3. Complete Stripe checkout (use test card: `4242 4242 4242 4242`)
-4. After checkout, verify credits updated
+1. As a free tier user, go to `/dashboard/business/billing`
+2. Scroll to "Upgrade your current plan" section (or click "Upgrade my plan" button)
+3. Click "Subscribe" button on Starter plan card
+4. Complete Stripe checkout (use test card: `4242 4242 4242 4242`)
+5. After checkout redirect, verify credits updated
 
 **Expected Result:**
+- ✅ Redirects to Stripe checkout page
+- ✅ After successful payment, redirects to success page
 - ✅ `subscriptionTier = "starter"`
 - ✅ `aiCreditsRemaining = 40`
 - ✅ `aiCreditsTotal = 40`
@@ -146,6 +149,10 @@ curl http://localhost:3000/api/render/download?id={generationId}&type=ai
 - Success: `4242 4242 4242 4242`
 - Decline: `4000 0000 0000 0002`
 - 3D Secure: `4000 0025 0000 3155`
+
+**Note:** Price IDs are configured in `lib/config/pricing.ts`:
+- Starter: `price_1SWWGuAxKGgV505GHghhGupi`
+- Growth: `price_1SWWIsAxKGgV505G2kL5ha8d`
 
 ---
 

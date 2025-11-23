@@ -43,12 +43,17 @@ export default function BillingInfo() {
         <div className="md:flex space-y-2 md:space-y-0 md:space-x-2 mt-5">
           <BillingPortalButton />
 
-          <Link href="/app/billing/upgrade-plan">
-            <Button size="lg" variant="ghost">
-              <ArrowUp />
-              <span>Upgrade my plan</span>
-            </Button>
-          </Link>
+          <Button 
+            size="lg" 
+            variant="ghost"
+            onClick={() => {
+              // Scroll to upgrade plan section on the same page
+              document.getElementById('upgrade-plan-section')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            <ArrowUp />
+            <span>Upgrade my plan</span>
+          </Button>
         </div>
       </CardContent>
     </Card>

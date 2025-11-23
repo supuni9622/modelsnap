@@ -150,6 +150,13 @@ export default function CheckoutButton({
         paymentProvider
       });
       
+      // Show user-friendly error message
+      if (errorMessage.includes("No such price") || errorMessage.includes("price")) {
+        alert("Subscription pricing is not configured yet. Please contact support or check back later.");
+      } else {
+        alert(`Failed to start checkout: ${errorMessage}`);
+      }
+      
       // Track purchase failed for analytics
       trackEvent("purchase_failed", "checkout", `${priceId}: ${errorMessage}`);
     } finally {

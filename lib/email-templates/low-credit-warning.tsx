@@ -64,8 +64,9 @@ export function LowCreditWarningEmail({
           >
             Upgrade Plan
           </Button>
+          
           <Button
-            href={`${dashboardUrl}/app/billing`}
+            href={`${dashboardUrl}/dashboard/business/billing`}
             style={{
               backgroundColor: "#6b7280",
               color: "#ffffff",

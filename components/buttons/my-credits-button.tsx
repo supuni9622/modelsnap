@@ -36,7 +36,7 @@ export default function MyCreditsButton() {
           <span className="text-muted-foreground">Credits</span>
         </Badge>
         {isFreePlan ? (
-          <Link href="/app/billing/upgrade-plan">
+          <Link href="/dashboard/business/billing">
             <Button size="sm" variant="default">
               Upgrade Plan
             </Button>
@@ -67,7 +67,7 @@ export default function MyCreditsButton() {
               <p className="text-2xl font-bold">{credits}</p>
             </div>
             {isFreePlan ? (
-              <Link href="/app/billing/upgrade-plan" className="block">
+              <Link href="/dashboard/business/billing" className="block">
                 <Button size="sm" variant="default" className="w-full">
                   Upgrade Plan
                 </Button>

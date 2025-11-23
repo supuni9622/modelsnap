@@ -2,7 +2,7 @@ import Pricing from "@/components/landing/pricing/pricing-1";
 
 export default function UpgradePlanComponents() {
   return (
-    <section className="mt-10 w-full ">
+    <section id="upgrade-plan-section" className="mt-10 w-full ">
       <div>
         <p>Upgrade your current plan</p>
       </div>

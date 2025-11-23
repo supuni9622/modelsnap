@@ -394,6 +394,20 @@ Payment flow is working correctly when:
 - [ ] Subscription Management
 - [ ] Credit Package Purchases
 
+User clicks "Subscribe/Upgrade"
+    ↓
+Check BusinessProfile for subscription ID
+    ↓
+Check Stripe for existing subscription
+    ↓
+If found → Update existing subscription ✅
+    ↓
+If not found → Final check before checkout
+    ↓
+If found in final check → Update existing subscription ✅
+    ↓
+If still not found → Create new checkout session (first subscription) ✅
+
 ---
 
 *Update this document as you test each component of the payment flow.*
