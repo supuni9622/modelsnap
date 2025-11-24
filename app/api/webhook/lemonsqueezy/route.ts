@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { connectDB } from "@/lib/db";
 import { clerkClient } from "@clerk/nextjs/server";
+import mongoose from "mongoose";
 import User from "@/models/user";
 import BusinessProfile from "@/models/business-profile";
 import ModelProfile from "@/models/model-profile";
@@ -127,9 +128,31 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           const modelEarnings = parseInt(customData.modelEarnings || "0");
 
           if (!modelId || !businessId) {
-            console.error("🚨 Model purchase order missing required data:", { modelId, businessId });
+            console.error("🚨 Model purchase order missing required data:", { modelId, businessId, customData });
             break;
           }
+
+          // Convert string IDs to ObjectIds
+          let modelObjectId: mongoose.Types.ObjectId;
+          let businessObjectId: mongoose.Types.ObjectId;
+          
+          try {
+            modelObjectId = new mongoose.Types.ObjectId(modelId);
+            businessObjectId = new mongoose.Types.ObjectId(businessId);
+          } catch (error) {
+            console.error("🚨 Invalid ObjectId format:", { modelId, businessId, error });
+            break;
+          }
+
+          console.log("🔍 Processing model purchase webhook:", {
+            orderId,
+            modelId: modelObjectId,
+            businessId: businessObjectId,
+            status,
+            amount,
+            modelEarnings,
+            platformCommission,
+          });
 
           // Handle model purchase atomically
           await withTransaction(async (session) => {
@@ -138,7 +161,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
               {
                 $or: [
                   { lemonsqueezyCheckoutId: order.attributes.first_order_item?.checkout_id },
-                  { businessId: businessId, modelId: modelId, status: "pending" },
+                  { businessId: businessObjectId, modelId: modelObjectId, status: "pending" },
                 ],
               },
               {
@@ -154,12 +177,12 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
             if (!purchase) {
               logger.warn("Model purchase record not found for order", {
                 orderId,
-                modelId,
-                businessId,
+                modelId: modelObjectId,
+                businessId: businessObjectId,
               });
               // Create purchase record if it doesn't exist
-              const businessProfile = await BusinessProfile.findById(businessId).session(session);
-              const modelProfile = await ModelProfile.findById(modelId).session(session);
+              const businessProfile = await BusinessProfile.findById(businessObjectId).session(session);
+              const modelProfile = await ModelProfile.findById(modelObjectId).session(session);
               
               if (businessProfile && modelProfile) {
                 await ModelPurchase.create([{
@@ -179,17 +202,31 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
             // Only process if payment is successful
             if (status === "paid") {
               // Add model to business's purchasedModels array
-              await BusinessProfile.findByIdAndUpdate(
-                businessId,
+              const updatedBusiness = await BusinessProfile.findByIdAndUpdate(
+                businessObjectId,
                 {
-                  $addToSet: { purchasedModels: modelId },
+                  $addToSet: { purchasedModels: modelObjectId },
                 },
-                { session }
+                { session, new: true }
               );
 
+              if (!updatedBusiness) {
+                logger.error("BusinessProfile not found for model purchase", undefined, {
+                  businessId: businessObjectId.toString(),
+                  orderId: orderId.toString(),
+                });
+                throw new Error(`BusinessProfile not found: ${businessObjectId}`);
+              }
+              
+              console.log("✅ Added model to purchasedModels:", {
+                businessId: businessObjectId.toString(),
+                modelId: modelObjectId.toString(),
+                purchasedModelsCount: updatedBusiness.purchasedModels?.length || 0,
+              });
+
               // Update model's availableBalance (90% of purchase price) and earnings
-              await ModelProfile.findByIdAndUpdate(
-                modelId,
+              const updatedModel = await ModelProfile.findByIdAndUpdate(
+                modelObjectId,
                 {
                   $inc: { 
                     availableBalance: modelEarnings, // 90% goes to model
@@ -198,13 +235,27 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
                     totalPurchases: 1,
                   },
                 },
-                { session }
+                { session, new: true }
               );
 
+              if (!updatedModel) {
+                logger.error("ModelProfile not found for model purchase", undefined, {
+                  modelId: modelObjectId.toString(),
+                  orderId: orderId.toString(),
+                });
+                throw new Error(`ModelProfile not found: ${modelObjectId}`);
+              }
+              
+              console.log("✅ Updated model earnings:", {
+                modelId: modelObjectId.toString(),
+                availableBalance: updatedModel.availableBalance,
+                totalEarnings: updatedModel.totalEarnings,
+              });
+
               logger.info("Model purchase completed", {
-                orderId,
-                modelId,
-                businessId,
+                orderId: orderId.toString(),
+                modelId: modelObjectId.toString(),
+                businessId: businessObjectId.toString(),
                 amount,
                 modelEarnings,
                 platformCommission,

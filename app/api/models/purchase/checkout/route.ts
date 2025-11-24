@@ -184,8 +184,9 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       );
     }
 
-    // Check if model has a price set
-    if (!modelProfile.price || modelProfile.price <= 0) {
+    // Check if model has a price set (check pricePerAccess first, fallback to price for backward compatibility)
+    const modelPrice = modelProfile.pricePerAccess || modelProfile.price;
+    if (!modelPrice || modelPrice <= 0) {
       return NextResponse.json(
         {
           status: "error",
@@ -237,9 +238,49 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
     }
 
     // Calculate commission (10% platform, 90% model)
-    const amountInCents = modelProfile.price; // Price is already in cents
+    // Use pricePerAccess (primary field) or fallback to price (deprecated)
+    const modelCurrency = modelProfile.currency || "usd";
+    const priceInModelCurrency = modelProfile.pricePerAccess || modelProfile.price || 0;
+    
+    // Convert to variant's currency (LKR) if needed
+    // Note: The variant is configured in LKR, so we need to convert from model's currency
+    // Using approximate exchange rate: 1 USD ≈ 307 LKR (adjust as needed)
+    // TODO: Consider using a currency conversion API for real-time rates
+    const USD_TO_LKR_RATE = 307; // Update this with current exchange rate
+    let amountInLKR: number;
+    
+    if (modelCurrency.toLowerCase() === "usd") {
+      // Convert USD to LKR: $55 USD * 307 = 16,885 LKR
+      amountInLKR = Math.round(priceInModelCurrency * USD_TO_LKR_RATE);
+    } else if (modelCurrency.toLowerCase() === "lkr") {
+      // Already in LKR, use as-is
+      amountInLKR = Math.round(priceInModelCurrency);
+    } else {
+      // For other currencies, convert via USD
+      // You may want to add more conversion rates here
+      const priceInUSD = modelCurrency.toLowerCase() === "eur" 
+        ? priceInModelCurrency * 1.1  // EUR to USD approximate
+        : modelCurrency.toLowerCase() === "gbp"
+        ? priceInModelCurrency * 1.25  // GBP to USD approximate
+        : priceInModelCurrency;
+      amountInLKR = Math.round(priceInUSD * USD_TO_LKR_RATE);
+    }
+    
+    // Lemon Squeezy expects customPrice in the smallest unit of the variant's currency
+    // For LKR: 1 LKR = 100 cents, so convert LKR to cents
+    // Example: 16,885 LKR = 1,688,500 LKR cents
+    const amountInCents = Math.round(amountInLKR * 100);
     const platformCommission = Math.round(amountInCents * 0.1);
     const modelEarnings = amountInCents - platformCommission;
+    
+    logger.info("Price conversion for model purchase", {
+      modelCurrency,
+      priceInModelCurrency,
+      amountInLKR,
+      amountInCents,
+      platformCommission,
+      modelEarnings,
+    });
 
     // Get user email and name
     let userEmail = user.emailAddress?.[0];
@@ -313,42 +354,87 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       );
     }
 
+    // Create checkout options for one-time payment
+    // Note: For one-time payments, redirectUrl should be at root level, not in productOptions
+    const checkoutOptions: any = {
+      checkoutData: {
+        custom: {
+          type: "model_purchase",
+          userId: userId,
+          userEmail: userEmail,
+          modelId: modelId.toString(),
+          businessId: businessProfile._id.toString(),
+          amount: amountInCents.toString(),
+          platformCommission: platformCommission.toString(),
+          modelEarnings: modelEarnings.toString(),
+          modelName: modelProfile.name,
+        } as Record<string, string>, // Ensure all values are strings for custom data
+        email: userEmail,
+        name: userFirstName && userLastName ? `${userFirstName} ${userLastName}` : undefined,
+      },
+      productOptions: {
+        name: `Purchase Access: ${modelProfile.name}`,
+        description: `One-time purchase for access to ${modelProfile.name} model`,
+        redirectUrl: `${publicUrl}/${defaultLocale}/dashboard/business/models?purchase=success&modelId=${modelId}`,
+      },
+      redirectUrl: `${publicUrl}/${defaultLocale}/dashboard/business/models?purchase=success&modelId=${modelId}`,
+      cancelUrl: `${publicUrl}/${defaultLocale}/dashboard/business/models?purchase=cancelled`,
+      // Try with customPrice - if this fails with "Package pricing", you may need to:
+      // Option 1: Change pricing model to "Pay what you want" in Lemon Squeezy dashboard
+      // Option 2: Remove customPrice and use variant's base price (LKR 10,000)
+      // Option 3: Create multiple variants for different price ranges
+      customPrice: amountInCents, // Set custom price for the model purchase
+    };
+
+    // Add customerId if available
+    if (customerId) {
+      checkoutOptions.customerId = customerId;
+    }
+
+    logger.info("Creating Lemon Squeezy checkout for model purchase", {
+      storeId,
+      variantId: parsedVariantId,
+      amountInCents,
+      modelId,
+      businessId: businessProfile._id,
+    });
+
     const { data: checkoutData, error: checkoutError } = await createCheckout(
       storeId,
       parsedVariantId,
-      {
-        checkoutData: {
-          custom: {
-            type: "model_purchase",
-            userId: userId,
-            userEmail: userEmail,
-            modelId: modelId.toString(),
-            businessId: businessProfile._id.toString(),
-            amount: amountInCents.toString(),
-            platformCommission: platformCommission.toString(),
-            modelEarnings: modelEarnings.toString(),
-            modelName: modelProfile.name,
-            customerId: customerId.toString(),
-          },
-          email: userEmail,
-          name: userFirstName && userLastName ? `${userFirstName} ${userLastName}` : undefined,
-        },
-        productOptions: {
-          redirectUrl: `${publicUrl}/${defaultLocale}/dashboard/business/models?purchase=success&modelId=${modelId}`,
-          name: `Purchase Access: ${modelProfile.name}`,
-          description: `One-time purchase for access to ${modelProfile.name} model`,
-        },
-        customPrice: amountInCents, // Set custom price for the model purchase
-      }
+      checkoutOptions
     );
 
     if (checkoutError) {
-      logger.error("Lemon Squeezy checkout error", checkoutError as Error);
+      logger.error("Lemon Squeezy checkout error", checkoutError as Error, {
+        storeId,
+        variantId: parsedVariantId,
+        amountInCents,
+        errorDetails: checkoutError,
+      });
+      
+      // Provide more detailed error message
+      let errorMessage = "Failed to create checkout";
+      if (checkoutError.message) {
+        errorMessage = checkoutError.message;
+      } else if (typeof checkoutError === "object" && "errors" in checkoutError) {
+        const errors = (checkoutError as any).errors;
+        if (Array.isArray(errors) && errors.length > 0) {
+          errorMessage = errors[0].detail || errors[0].title || errorMessage;
+        }
+      }
+      
       return NextResponse.json(
         {
           status: "error",
-          message: `Failed to create checkout: ${checkoutError.message}`,
+          message: errorMessage,
           code: "CHECKOUT_ERROR",
+          details: process.env.NODE_ENV === "development" ? {
+            storeId,
+            variantId: parsedVariantId,
+            amountInCents,
+            error: checkoutError,
+          } : undefined,
         },
         { status: 500 }
       );

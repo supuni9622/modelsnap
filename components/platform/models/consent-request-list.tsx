@@ -16,11 +16,11 @@ interface ConsentRequest {
   businessId: {
     _id: string;
     businessName: string;
-  };
+  } | null;
   modelId: {
     _id: string;
     name: string;
-  };
+  } | null;
 }
 
 export function ConsentRequestList() {
@@ -105,7 +105,7 @@ export function ConsentRequestList() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Building2 className="h-5 w-5" />
-                      {request.businessId.businessName}
+                      {request.businessId?.businessName || "Unknown Business"}
                     </CardTitle>
                     <CardDescription>
                       Requested {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
@@ -144,7 +144,7 @@ export function ConsentRequestList() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Building2 className="h-5 w-5" />
-                      {request.businessId.businessName}
+                      {request.businessId?.businessName || "Unknown Business"}
                     </CardTitle>
                     <CardDescription>
                       {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
