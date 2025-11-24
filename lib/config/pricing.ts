@@ -3,7 +3,7 @@
  * Choose your preferred payment provider: "stripe", "lemonsqueezy", or "webxpay"
  * Make sure to configure the corresponding environment variables
  */
-export const paymentProvider: "stripe" | "lemonsqueezy" | "webxpay" = "stripe";
+export const paymentProvider: "stripe" | "lemonsqueezy" | "webxpay" = "lemonsqueezy";
 
 /**
  * CURRENCY CONFIGURATION
@@ -111,7 +111,7 @@ export const PricingPlans: PricingPlanTypes[] = [
     currencySymbol: "$",
     billingCycle: "monthly",
     priceId: "price_1SWWGuAxKGgV505GHghhGupi", // TODO: Replace with actual Stripe price ID (starts with 'price_')
-    variantId: "", // Replace with actual Lemon Squeezy variant ID
+    variantId: "1106959", // Replace with actual Lemon Squeezy variant ID
     features: [
       {
         active: true,
@@ -152,7 +152,7 @@ export const PricingPlans: PricingPlanTypes[] = [
     currencySymbol: "$",
     billingCycle: "monthly",
     priceId: "price_1SWWIsAxKGgV505G2kL5ha8d", // TODO: Replace with actual Stripe price ID (starts with 'price_')
-    variantId: "", // Replace with actual Lemon Squeezy variant ID
+    variantId: "1106971", // Replace with actual Lemon Squeezy variant ID
     features: [
       {
         active: true,
@@ -199,17 +199,17 @@ export const Credits = {
   /** Available credit packages for purchase */
   plans: [
     {
-      title: "50 Credits",
-      price: "4.99",
+      title: "40 Credits",
+      price: "5999.99",
       priceId: "", // Replace with actual Stripe price ID
-      variantId: "", // Replace with actual Lemon Squeezy variant ID
-      credits: 50,
+      variantId: "1106959", // Replace with actual Lemon Squeezy variant ID
+      credits: 40,
     },
     {
       title: "100 Credits",
-      price: "8.99",
+      price: "15099.99",
       priceId: "", // Replace with actual Stripe price ID
-      variantId: "", // Replace with actual Lemon Squeezy variant ID
+      variantId: "1106971", // Replace with actual Lemon Squeezy variant ID
       credits: 100,
     },
   ],

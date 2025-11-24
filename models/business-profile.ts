@@ -58,6 +58,11 @@ const BusinessProfileSchema = new Schema(
       // Indexed below
     },
 
+    lemonsqueezySubscriptionId: {
+      type: String,
+      // Indexed below
+    },
+
     subscriptionCurrentPeriodEnd: {
       type: Date,
     },
@@ -123,6 +128,7 @@ BusinessProfileSchema.index({ subscriptionStatus: 1 }); // Legacy field
 BusinessProfileSchema.index({ subscriptionTier: 1 });
 BusinessProfileSchema.index({ stripeCustomerId: 1 });
 BusinessProfileSchema.index({ stripeSubscriptionId: 1 });
+BusinessProfileSchema.index({ lemonsqueezySubscriptionId: 1 });
 BusinessProfileSchema.index({ subscriptionCurrentPeriodEnd: 1 });
 BusinessProfileSchema.index({ purchasedModels: 1 });
 

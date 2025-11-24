@@ -23,15 +23,24 @@ const ModelPurchaseSchema = new Schema(
       // Indexed below
     },
 
-    // Stripe payment information
+    // Stripe payment information (kept for backward compatibility)
     stripePaymentIntentId: {
       type: String,
-      required: true,
-      unique: true,
       // Indexed below
     },
 
     stripeCheckoutSessionId: {
+      type: String,
+      // Indexed below
+    },
+
+    // Lemon Squeezy payment information
+    lemonsqueezyOrderId: {
+      type: String,
+      // Indexed below
+    },
+
+    lemonsqueezyCheckoutId: {
       type: String,
       // Indexed below
     },
@@ -95,15 +104,15 @@ ModelPurchaseSchema.index({ modelId: 1, status: 1 }); // Get all purchases for a
 ModelPurchaseSchema.index({ businessId: 1, status: 1 }); // Get all purchases for a business
 ModelPurchaseSchema.index({ stripePaymentIntentId: 1 });
 ModelPurchaseSchema.index({ stripeCheckoutSessionId: 1 });
+ModelPurchaseSchema.index({ lemonsqueezyOrderId: 1 });
+ModelPurchaseSchema.index({ lemonsqueezyCheckoutId: 1 });
 ModelPurchaseSchema.index({ status: 1 });
 
 // Compound unique index to prevent duplicate purchases
+// Note: Removed unique constraint to allow multiple payment providers
+// Validation is handled at application level
 ModelPurchaseSchema.index(
-  { businessId: 1, modelId: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { status: { $in: ["pending", "completed"] } },
-  }
+  { businessId: 1, modelId: 1, status: 1 }
 );
 
 const ModelPurchase =

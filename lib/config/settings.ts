@@ -119,5 +119,5 @@ export const SocialLink = {
  * ⚠️  IMPORTANT: Replace these with your actual Lemon Squeezy store details
  * Get these values from your Lemon Squeezy dashboard
  */
-export const lemonSqueezyStoreId = 0; // Replace with your actual store ID
-export const lemonSqueezyStoreUrl = ""; // Replace with your store URL
+export const lemonSqueezyStoreId = 247074; // Replace with your actual store ID
+export const lemonSqueezyStoreUrl = "https://modelsnap.lemonsqueezy.com"; // Replace with your store URL

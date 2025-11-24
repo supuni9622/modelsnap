@@ -1,8 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { stripe } from "@/lib/stripe";
-import { SiteSettings } from "@/lib/config/settings";
+import { SiteSettings, lemonSqueezyStoreId } from "@/lib/config/settings";
 import User from "@/models/user";
 import BusinessProfile from "@/models/business-profile";
 import ModelProfile from "@/models/model-profile";
@@ -10,29 +9,102 @@ import ModelPurchase from "@/models/model-purchase";
 import { checkConsentStatus } from "@/lib/consent-utils";
 import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiter";
 import { createLogger } from "@/lib/utils/logger";
+import {
+  createCheckout,
+  lemonSqueezySetup,
+  createCustomer,
+} from "@lemonsqueezy/lemonsqueezy.js";
 
 const logger = createLogger({ component: "model-purchase-checkout" });
-const publicUrl = SiteSettings.domainUrl;
+
+// Get public URL from site settings
+let publicUrl = SiteSettings.domainUrl;
+if (publicUrl.endsWith("/en")) {
+  publicUrl = publicUrl.slice(0, -3);
+}
+const defaultLocale = "en";
+
+/**
+ * Creates or retrieves a Lemon Squeezy customer
+ */
+async function getOrCreateLemonSqueezyCustomer(
+  userId: string,
+  userEmail: string,
+  userFirstName?: string,
+  userLastName?: string
+) {
+  await connectDB();
+
+  let user = await User.findOne({ id: userId });
+
+  if (user?.lemonsqueezyCustomerId) {
+    return user.lemonsqueezyCustomerId;
+  }
+
+  // Create new customer in Lemon Squeezy
+  const storeId = lemonSqueezyStoreId;
+  if (isNaN(storeId)) {
+    throw new Error("Invalid store ID format");
+  }
+
+  const { data: customerData, error } = await createCustomer(storeId, {
+    name:
+      userFirstName && userLastName
+        ? `${userFirstName} ${userLastName}`
+        : userEmail,
+    email: userEmail,
+    city: null,
+    region: null,
+    country: null,
+  });
+
+  if (error) {
+    throw new Error(`Failed to create Lemon Squeezy customer: ${error.message}`);
+  }
+
+  const customerId = customerData.data.id;
+
+  // Save customer ID to database
+  if (user) {
+    await User.updateOne({ id: userId }, { lemonsqueezyCustomerId: customerId });
+  } else {
+    const clerkUser = await (await clerkClient()).users.getUser(userId);
+    await User.create({
+      id: userId,
+      emailAddress: [userEmail],
+      firstName: userFirstName || clerkUser.firstName,
+      lastName: userLastName || clerkUser.lastName,
+      lemonsqueezyCustomerId: customerId,
+    });
+  }
+
+  return customerId;
+}
 
 /**
  * POST /api/models/purchase/checkout
- * Create a Stripe checkout session for purchasing a human model
+ * Create a Lemon Squeezy checkout session for purchasing a human model
  */
 export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequest) => {
   try {
     await connectDB();
 
-    // Check if Stripe is configured
-    if (!stripe) {
+    // Check if Lemon Squeezy is configured
+    if (!process.env.LEMON_SQUEEZY_API_KEY || !process.env.LEMON_SQUEEZY_STORE_ID) {
       return NextResponse.json(
         {
           status: "error",
-          message: "Stripe is not configured",
-          code: "STRIPE_NOT_CONFIGURED",
+          message: "Lemon Squeezy is not configured",
+          code: "LEMONSQUEEZY_NOT_CONFIGURED",
         },
         { status: 503 }
       );
     }
+
+    // Setup Lemon Squeezy
+    lemonSqueezySetup({
+      apiKey: process.env.LEMON_SQUEEZY_API_KEY,
+    });
 
     // Verify authentication
     const { userId } = await auth();
@@ -169,63 +241,127 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
     const platformCommission = Math.round(amountInCents * 0.1);
     const modelEarnings = amountInCents - platformCommission;
 
-    // Ensure user has Stripe customer ID
-    if (!user.stripeCustomerId && stripe) {
-      const customer = await stripe.customers.create({
-        email: user.emailAddress,
-        metadata: { userId },
-      });
-      user.stripeCustomerId = customer.id;
-      await user.save();
+    // Get user email and name
+    let userEmail = user.emailAddress?.[0];
+    let userFirstName = user.firstName;
+    let userLastName = user.lastName;
+
+    if (!userEmail || !userFirstName || !userLastName) {
+      const clerkUser = await (await clerkClient()).users.getUser(userId);
+      userEmail = userEmail || clerkUser.emailAddresses[0]?.emailAddress;
+      userFirstName = userFirstName || clerkUser.firstName;
+      userLastName = userLastName || clerkUser.lastName;
     }
 
-    if (!user.stripeCustomerId) {
+    if (!userEmail) {
       return NextResponse.json(
         {
           status: "error",
-          message: "Failed to create Stripe customer",
-          code: "STRIPE_CUSTOMER_ERROR",
+          message: "User email is required",
+          code: "USER_EMAIL_REQUIRED",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Ensure user has Lemon Squeezy customer ID
+    const customerId = await getOrCreateLemonSqueezyCustomer(
+      userId,
+      userEmail,
+      userFirstName,
+      userLastName
+    );
+
+    // Get model purchase variant ID from environment or use a default
+    // Note: You need to create a product/variant in Lemon Squeezy for model purchases
+    // This variant should be configured to accept custom pricing or use a base price
+    const modelPurchaseVariantId = process.env.LEMON_SQUEEZY_MODEL_PURCHASE_VARIANT_ID;
+    
+    if (!modelPurchaseVariantId) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message: "Model purchase variant ID is not configured. Please set LEMON_SQUEEZY_MODEL_PURCHASE_VARIANT_ID environment variable.",
+          code: "VARIANT_ID_NOT_CONFIGURED",
         },
         { status: 500 }
       );
     }
 
-    // Create Stripe checkout session
-    const checkoutSession = await stripe.checkout.sessions.create({
-      customer: user.stripeCustomerId,
-      payment_method_types: ["card"],
-      line_items: [
+    const parsedVariantId = parseInt(modelPurchaseVariantId);
+    if (isNaN(parsedVariantId)) {
+      return NextResponse.json(
         {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `Purchase Access: ${modelProfile.name}`,
-              description: `One-time purchase for access to ${modelProfile.name} model`,
-            },
-            unit_amount: amountInCents,
-          },
-          quantity: 1,
+          status: "error",
+          message: "Invalid model purchase variant ID format",
+          code: "INVALID_VARIANT_ID",
         },
-      ],
-      mode: "payment",
-      success_url: `${publicUrl}/dashboard/business/models?purchase=success&modelId=${modelId}`,
-      cancel_url: `${publicUrl}/dashboard/business/models?purchase=cancelled`,
-      metadata: {
-        type: "model_purchase",
-        modelId: modelId.toString(),
-        businessId: businessProfile._id.toString(),
-        amount: amountInCents.toString(),
-        platformCommission: platformCommission.toString(),
-        modelEarnings: modelEarnings.toString(),
-      },
-    });
+        { status: 500 }
+      );
+    }
+
+    // Create Lemon Squeezy checkout session
+    const storeId = lemonSqueezyStoreId;
+    if (isNaN(storeId)) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message: "Invalid store ID format",
+          code: "INVALID_STORE_ID",
+        },
+        { status: 500 }
+      );
+    }
+
+    const { data: checkoutData, error: checkoutError } = await createCheckout(
+      storeId,
+      parsedVariantId,
+      {
+        checkoutData: {
+          custom: {
+            type: "model_purchase",
+            userId: userId,
+            userEmail: userEmail,
+            modelId: modelId.toString(),
+            businessId: businessProfile._id.toString(),
+            amount: amountInCents.toString(),
+            platformCommission: platformCommission.toString(),
+            modelEarnings: modelEarnings.toString(),
+            modelName: modelProfile.name,
+            customerId: customerId.toString(),
+          },
+          email: userEmail,
+          name: userFirstName && userLastName ? `${userFirstName} ${userLastName}` : undefined,
+        },
+        productOptions: {
+          redirectUrl: `${publicUrl}/${defaultLocale}/dashboard/business/models?purchase=success&modelId=${modelId}`,
+          name: `Purchase Access: ${modelProfile.name}`,
+          description: `One-time purchase for access to ${modelProfile.name} model`,
+        },
+        customPrice: amountInCents, // Set custom price for the model purchase
+      }
+    );
+
+    if (checkoutError) {
+      logger.error("Lemon Squeezy checkout error", checkoutError as Error);
+      return NextResponse.json(
+        {
+          status: "error",
+          message: `Failed to create checkout: ${checkoutError.message}`,
+          code: "CHECKOUT_ERROR",
+        },
+        { status: 500 }
+      );
+    }
+
+    const checkoutId = checkoutData.data.id;
+    const checkoutUrl = checkoutData.data.attributes.url;
 
     // Create pending purchase record
     const purchase = await ModelPurchase.create({
       businessId: businessProfile._id,
       modelId: modelProfile._id,
-      stripePaymentIntentId: checkoutSession.payment_intent as string || checkoutSession.id,
-      stripeCheckoutSessionId: checkoutSession.id,
+      lemonsqueezyCheckoutId: checkoutId,
       amount: amountInCents,
       currency: "usd",
       platformCommission,
@@ -238,7 +374,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       modelId,
       businessId: businessProfile._id,
       amount: amountInCents,
-      checkoutSessionId: checkoutSession.id,
+      checkoutId: checkoutId,
     });
 
     return NextResponse.json(
@@ -246,7 +382,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
         status: "success",
         message: "Checkout session created",
         data: {
-          checkoutUrl: checkoutSession.url,
+          checkoutUrl: checkoutUrl,
           purchaseId: purchase._id,
           amount: amountInCents,
           currency: "usd",
