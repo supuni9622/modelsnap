@@ -17,21 +17,21 @@ export interface RateLimitConfig {
 export const RATE_LIMIT_CONFIGS = {
   // Payment endpoints - Moderate limits (allow for retries and upgrades)
   PAYMENT: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 15, // 15 requests per 15 minutes (increased to allow for upgrades and retries)
+    windowMs: 60 * 1000, // 15 minutes
+    maxRequests: 150, // 15 requests per 15 minutes (increased to allow for upgrades and retries)
     message: "Too many payment requests. Please try again later.",
   },
   
   // Webhook endpoints - Moderate limits (legitimate webhooks should be infrequent)
   WEBHOOK: {
     windowMs: 60 * 1000, // 1 minute
-    maxRequests: 10, // 10 requests per minute
+    maxRequests: 150, // 10 requests per minute
     message: "Too many webhook requests. Please check your webhook configuration.",
   },
   
   // Public endpoints - Moderate limits
   PUBLIC: {
-    windowMs: 60 * 1000, // 15 minutes
+    windowMs: 60 * 1000, // 1 minutes
     maxRequests: 120, // 20 requests per 15 minutes
     message: "Too many requests. Please try again later.",
   },
@@ -53,7 +53,7 @@ export const RATE_LIMIT_CONFIGS = {
   // General API endpoints - Standard limits
   API: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 100, // 100 requests per 15 minutes
+    maxRequests: 1000, // 100 requests per 15 minutes
     message: "Too many API requests. Please try again later.",
   },
   
