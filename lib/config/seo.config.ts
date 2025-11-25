@@ -21,7 +21,7 @@ const SEO_CONFIG: Metadata = {
       "ModelSnap.ai is an AI fashion photography platform that allows you to create realistic fashion photos with AI.",
     images: [
       {
-        url: "/dark-logo.png",
+        url: "/dark-logo1.png",
         width: 1200,
         height: 630,
         alt: "ModelSnap.ai - AI Fashion Photography",
@@ -34,7 +34,7 @@ const SEO_CONFIG: Metadata = {
     title: "ModelSnap.ai - AI Fashion Photography",
     description:
       "ModelSnap.ai is an AI fashion photography platform that allows you to create realistic fashion photos with AI.",
-    images: ["/dark-logo.png"],
+    images: ["/dark-logo1.png"],
   },
 };
 
