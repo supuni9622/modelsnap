@@ -15,10 +15,10 @@ export interface RateLimitConfig {
 
 // Default rate limit configurations for different endpoint types
 export const RATE_LIMIT_CONFIGS = {
-  // Payment endpoints - Very strict limits
+  // Payment endpoints - Moderate limits (allow for retries and upgrades)
   PAYMENT: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 5, // 5 requests per 15 minutes
+    maxRequests: 15, // 15 requests per 15 minutes (increased to allow for upgrades and retries)
     message: "Too many payment requests. Please try again later.",
   },
   

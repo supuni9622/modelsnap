@@ -3,6 +3,7 @@ import RenderQueue from "@/models/render-queue";
 import Generation from "@/models/generation";
 import Render from "@/models/render";
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
 import ModelProfile from "@/models/model-profile";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
@@ -10,10 +11,10 @@ import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiter";
 import { withTransaction } from "@/lib/transaction-utils";
 import { createLogger } from "@/lib/utils/logger";
 import { checkConsentStatus } from "@/lib/consent-utils";
+import { canGenerate } from "@/lib/credit-utils";
 import { randomUUID } from "crypto";
 
 const logger = createLogger({ component: "batch-render-api" });
-const ROYALTY_AMOUNT = 2.0;
 
 /**
  * POST /api/render/batch
@@ -105,41 +106,44 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
         );
       }
 
-      // Validate human model consent
+      // Validate human model (no consent required for generation/preview)
       if (isHumanModel) {
         const modelProfile = await ModelProfile.findById(modelId);
-        if (!modelProfile) {
+        if (!modelProfile || modelProfile.status !== "active") {
           return NextResponse.json(
             {
               status: "error",
-              message: `Model profile not found for modelId: ${modelId}`,
+              message: `Model profile not found or inactive for modelId: ${modelId}`,
               code: "MODEL_NOT_FOUND",
             },
             { status: 404 }
           );
         }
-
-        const hasConsent = await checkConsentStatus(userId, modelId);
-        if (!hasConsent) {
+      } else {
+        // Check credits for AI avatar using BusinessProfile
+        const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        if (!businessProfile) {
           return NextResponse.json(
             {
               status: "error",
-              message: `Consent not granted for model: ${modelId}`,
-              code: "CONSENT_REQUIRED",
+              message: "Business profile not found",
+              code: "PROFILE_NOT_FOUND",
             },
-            { status: 403 }
+            { status: 404 }
           );
         }
-      } else {
-        // Check credits for AI avatar
-        if (user.credits < 1) {
+
+        // Check if user can generate (includes subscription status and credit checks)
+        const canGen = await canGenerate(businessProfile);
+        if (!canGen.can) {
           return NextResponse.json(
             {
               status: "error",
-              message: "Insufficient credits",
-              code: "INSUFFICIENT_CREDITS",
+              message: canGen.reason || "Cannot generate",
+              code: "GENERATION_BLOCKED",
+              creditsAvailable: businessProfile.aiCreditsRemaining,
             },
-            { status: 400 }
+            { status: 402 }
           );
         }
       }
@@ -162,21 +166,20 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                 garmentImageUrl,
                 status: "pending",
                 creditsUsed: 0,
-                royaltyPaid: ROYALTY_AMOUNT,
+                royaltyPaid: 0, // No royalties - models only earn from purchases
               },
             ],
             { session }
           );
 
-          // Add royalty to model's balance
-          await ModelProfile.findByIdAndUpdate(
-            modelProfile._id,
-            { $inc: { royaltyBalance: ROYALTY_AMOUNT } },
-            { session }
-          );
-
           generationId = gen[0]._id.toString();
         } else {
+          // Get BusinessProfile for credit deduction
+          const businessProfile = await BusinessProfile.findOne({ userId: user._id }).session(session);
+          if (!businessProfile) {
+            throw new Error("Business profile not found");
+          }
+
           const render = await Render.create(
             [
               {
@@ -190,10 +193,10 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
             { session }
           );
 
-          // Deduct credits
-          await User.findOneAndUpdate(
-            { id: userId },
-            { $inc: { credits: -1 } },
+          // Deduct credits from BusinessProfile
+          await BusinessProfile.findByIdAndUpdate(
+            businessProfile._id,
+            { $inc: { aiCreditsRemaining: -1 } },
             { session }
           );
 

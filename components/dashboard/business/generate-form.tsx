@@ -5,12 +5,13 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Upload, X, Image as ImageIcon, Sparkles, Loader2, CheckCircle2 } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, Mountain, FileImage, Trash2, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { useAppContext } from "@/context/app";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Avatar {
   _id: string;
@@ -26,9 +27,16 @@ interface Model {
   status: string;
 }
 
+interface UploadedFile {
+  name: string;
+  size: number;
+  url: string;
+}
+
 export function GenerateForm() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const { billing, setBilling, refreshBillingData } = useAppContext();
   const [garmentImageUrl, setGarmentImageUrl] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [modelType, setModelType] = useState<"ai" | "human">("ai");
@@ -36,6 +44,8 @@ export function GenerateForm() {
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<string | null>(null);
   const [generationType, setGenerationType] = useState<"ai" | "human">("ai");
+  const [modelId, setModelId] = useState<string | null>(null);
+  const [isPurchased, setIsPurchased] = useState<boolean | null>(null);
 
   // Fetch AI avatars
   const { data: avatarsData, isLoading: avatarsLoading } = useQuery({
@@ -82,29 +92,60 @@ export function GenerateForm() {
       }
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Update credits immediately from API response (optimistic update)
+      if (data.data?.creditsRemaining !== undefined && billing) {
+        setBilling({
+          ...billing,
+          credits: data.data.creditsRemaining,
+        });
+      }
+
       // Display the generated image immediately
-      // Prioritize S3 URL (watermarked) for free users, or FASHN URL
-      const imageUrl = data.data?.renderedImageUrl || data.data?.outputS3Url || data.data?.fashnImageUrl;
+      const imageUrl = data.data?.previewImageUrl || data.data?.renderedImageUrl || data.data?.outputS3Url || data.data?.fashnImageUrl;
       if (imageUrl) {
         setGeneratedImageUrl(imageUrl);
         setGenerationId(data.data?.generationId);
-        setGenerationType(data.data?.type === "HUMAN_MODEL" ? "human" : "ai");
-        setStep(3); // Show result step
+        const isHuman = data.data?.type === "HUMAN_MODEL";
+        setGenerationType(isHuman ? "human" : "ai");
+        
+        // Check purchase status for human models
+        if (isHuman && selectedModel?._id) {
+          setModelId(selectedModel._id);
+          try {
+            const purchaseRes = await fetch(`/api/models/${selectedModel._id}/purchase-status`);
+            const purchaseData = await purchaseRes.json();
+            if (purchaseData.status === "success") {
+              setIsPurchased(purchaseData.data?.isPurchased || false);
+            }
+          } catch (error) {
+            console.error("Failed to check purchase status:", error);
+            setIsPurchased(false);
+          }
+        } else {
+          setIsPurchased(null);
+        }
+        
         toast.success("Generation completed! Image is ready.");
       } else {
         toast.success("Generation started! Check history for results.");
-        // Reset form
-        setStep(1);
-        setGarmentImageUrl(null);
-        setSelectedAvatar(null);
-        setSelectedModel(null);
       }
+
+      // Refresh billing data to ensure sync (runs in background)
+      refreshBillingData?.().catch((error) => {
+        console.error("Failed to refresh billing data:", error);
+      });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to start generation");
     },
   });
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
 
   const handleFileUpload = useCallback(async (file: File) => {
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -166,7 +207,11 @@ export function GenerateForm() {
       }
 
       setGarmentImageUrl(imageUrl);
-      setStep(2);
+      setUploadedFile({
+        name: file.name,
+        size: file.size,
+        url: imageUrl,
+      });
       toast.success("Image uploaded successfully!");
     } catch (err) {
       toast.error((err as Error).message || "Failed to upload image");
@@ -174,6 +219,11 @@ export function GenerateForm() {
       setIsUploading(false);
     }
   }, []);
+
+  const handleRemoveFile = () => {
+    setGarmentImageUrl(null);
+    setUploadedFile(null);
+  };
 
   const handleGenerate = () => {
     if (!garmentImageUrl) {
@@ -211,15 +261,18 @@ export function GenerateForm() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Step 1: Upload */}
-      {step === 1 && (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Left Column: Upload + Model Selection */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Section 1: Upload Your Product Image */}
         <Card>
           <CardHeader>
-            <CardTitle>Step 1: Upload Product Image</CardTitle>
-            <CardDescription>Upload an image of the clothing item you want to render</CardDescription>
+            <CardTitle>1. Upload Your Product Image</CardTitle>
+            <CardDescription>
+              Upload a clear, high-resolution image of your product. Supported formats: JPG, PNG.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div
               className={cn(
                 "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
@@ -251,23 +304,59 @@ export function GenerateForm() {
                   <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 )}
                 <p className="text-lg font-medium mb-2">
-                  {isUploading ? "Uploading..." : "Drag and drop or click to upload"}
+                  {isUploading ? "Uploading..." : "Click to upload or drag and drop"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  JPEG, PNG, WebP up to 10MB
+                  PNG, JPG (MAX. 10MB)
                 </p>
               </label>
             </div>
+
+            {/* Uploaded File Display */}
+            <AnimatePresence>
+              {uploadedFile && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border"
+                >
+                  <div className="relative w-12 h-12 rounded overflow-hidden bg-background flex items-center justify-center">
+                    {garmentImageUrl ? (
+                      <Image
+                        src={garmentImageUrl}
+                        alt={uploadedFile.name}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <FileImage className="w-6 h-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{uploadedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(uploadedFile.size)}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRemoveFile}
+                    className="h-8 w-8"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </CardContent>
         </Card>
-      )}
 
-      {/* Step 2: Select Model */}
-      {step === 2 && (
+        {/* Section 2: Choose Your Model */}
         <Card>
           <CardHeader>
-            <CardTitle>Step 2: Select Model</CardTitle>
-            <CardDescription>Choose between AI avatars or human models</CardDescription>
+            <CardTitle>2. Choose Your Model</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={modelType} onValueChange={(v) => setModelType(v as "ai" | "human")}>
@@ -282,19 +371,21 @@ export function GenerateForm() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="ai" className="mt-4">
+              <TabsContent value="ai" className="mt-6">
                 {avatarsLoading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[...Array(8)].map((_, i) => (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[...Array(6)].map((_, i) => (
                       <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {avatarsData?.map((avatar: Avatar) => (
-                      <button
+                      <motion.button
                         key={avatar._id}
                         onClick={() => setSelectedAvatar(avatar)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         className={cn(
                           "relative aspect-square rounded-lg overflow-hidden border-2 transition-all",
                           selectedAvatar?._id === avatar._id
@@ -308,18 +399,29 @@ export function GenerateForm() {
                           fill
                           className="object-cover"
                         />
-                        {selectedAvatar?._id === avatar._id && (
-                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                            <CheckCircle2 className="w-8 h-8 text-primary" />
-                          </div>
-                        )}
-                      </button>
+                        <AnimatePresence>
+                          {selectedAvatar?._id === avatar._id && (
+                            <motion.div
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0, opacity: 0 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              className="absolute top-2 right-2 bg-primary rounded-full p-1"
+                            >
+                              <CheckCircle2 className="w-5 h-5 text-primary-foreground" />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2">
+                          <p className="text-xs text-white font-medium truncate">{avatar.name}</p>
+                        </div>
+                      </motion.button>
                     ))}
                   </div>
                 )}
               </TabsContent>
 
-              <TabsContent value="human" className="mt-4">
+              <TabsContent value="human" className="mt-6">
                 {modelsLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[...Array(4)].map((_, i) => (
@@ -336,196 +438,339 @@ export function GenerateForm() {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {modelsData?.map((model: Model) => (
-                      <button
+                      <motion.button
                         key={model._id}
                         onClick={() => setSelectedModel(model)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         className={cn(
-                          "relative rounded-lg overflow-hidden border-2 p-4 text-left transition-all",
+                          "relative aspect-square rounded-lg overflow-hidden border-2 transition-all",
                           selectedModel?._id === model._id
                             ? "border-primary ring-2 ring-primary"
                             : "border-muted hover:border-primary/50"
                         )}
                       >
-                        <div className="flex gap-4">
-                          {model.referenceImages?.[0] && (
-                            <div className="relative w-20 h-20 rounded overflow-hidden">
-                              <Image
-                                src={model.referenceImages[0]}
-                                alt={model.name}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{model.name}</h3>
-                            <p className="text-sm text-muted-foreground">Status: {model.status}</p>
+                        {model.referenceImages?.[0] ? (
+                          <Image
+                            src={model.referenceImages[0]}
+                            alt={model.name}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <ImageIcon className="w-12 h-12 text-muted-foreground" />
                           </div>
+                        )}
+                        <AnimatePresence>
                           {selectedModel?._id === model._id && (
-                            <CheckCircle2 className="w-6 h-6 text-primary" />
+                            <motion.div
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0, opacity: 0 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              className="absolute top-2 right-2 bg-primary rounded-full p-1"
+                            >
+                              <CheckCircle2 className="w-5 h-5 text-primary-foreground" />
+                            </motion.div>
                           )}
+                        </AnimatePresence>
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2">
+                          <p className="text-xs text-white font-medium truncate">{model.name}</p>
                         </div>
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 )}
               </TabsContent>
             </Tabs>
 
-            <div className="flex gap-4 mt-6">
-              <Button variant="outline" onClick={() => setStep(1)}>
-                Back
-              </Button>
-              <Button
-                onClick={() => setStep(3)}
-                disabled={
-                  (modelType === "ai" && !selectedAvatar) ||
-                  (modelType === "human" && !selectedModel)
+            {/* Generate Button */}
+            <div className="mt-6">
+              <motion.div
+                whileHover={
+                  !renderMutation.isPending &&
+                  garmentImageUrl &&
+                  ((modelType === "ai" && selectedAvatar) || (modelType === "human" && selectedModel))
+                    ? { scale: 1.02 }
+                    : {}
                 }
-                className="flex-1"
+                whileTap={
+                  !renderMutation.isPending &&
+                  garmentImageUrl &&
+                  ((modelType === "ai" && selectedAvatar) || (modelType === "human" && selectedModel))
+                    ? { scale: 0.98 }
+                    : {}
+                }
               >
-                Continue
-              </Button>
+                <Button
+                  onClick={handleGenerate}
+                  disabled={
+                    !garmentImageUrl ||
+                    renderMutation.isPending ||
+                    (modelType === "ai" && !selectedAvatar) ||
+                    (modelType === "human" && !selectedModel)
+                  }
+                  className="w-full"
+                  size="lg"
+                >
+                  {renderMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Image"
+                  )}
+                </Button>
+              </motion.div>
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
 
-      {/* Step 3: Generate / Result */}
-      {step === 3 && (
-        <Card>
+      {/* Right Column: Preview Pane */}
+      <div className="lg:col-span-1">
+        <Card className="sticky top-6">
           <CardHeader>
-            <CardTitle>
-              {generatedImageUrl ? "Generation Complete!" : "Step 3: Generate"}
-            </CardTitle>
-            <CardDescription>
-              {generatedImageUrl
-                ? "Your generated image is ready"
-                : "Review your selection and generate the image"}
-            </CardDescription>
+            <CardTitle>Generated Image</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {generatedImageUrl ? (
-              // Show generated image result
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium mb-2">Generated Image:</p>
-                  <div className="relative w-full aspect-square rounded-lg overflow-hidden border bg-muted">
+          <CardContent>
+            <AnimatePresence mode="wait">
+              {renderMutation.isPending ? (
+                // Loading Animation
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex flex-col items-center justify-center py-12 text-center"
+                >
+                  <div className="relative w-full aspect-square rounded-lg overflow-hidden border bg-gradient-to-br from-muted via-muted/50 to-muted mb-6">
+                    {/* Animated background shimmer */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
+                      animate={{
+                        x: ["-100%", "100%"],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                    />
+                    
+                    {/* Floating magic wand icon */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <motion.div
+                        animate={{
+                          y: [0, -10, 0],
+                          rotate: [0, 5, -5, 0],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <Wand2 className="w-16 h-16 text-primary" />
+                      </motion.div>
+                    </div>
+
+                    {/* Pulsing dots */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-2 h-2 rounded-full bg-primary"
+                          animate={{
+                            scale: [1, 1.5, 1],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <p className="text-sm font-medium mb-2">Generating your image...</p>
+                    <p className="text-xs text-muted-foreground">
+                      This may take a few moments
+                    </p>
+                  </motion.div>
+                </motion.div>
+              ) : generatedImageUrl ? (
+                // Generated Image
+                <motion.div
+                  key="image"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="space-y-4"
+                >
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="relative w-full aspect-square rounded-lg overflow-hidden border bg-muted"
+                  >
                     <Image
                       src={generatedImageUrl}
                       alt="Generated fashion image"
                       fill
                       className="object-contain"
-                      unoptimized // FASHN CDN URLs may not be optimized
+                      unoptimized
                     />
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      // Download image via proxy to avoid CORS issues
-                      if (!generationId) {
-                        toast.error("Generation ID not found");
-                        return;
-                      }
-                      try {
-                        const downloadUrl = `/api/render/download?id=${generationId}&type=${generationType === "human" ? "human" : "ai"}`;
-                        const link = document.createElement("a");
-                        link.href = downloadUrl;
-                        link.download = `generated-${generationId || Date.now()}.jpg`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        toast.success("Download started");
-                      } catch (error) {
-                        console.error("Download error:", error);
-                        toast.error("Failed to download image");
-                      }
-                    }}
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="space-y-2"
                   >
-                    Download
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      // Reset and start over
-                      setGeneratedImageUrl(null);
-                      setGenerationId(null);
-                      setGenerationType("ai");
-                      setStep(1);
-                      setGarmentImageUrl(null);
-                      setSelectedAvatar(null);
-                      setSelectedModel(null);
-                    }}
-                  >
-                    Generate Another
-                  </Button>
-                  <Button asChild className="flex-1">
-                    <Link href="/dashboard/business/history">View History</Link>
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              // Show preview before generation
-              <>
-                {garmentImageUrl && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">Garment Image:</p>
-                    <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-                      <Image src={garmentImageUrl} alt="Garment" fill className="object-contain" />
-                    </div>
-                  </div>
-                )}
-
-                {modelType === "ai" && selectedAvatar && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">Selected AI Avatar:</p>
-                    <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
-                      <Image
-                        src={selectedAvatar.imageUrl}
-                        alt={selectedAvatar.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {modelType === "human" && selectedModel && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">Selected Human Model:</p>
-                    <p className="text-lg">{selectedModel.name}</p>
-                  </div>
-                )}
-
-                <div className="flex gap-4 pt-4">
-                  <Button variant="outline" onClick={() => setStep(2)}>
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={renderMutation.isPending}
-                    className="flex-1"
-                  >
-                    {renderMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
+                    {/* Download button */}
+                    {generationType === "human" && isPurchased === false ? (
+                      <Button
+                        variant="outline"
+                        disabled
+                        className="w-full"
+                        title="Purchase model access to download"
+                      >
+                        Download (Purchase Required)
+                      </Button>
                     ) : (
-                      "Generate"
+                      <Button
+                        variant="outline"
+                        onClick={async () => {
+                          if (!generationId) {
+                            toast.error("Generation ID not found");
+                            return;
+                          }
+                          try {
+                            const downloadUrl = `/api/render/download?id=${generationId}&type=${generationType === "human" ? "human" : "ai"}`;
+                            const response = await fetch(downloadUrl);
+                            if (!response.ok) {
+                              const errorData = await response.json();
+                              if (errorData.code === "PURCHASE_REQUIRED") {
+                                toast.error(errorData.message || "Purchase model access to download");
+                                return;
+                              }
+                              throw new Error(errorData.message || "Download failed");
+                            }
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement("a");
+                            link.href = url;
+                            link.download = `generated-${generationId || Date.now()}.jpg`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+                            toast.success("Download started");
+                          } catch (error) {
+                            console.error("Download error:", error);
+                            toast.error((error as Error).message || "Failed to download image");
+                          }
+                        }}
+                        className="w-full"
+                      >
+                        Download
+                      </Button>
                     )}
-                  </Button>
-                </div>
-              </>
-            )}
+                    
+                    {/* Purchase button for unpurchased human models */}
+                    {generationType === "human" && isPurchased === false && modelId && (
+                      <Button
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(`/api/models/purchase/checkout`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ modelId }),
+                            });
+                            const data = await res.json();
+                            if (data.status === "success" && data.data?.checkoutUrl) {
+                              window.location.href = data.data.checkoutUrl;
+                            } else {
+                              toast.error(data.message || "Failed to start purchase");
+                            }
+                          } catch (error) {
+                            toast.error("Failed to start purchase");
+                            console.error(error);
+                          }
+                        }}
+                        className="w-full"
+                      >
+                        Purchase Model Access
+                      </Button>
+                    )}
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setGeneratedImageUrl(null);
+                        setGenerationId(null);
+                        setGenerationType("ai");
+                        setGarmentImageUrl(null);
+                        setUploadedFile(null);
+                        setSelectedAvatar(null);
+                        setSelectedModel(null);
+                      }}
+                      className="w-full"
+                    >
+                      Generate Another
+                    </Button>
+                    <Button asChild className="w-full">
+                      <Link href="/dashboard/business/history">View History</Link>
+                    </Button>
+                  </motion.div>
+                </motion.div>
+              ) : (
+                // Placeholder
+                <motion.div
+                  key="placeholder"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center justify-center py-12 text-center"
+                >
+                  <motion.div
+                    animate={{
+                      y: [0, -5, 0],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4"
+                  >
+                    <Mountain className="w-12 h-12 text-muted-foreground" />
+                  </motion.div>
+                  <p className="text-sm font-medium mb-2">Your generated image will appear here</p>
+                  <p className="text-xs text-muted-foreground">
+                    Complete the steps on the left to begin.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   );
 }
-

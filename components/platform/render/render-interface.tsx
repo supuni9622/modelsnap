@@ -240,6 +240,8 @@ export function RenderInterface() {
               imageUrl={renderResult.renderedImageUrl}
               imageTitle="Rendered Image Preview"
               downloadFileName={`render-${renderResult.renderId}.jpg`}
+              generationId={renderResult.renderId}
+              type="ai"
             />
           </CardContent>
         </Card>

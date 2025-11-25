@@ -1,13 +1,23 @@
 // Import required dependencies
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import Stripe from "stripe";
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
 import { connectDB } from "@/lib/db";
 import { SiteSettings } from "@/lib/config/settings";
 import { stripe } from "@/lib/stripe";
 
 // Get public URL from site settings
-const publicUrl = SiteSettings.domainUrl;
+// Note: domainUrl may already include /en in production, so we normalize it
+let publicUrl = SiteSettings.domainUrl;
+// Remove trailing /en if present to avoid double locale
+if (publicUrl.endsWith("/en")) {
+  publicUrl = publicUrl.slice(0, -3);
+}
+
+// Default locale for URLs (since Stripe doesn't know the user's locale)
+const defaultLocale = "en";
 
 /**
  * Creates a new user in MongoDB and Stripe if they don't already exist
@@ -83,6 +93,141 @@ export async function POST(req: Request) {
     const user = await createUserIfNotExists(userId);
     console.log("User found:", user);
 
+    // Check if user has an existing subscription (for upgrades/downgrades)
+    // This prevents creating duplicate subscriptions
+    let existingSubscription: Stripe.Subscription | null = null;
+    
+    if (isSubscription && user.stripeCustomerId) {
+      try {
+        // First check BusinessProfile for subscription ID
+        const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        
+        if (businessProfile?.stripeSubscriptionId) {
+          try {
+            // Verify subscription exists in Stripe and is active
+            const subscription = await stripe.subscriptions.retrieve(
+              businessProfile.stripeSubscriptionId
+            );
+            
+            if (subscription.status !== "canceled" && subscription.status !== "unpaid" && subscription.status !== "incomplete_expired") {
+              existingSubscription = subscription;
+              console.log("✅ Found existing subscription from database:", existingSubscription.id, "Status:", subscription.status);
+            }
+          } catch (error) {
+            console.log("Subscription not found in Stripe, checking all subscriptions");
+          }
+        }
+        
+        // If not found in database, check Stripe directly
+        if (!existingSubscription) {
+          const subscriptions = await stripe.subscriptions.list({
+            customer: user.stripeCustomerId,
+            status: "all",
+            limit: 10,
+          });
+          
+          // Find first active subscription
+          const activeSub = subscriptions.data.find(
+            (sub) => sub.status !== "canceled" && sub.status !== "unpaid" && sub.status !== "incomplete_expired"
+          );
+          
+          if (activeSub) {
+            existingSubscription = activeSub;
+            console.log("✅ Found existing subscription from Stripe:", existingSubscription.id, "Status:", activeSub.status);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking existing subscription:", error);
+        // Continue with checkout creation if check fails
+      }
+    }
+
+    // If user has existing subscription, update it instead of creating new one
+    if (isSubscription && existingSubscription && !trial) {
+      const currentPriceId = existingSubscription.items.data[0]?.price?.id;
+      
+      // Check if user is already on this plan
+      if (currentPriceId === priceId) {
+        console.log("User is already on this plan");
+        return NextResponse.json(
+          {
+            url: `${publicUrl}/${defaultLocale}/dashboard/business/billing/success-payment?already_on_plan=true`,
+            message: "You are already subscribed to this plan",
+          },
+          { status: 200 }
+        );
+      }
+
+      console.log("Updating existing subscription from", currentPriceId, "to", priceId);
+      
+      try {
+        // Update existing subscription to new plan
+        const updatedSubscription = await stripe.subscriptions.update(
+          existingSubscription.id,
+          {
+            items: [
+              {
+                id: existingSubscription.items.data[0].id,
+                price: priceId,
+              },
+            ],
+            proration_behavior: "always_invoice", // Create prorated invoice immediately
+          }
+        );
+
+        console.log("✅ Subscription updated successfully:", updatedSubscription.id);
+        
+        // Check invoice to ensure it's not $0 for upgrades
+        if (updatedSubscription.latest_invoice) {
+          const invoice = await stripe.invoices.retrieve(
+            updatedSubscription.latest_invoice as string
+          );
+          
+          // Get prices to determine if upgrade or downgrade
+          const currentPrice = await stripe.prices.retrieve(currentPriceId);
+          const newPrice = await stripe.prices.retrieve(priceId);
+          const isUpgrade = newPrice.unit_amount! > currentPrice.unit_amount!;
+          
+          console.log("Invoice details:", {
+            id: invoice.id,
+            amount_due: invoice.amount_due,
+            total: invoice.total,
+            isUpgrade,
+          });
+          
+          if (isUpgrade && invoice.amount_due <= 0) {
+            console.error("❌ ERROR: Upgrade invoice is $0! This should not happen.");
+          }
+        }
+        
+        // Return success URL - webhook will handle credit updates
+        return NextResponse.json(
+          {
+            url: `${publicUrl}/${defaultLocale}/dashboard/business/billing/success-payment?subscription_updated=true`,
+            subscriptionId: updatedSubscription.id,
+          },
+          { status: 200 }
+        );
+      } catch (updateError: any) {
+        console.error("❌ Failed to update subscription:", updateError);
+        // Fall through to create new checkout session if update fails
+        console.log("Falling back to creating new checkout session");
+      }
+    }
+
+    // Construct success and cancel URLs
+    // Stripe will automatically replace {CHECKOUT_SESSION_ID} with the actual session ID
+    const successUrl = `${publicUrl}/${defaultLocale}/dashboard/business/billing/success-payment?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${publicUrl}/${defaultLocale}/dashboard/business/billing/cancel-payment`;
+    
+    console.log("Creating checkout session with URLs:", {
+      successUrl,
+      cancelUrl,
+      publicUrl,
+      defaultLocale,
+      hasExistingSubscription: !!existingSubscription,
+    });
+
     let session;
     if (isSubscription) {
       // Handle subscription checkout
@@ -93,8 +238,8 @@ export async function POST(req: Request) {
           line_items: [{ price: priceId, quantity: 1 }],
           mode: "subscription",
           subscription_data: { trial_period_days: trial },
-          success_url: `${publicUrl}/dashboard/business/billing/success-payment`,
-          cancel_url: `${publicUrl}/dashboard/business/billing/cancel-payment`,
+          success_url: successUrl,
+          cancel_url: cancelUrl,
         });
       } else {
         // Create regular subscription checkout session
@@ -102,8 +247,8 @@ export async function POST(req: Request) {
           customer: user.stripeCustomerId,
           line_items: [{ price: priceId, quantity: 1 }],
           mode: "subscription",
-          success_url: `${publicUrl}/dashboard/business/billing/success-payment`,
-          cancel_url: `${publicUrl}/dashboard/business/billing/cancel-payment`,
+          success_url: successUrl,
+          cancel_url: cancelUrl,
         });
       }
     } else {
@@ -112,12 +257,18 @@ export async function POST(req: Request) {
         customer: user.stripeCustomerId,
         line_items: [{ price: priceId, quantity: 1 }],
         mode: "payment",
-        success_url: `${publicUrl}/dashboard/business/billing/success-payment`,
-        cancel_url: `${publicUrl}/dashboard/business/billing/cancel-payment`,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
       });
     }
 
-    console.log("Checkout session created:", session);
+    console.log("✅ Checkout session created:", {
+      sessionId: session.id,
+      url: session.url,
+      successUrl: session.success_url,
+      cancelUrl: session.cancel_url,
+    });
+    
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (error) {
     const err = error as Error;

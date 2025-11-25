@@ -1,7 +1,8 @@
 import { Metadata } from "next";
-import BillingInfo from "@/components/platform/billing/billing-info";
 import { InvoiceList } from "@/components/platform/billing/invoice-list";
 import UpgradePlanComponents from "@/components/platform/billing/upgrade-plan";
+import CurrentPlanCard from "@/components/platform/billing/current-plan-card";
+import MonthlyCreditsCard from "@/components/platform/billing/monthly-credits-card";
 
 export const metadata: Metadata = {
   title: "Billing | ModelSnap.ai",
@@ -17,7 +18,10 @@ export default function BillingPage() {
           Manage your subscription plan, view credits, and access invoices
         </p>
       </div>
-      <BillingInfo />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CurrentPlanCard />
+        <MonthlyCreditsCard />
+      </div>
       <UpgradePlanComponents />
       <InvoiceList />
     </div>

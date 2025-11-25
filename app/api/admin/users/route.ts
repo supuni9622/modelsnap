@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/db";
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiter";
@@ -64,13 +65,47 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
       User.countDocuments(query),
     ]);
 
+    // For business users, fetch BusinessProfile to get actual credits
+    const businessUserIds = users
+      .filter((u: any) => u.role === "BUSINESS")
+      .map((u: any) => u._id);
+
+    const businessProfiles = businessUserIds.length > 0
+      ? await BusinessProfile.find({ userId: { $in: businessUserIds } }).lean()
+      : [];
+
+    // Create a map of userId -> BusinessProfile for quick lookup
+    const businessProfileMap = new Map(
+      businessProfiles.map((bp: any) => [bp.userId.toString(), bp])
+    );
+
+    // Enrich users with BusinessProfile credits for business users
+    const enrichedUsers = users.map((user: any) => {
+      if (user.role === "BUSINESS") {
+        const businessProfile = businessProfileMap.get(user._id.toString());
+        return {
+          ...user,
+          credits: businessProfile?.aiCreditsRemaining ?? user.credits ?? 0,
+          // Include additional business profile info for reference
+          businessProfile: businessProfile
+            ? {
+                subscriptionTier: businessProfile.subscriptionTier,
+                aiCreditsTotal: businessProfile.aiCreditsTotal,
+                subscriptionStatus: businessProfile.subscriptionStatus,
+              }
+            : null,
+        };
+      }
+      return user;
+    });
+
     const totalPages = Math.ceil(total / limit);
 
     return NextResponse.json(
       {
         status: "success",
         data: {
-          users,
+          users: enrichedUsers,
           pagination: {
             page,
             limit,

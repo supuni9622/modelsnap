@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import {
@@ -24,11 +24,7 @@ export default function RoleSwitcher() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
 
-  useEffect(() => {
-    fetchCurrentRole();
-  }, [userId]);
-
-  const fetchCurrentRole = async () => {
+  const fetchCurrentRole = useCallback(async () => {
     if (!userId) {
       setIsLoading(false);
       return;
@@ -46,7 +42,11 @@ export default function RoleSwitcher() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchCurrentRole();
+  }, [fetchCurrentRole]);
 
   const handleRoleSwitch = async (newRole: UserRole) => {
     if (newRole === currentRole || !userId) return;

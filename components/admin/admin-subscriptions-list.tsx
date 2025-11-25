@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CreditCard, Mail, User as UserIcon } from "lucide-react";
@@ -36,11 +36,7 @@ export function AdminSubscriptionsList() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  useEffect(() => {
-    fetchSubscriptions();
-  }, [page]);
-
-  const fetchSubscriptions = async () => {
+  const fetchSubscriptions = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -61,7 +57,11 @@ export function AdminSubscriptionsList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
+
+  useEffect(() => {
+    fetchSubscriptions();
+  }, [fetchSubscriptions]);
 
   const getPlanBadge = (plan: Subscription["plan"]) => {
     if (plan.type === "free") {

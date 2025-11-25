@@ -15,10 +15,12 @@ interface Generation {
   type: "AI_AVATAR" | "HUMAN_MODEL";
   garmentImageUrl: string;
   outputS3Url?: string;
+  previewImageUrl?: string;
   status: string;
   creditsUsed?: number;
   royaltyPaid?: number;
   modelName?: string;
+  modelId?: string;
   createdAt: string;
 }
 
@@ -50,21 +52,42 @@ export function HistoryList() {
     },
   });
 
-  const handleDownload = async (url: string, filename: string) => {
+  const handleDownload = async (generationId: string, type: "AI_AVATAR" | "HUMAN_MODEL", modelId?: string) => {
     try {
-      const response = await fetch(url);
+      // For human models, check purchase status first
+      if (type === "HUMAN_MODEL" && modelId) {
+        const purchaseRes = await fetch(`/api/models/${modelId}/purchase-status`);
+        const purchaseData = await purchaseRes.json();
+        if (purchaseData.status === "success" && !purchaseData.data?.isPurchased) {
+          toast.error("Purchase model access to download");
+          return;
+        }
+      }
+      
+      const downloadUrl = `/api/render/download?id=${generationId}&type=${type === "HUMAN_MODEL" ? "human" : "ai"}`;
+      const response = await fetch(downloadUrl);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.code === "PURCHASE_REQUIRED") {
+          toast.error(errorData.message || "Purchase model access to download");
+          return;
+        }
+        throw new Error(errorData.message || "Download failed");
+      }
+      
       const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = filename;
+      a.href = url;
+      a.download = `generation-${generationId}.jpg`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(downloadUrl);
+      window.URL.revokeObjectURL(url);
       toast.success("Image downloaded");
     } catch (err) {
-      toast.error("Failed to download image");
+      toast.error((err as Error).message || "Failed to download image");
     }
   };
 
@@ -133,18 +156,38 @@ export function HistoryList() {
               <Card key={gen._id} className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="relative aspect-square">
-                    {gen.outputS3Url ? (
-                      <Image
-                        src={gen.outputS3Url}
-                        alt="Generated image"
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <p className="text-muted-foreground">No image</p>
-                      </div>
-                    )}
+                    {(() => {
+                      // Always use watermarked preview URL for display
+                      // Never use outputS3Url directly (it's non-watermarked)
+                      let imageUrl: string | null = null;
+                      
+                      // Priority 1: Use previewImageUrl from API (already includes full watermarked URL)
+                      if (gen.previewImageUrl) {
+                        imageUrl = gen.previewImageUrl;
+                      } 
+                      // Priority 2: Construct watermarked URL if outputS3Url exists
+                      else if (gen.outputS3Url) {
+                        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+                        const typeParam = gen.type === "HUMAN_MODEL" ? "human" : "ai";
+                        // Add cache-busting parameter to ensure fresh watermarked image
+                        imageUrl = `${baseUrl}/api/images/${gen._id}/watermarked?type=${typeParam}&v=1`;
+                      }
+                      
+                      return imageUrl ? (
+                        <Image
+                          src={imageUrl}
+                          alt="Generated image"
+                          fill
+                          className="object-cover"
+                          unoptimized
+                          key={`watermarked-${gen._id}`} // Force re-render to avoid cache
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <p className="text-muted-foreground">No image</p>
+                        </div>
+                      );
+                    })()}
                     <div className="absolute top-2 right-2 flex gap-2">
                       <Badge
                         variant={
@@ -166,17 +209,16 @@ export function HistoryList() {
                         {gen.type === "AI_AVATAR" ? "AI" : "Human"}
                       </Badge>
                     </div>
-                    {gen.outputS3Url && (
+                    {(gen.previewImageUrl || gen.outputS3Url) && (
                       <div className="absolute bottom-2 right-2">
                         <Button
                           size="sm"
                           variant="secondary"
                           onClick={() =>
-                            handleDownload(
-                              gen.outputS3Url!,
-                              `generation-${gen._id}.jpg`
-                            )
+                            handleDownload(gen._id, gen.type, gen.modelId)
                           }
+                          disabled={gen.type === "HUMAN_MODEL" && !gen.modelId}
+                          title={gen.type === "HUMAN_MODEL" && !gen.modelId ? "Purchase required" : "Download"}
                         >
                           <Download className="w-4 h-4" />
                         </Button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,11 +35,7 @@ export function InvoiceList() {
     hasPrevPage: false,
   });
 
-  useEffect(() => {
-    fetchInvoices();
-  }, [page]);
-
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/invoices?page=${page}&limit=10`);
@@ -54,7 +50,11 @@ export function InvoiceList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   const getStatusBadge = (status: Invoice["status"]) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {

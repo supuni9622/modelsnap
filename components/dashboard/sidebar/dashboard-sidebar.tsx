@@ -5,25 +5,14 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarHeader,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/logo";
 import SidebarButton from "@/components/platform/sidebar/sidebar-button";
 import { usePathname } from "@/i18n/navigation";
-import {
-  Sparkles,
-  History,
-  Users,
-  CreditCard,
-  User,
-  FileText,
-  DollarSign,
-  BarChart3,
-  MailCheck,
-  Coins,
-  Settings,
-  UserCheck,
-} from "lucide-react";
 import type { UserRole } from "@/lib/auth-utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface DashboardSidebarProps {
   role: UserRole;
@@ -32,27 +21,27 @@ interface DashboardSidebarProps {
 const businessNavItems = [
   {
     label: "Generate",
-    icon: <Sparkles className="w-4 h-4" />,
+    emoji: "✨",
     path: "/dashboard/business/generate",
   },
   {
     label: "Models",
-    icon: <Users className="w-4 h-4" />,
+    emoji: "👥",
     path: "/dashboard/business/models",
   },
   {
     label: "History",
-    icon: <History className="w-4 h-4" />,
+    emoji: "📜",
     path: "/dashboard/business/history",
   },
   {
     label: "Billing",
-    icon: <CreditCard className="w-4 h-4" />,
+    emoji: "💳",
     path: "/dashboard/business/billing",
   },
   {
     label: "Profile",
-    icon: <User className="w-4 h-4" />,
+    emoji: "👤",
     path: "/dashboard/business/profile",
   },
 ];
@@ -60,17 +49,22 @@ const businessNavItems = [
 const modelNavItems = [
   {
     label: "Profile",
-    icon: <User className="w-4 h-4" />,
+    emoji: "👤",
     path: "/dashboard/model/profile",
   },
   {
+    label: "Portfolio",
+    emoji: "📸",
+    path: "/dashboard/model/portfolio",
+  },
+  {
     label: "Requests",
-    icon: <FileText className="w-4 h-4" />,
+    emoji: "📋",
     path: "/dashboard/model/requests",
   },
   {
     label: "Earnings",
-    icon: <DollarSign className="w-4 h-4" />,
+    emoji: "💰",
     path: "/dashboard/model/earnings",
   },
 ];
@@ -78,27 +72,27 @@ const modelNavItems = [
 const adminNavItems = [
   {
     label: "Analytics",
-    icon: <BarChart3 className="w-4 h-4" />,
+    emoji: "📊",
     path: "/dashboard/admin/analytics",
   },
   {
     label: "Consent",
-    icon: <UserCheck className="w-4 h-4" />,
+    emoji: "✅",
     path: "/dashboard/admin/consent",
   },
   {
     label: "Credits",
-    icon: <Coins className="w-4 h-4" />,
+    emoji: "🪙",
     path: "/dashboard/admin/credits",
   },
   {
     label: "Subscriptions",
-    icon: <CreditCard className="w-4 h-4" />,
+    emoji: "💳",
     path: "/dashboard/admin/subscriptions",
   },
   {
     label: "Users",
-    icon: <Users className="w-4 h-4" />,
+    emoji: "👥",
     path: "/dashboard/admin/users",
   },
 ];
@@ -120,22 +114,73 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
   };
 
   const navItems = getNavItems();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar className="bg-background border-r">
-      <SidebarHeader className="bg-background">
-        <div className="py-2 px-2">
-          <Logo />
-        </div>
+    <Sidebar className="bg-background border-r" collapsible="icon">
+      <SidebarHeader className="bg-background border-b">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className={cn(
+            "py-3 flex items-center transition-all duration-200",
+            isCollapsed ? "px-2 justify-center" : "px-3"
+          )}
+        >
+          <div className={cn("shrink-0", isCollapsed ? "" : "-mr-2")}>
+            <Logo className={cn(isCollapsed ? "!w-[40px] !h-[40px]" : "!w-[120px] !h-[45px]")} />
+          </div>
+          <AnimatePresence mode="wait">
+            {!isCollapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2 }}
+                className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent whitespace-nowrap overflow-hidden"
+              >
+                ModelSnap
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </SidebarHeader>
       <SidebarContent className="bg-background">
-        <SidebarGroup className="space-y-1">
-          <p className="text-xs pb-1 text-muted-foreground px-2">Navigation</p>
+        <SidebarGroup className={cn("space-y-1 pt-4", isCollapsed ? "px-1" : "px-2")} data-collapsible={isCollapsed ? "icon" : ""}>
           {navItems.map((item, idx) => (
-            <SidebarButton key={idx} path={item.path} onClick={() => {}}>
-              {item.icon}
-              <span>{item.label}</span>
-            </SidebarButton>
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 + idx * 0.05, duration: 0.3 }}
+            >
+              <SidebarButton path={item.path} onClick={() => {}}>
+                <span 
+                  className={cn(
+                    isCollapsed ? "text-xl" : "text-lg"
+                  )}
+                  role="img"
+                  aria-label={item.label}
+                >
+                  {item.emoji}
+                </span>
+                <AnimatePresence mode="wait">
+                  {!isCollapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="font-medium whitespace-nowrap overflow-hidden"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </SidebarButton>
+            </motion.div>
           ))}
         </SidebarGroup>
       </SidebarContent>

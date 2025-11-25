@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/db";
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
 import CreditTransaction from "@/models/credit-transaction";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
@@ -92,53 +93,121 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (req: NextReques
       );
     }
 
-    // Calculate new balance
-    const currentBalance = targetUser.credits || 0;
-    const newBalance = currentBalance + amount;
+    // Check if user is a business user (use BusinessProfile for credits)
+    const businessProfile = await BusinessProfile.findOne({ userId: targetUser._id });
+    
+    let currentBalance: number;
+    let newBalance: number;
+    let updatedBalance: number;
 
-    // Prevent negative balances (unless explicitly allowed)
-    if (newBalance < 0 && amount < 0) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message: "Insufficient credits. Cannot deduct more than available.",
-          code: "INSUFFICIENT_CREDITS",
-        },
-        { status: 400 }
-      );
-    }
+    if (businessProfile) {
+      // Business user: Use BusinessProfile.aiCreditsRemaining
+      currentBalance = businessProfile.aiCreditsRemaining || 0;
+      newBalance = currentBalance + amount;
 
-    // Update credits and create transaction record atomically
-    await withTransaction(async (session) => {
-      // Update user credits
-      await User.findByIdAndUpdate(
-        targetUser._id,
-        { $inc: { credits: amount } },
-        { session }
-      );
-
-      // Create transaction record
-      await CreditTransaction.create(
-        [
+      // Prevent negative balances (unless explicitly allowed)
+      if (newBalance < 0 && amount < 0) {
+        return NextResponse.json(
           {
-            userId: targetUser._id,
-            type: "ADMIN_ADJUSTMENT",
-            amount,
-            balanceAfter: newBalance,
-            reason: reason.trim(),
-            adminUserId: adminUser._id,
-            metadata: {
-              adminName: `${adminUser.firstName || ""} ${adminUser.lastName || ""}`.trim(),
-              adminEmail: adminUser.emailAddress?.[0],
-            },
+            status: "error",
+            message: "Insufficient credits. Cannot deduct more than available.",
+            code: "INSUFFICIENT_CREDITS",
           },
-        ],
-        { session }
-      );
-    });
+          { status: 400 }
+        );
+      }
 
-    // Get updated user
-    const updatedUser = await User.findOne({ id: targetUserId });
+      // Update BusinessProfile credits and create transaction record atomically
+      await withTransaction(async (session) => {
+        // Update BusinessProfile credits (new system)
+        await BusinessProfile.findByIdAndUpdate(
+          businessProfile._id,
+          { $inc: { aiCreditsRemaining: amount } },
+          { session }
+        );
+
+        // Also update legacy User.credits for backward compatibility
+        await User.findByIdAndUpdate(
+          targetUser._id,
+          { $inc: { credits: amount } },
+          { session }
+        );
+
+        // Create transaction record
+        await CreditTransaction.create(
+          [
+            {
+              userId: targetUser._id,
+              type: "ADMIN_ADJUSTMENT",
+              amount,
+              balanceAfter: newBalance,
+              reason: reason.trim(),
+              adminUserId: adminUser._id,
+              metadata: {
+                adminName: `${adminUser.firstName || ""} ${adminUser.lastName || ""}`.trim(),
+                adminEmail: adminUser.emailAddress?.[0],
+                adjustedField: "BusinessProfile.aiCreditsRemaining",
+              },
+            },
+          ],
+          { session }
+        );
+      });
+
+      // Get updated business profile
+      const updatedBusinessProfile = await BusinessProfile.findOne({ userId: targetUser._id });
+      updatedBalance = updatedBusinessProfile?.aiCreditsRemaining || newBalance;
+    } else {
+      // Non-business user: Use User.credits (legacy)
+      currentBalance = targetUser.credits || 0;
+      newBalance = currentBalance + amount;
+
+      // Prevent negative balances (unless explicitly allowed)
+      if (newBalance < 0 && amount < 0) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Insufficient credits. Cannot deduct more than available.",
+            code: "INSUFFICIENT_CREDITS",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Update user credits and create transaction record atomically
+      await withTransaction(async (session) => {
+        // Update user credits
+        await User.findByIdAndUpdate(
+          targetUser._id,
+          { $inc: { credits: amount } },
+          { session }
+        );
+
+        // Create transaction record
+        await CreditTransaction.create(
+          [
+            {
+              userId: targetUser._id,
+              type: "ADMIN_ADJUSTMENT",
+              amount,
+              balanceAfter: newBalance,
+              reason: reason.trim(),
+              adminUserId: adminUser._id,
+              metadata: {
+                adminName: `${adminUser.firstName || ""} ${adminUser.lastName || ""}`.trim(),
+                adminEmail: adminUser.emailAddress?.[0],
+                adjustedField: "User.credits",
+              },
+            },
+          ],
+          { session }
+        );
+      });
+
+      // Get updated user
+      const updatedUser = await User.findOne({ id: targetUserId });
+      updatedBalance = updatedUser?.credits || newBalance;
+    }
 
     return NextResponse.json(
       {
@@ -148,7 +217,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (req: NextReques
           userId: targetUser.id,
           previousBalance: currentBalance,
           adjustment: amount,
-          newBalance: updatedUser?.credits || newBalance,
+          newBalance: updatedBalance,
+          creditField: businessProfile ? "BusinessProfile.aiCreditsRemaining" : "User.credits",
         },
       },
       { status: 200 }

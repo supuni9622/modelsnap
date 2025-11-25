@@ -77,10 +77,27 @@ export async function applyWatermark(
  * Check if user should have watermarked images
  * @param planId - User's plan ID
  * @param isPremium - Whether user has premium plan
+ * @param isHumanModel - Whether this is a human model generation
+ * @param modelId - Model ID (for human models)
+ * @param purchasedModels - Array of purchased model IDs (for human models)
  * @returns true if watermark should be applied
  */
-export function shouldApplyWatermark(planId?: string, isPremium?: boolean): boolean {
-  // Apply watermark for free plan users
+export function shouldApplyWatermark(
+  planId?: string,
+  isPremium?: boolean,
+  isHumanModel?: boolean,
+  modelId?: string,
+  purchasedModels?: any[]
+): boolean {
+  // For human models: always watermark UNLESS purchased
+  if (isHumanModel && modelId && purchasedModels) {
+    const isPurchased = purchasedModels.some(
+      (id: any) => id.toString() === modelId.toString()
+    );
+    return !isPurchased; // Watermark if NOT purchased
+  }
+
+  // For AI models: watermark for free plan users only
   return planId === "free" || planId === undefined || isPremium === false;
 }
 

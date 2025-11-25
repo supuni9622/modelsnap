@@ -35,6 +35,21 @@ interface ModelProfile {
   referenceImages: string[];
   status: "active" | "paused" | "inactive";
   consentSigned: boolean;
+  phoneNumber?: string;
+  paymentMethods?: {
+    preferredMethod?: string;
+    stripeConnectedAccountId?: string;
+    paypalEmail?: string;
+    bankDetails?: {
+      bankName?: string;
+      accountNumber?: string;
+      accountHolderName?: string;
+      swiftCode?: string;
+      routingNumber?: string;
+      branchCode?: string;
+    };
+  };
+  activeness?: string;
 }
 
 interface UploadedImage {
@@ -49,17 +64,18 @@ export function ModelProfileEdit() {
   const [name, setName] = useState("");
   const [referenceImages, setReferenceImages] = useState<UploadedImage[]>([]);
   const [status, setStatus] = useState<"active" | "paused" | "inactive">("active");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [paypalEmail, setPaypalEmail] = useState("");
+  const [stripeConnected, setStripeConnected] = useState(false);
+  const [activeness, setActiveness] = useState<"active" | "paused" | "inactive">("active");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
 
-  useEffect(() => {
-    fetchModelProfile();
-  }, []);
-
-  const fetchModelProfile = async () => {
+  const fetchModelProfile = useCallback(async () => {
     try {
       const response = await fetch("/api/model/profile");
       const data = await response.json();
@@ -69,6 +85,11 @@ export function ModelProfileEdit() {
         setModelProfile(profile);
         setName(profile.name || "");
         setStatus(profile.status || "active");
+        setPhoneNumber(profile.phoneNumber || "");
+        setPaymentMethod(profile.paymentMethods?.preferredMethod || "");
+        setPaypalEmail(profile.paymentMethods?.paypalEmail || "");
+        setStripeConnected(!!profile.paymentMethods?.stripeConnectedAccountId);
+        setActiveness(profile.activeness || profile.status || "active");
         // Convert existing images to UploadedImage format
         setReferenceImages(
           (profile.referenceImages || []).map((url: string) => ({
@@ -87,7 +108,11 @@ export function ModelProfileEdit() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    fetchModelProfile();
+  }, [fetchModelProfile]);
 
   const handleFileUpload = useCallback(
     async (file: File) => {
@@ -236,6 +261,13 @@ export function ModelProfileEdit() {
           name: name.trim(),
           referenceImages: referenceImages.map((img) => img.url),
           status,
+          phoneNumber: phoneNumber.trim() || undefined,
+          paymentMethods: {
+            preferredMethod: paymentMethod || undefined,
+            paypalEmail: paymentMethod === "paypal" ? paypalEmail.trim() : undefined,
+            stripeConnectedAccountId: paymentMethod === "stripe_connect" && stripeConnected ? "connected" : undefined,
+          },
+          activeness: activeness,
         }),
       });
 
@@ -331,51 +363,121 @@ export function ModelProfileEdit() {
           </CardContent>
         </Card>
 
+        {/* Personal Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Personal Information</CardTitle>
+            <CardDescription>
+              Your contact and payment information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="+1 (555) 123-4567"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paymentMethod">Preferred Payment Method</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="stripe_connect">Stripe Connect</SelectItem>
+                  <SelectItem value="paypal">PayPal</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {paymentMethod === "paypal" && (
+              <div className="space-y-2">
+                <Label htmlFor="paypalEmail">PayPal Email</Label>
+                <Input
+                  id="paypalEmail"
+                  type="email"
+                  value={paypalEmail}
+                  onChange={(e) => setPaypalEmail(e.target.value)}
+                  placeholder="your.email@example.com"
+                />
+              </div>
+            )}
+
+            {paymentMethod === "stripe_connect" && (
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  {stripeConnected
+                    ? "✓ Stripe Connect account linked"
+                    : "Connect your Stripe account to receive automated payouts"}
+                </p>
+                {!stripeConnected && (
+                  <Button type="button" variant="outline" size="sm" className="mt-2">
+                    Connect Stripe
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Status Selection */}
         <Card>
           <CardHeader>
-            <CardTitle>Profile Status</CardTitle>
+            <CardTitle>Profile Status & Activeness</CardTitle>
             <CardDescription>
-              Control your visibility in the marketplace
+              Control your visibility and activity in the marketplace
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Label htmlFor="status">Status</Label>
-            <Select value={status} onValueChange={(value: "active" | "paused" | "inactive") => setStatus(value)}>
-              <SelectTrigger className="mt-2">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">
-                  <div className="flex items-center gap-2">
-                    <Play className="h-4 w-4 text-green-600" />
-                    Active - Visible in marketplace
-                  </div>
-                </SelectItem>
-                <SelectItem value="paused">
-                  <div className="flex items-center gap-2">
-                    <Pause className="h-4 w-4 text-yellow-600" />
-                    Paused - Hidden from marketplace
-                  </div>
-                </SelectItem>
-                <SelectItem value="inactive" disabled>
-                  <div className="flex items-center gap-2">
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                    Inactive - Deactivated
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground mt-2">
-              {status === "active" && "Your profile is visible to businesses in the marketplace"}
-              {status === "paused" && "Your profile is hidden but can be reactivated anytime"}
-              {status === "inactive" && "Your profile is deactivated and cannot be used"}
-            </p>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={status} onValueChange={(value: "active" | "paused" | "inactive") => {
+                setStatus(value);
+                setActiveness(value);
+              }}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">
+                    <div className="flex items-center gap-2">
+                      <Play className="h-4 w-4 text-green-600" />
+                      Active - Visible in marketplace
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="paused">
+                    <div className="flex items-center gap-2">
+                      <Pause className="h-4 w-4 text-yellow-600" />
+                      Paused - Hidden from marketplace
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="inactive" disabled>
+                    <div className="flex items-center gap-2">
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                      Inactive - Deactivated
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-2">
+                {status === "active" && "Your profile is visible to businesses in the marketplace"}
+                {status === "paused" && "Your profile is hidden but can be reactivated anytime"}
+                {status === "inactive" && "Your profile is deactivated and cannot be used"}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
         {/* Reference Images Upload */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>Reference Images</CardTitle>
             <CardDescription>
@@ -383,7 +485,7 @@ export function ModelProfileEdit() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Upload Area */}
+            
             {referenceImages.length < 4 && (
               <div
                 onDragOver={handleDragOver}
@@ -427,7 +529,7 @@ export function ModelProfileEdit() {
               </div>
             )}
 
-            {/* Uploaded Images Grid */}
+           
             {referenceImages.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {referenceImages.map((image, index) => (
@@ -466,7 +568,7 @@ export function ModelProfileEdit() {
               </p>
             )}
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Error Message */}
         {error && (

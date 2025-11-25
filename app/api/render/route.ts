@@ -4,6 +4,7 @@ import Render from "@/models/render";
 import Generation from "@/models/generation";
 import ModelProfile from "@/models/model-profile";
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
 import Avatar from "@/models/avatar";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
@@ -13,10 +14,9 @@ import { createLogger } from "@/lib/utils/logger";
 import { uploadToS3, generateS3Key, isS3Configured } from "@/lib/s3";
 import { checkConsentStatus } from "@/lib/consent-utils";
 import { sendRenderCompletionEmail, sendLowCreditWarningEmail } from "@/lib/email-notifications";
+import { canGenerate, deductCredit } from "@/lib/credit-utils";
 
 const logger = createLogger({ component: "render-api" });
-
-const ROYALTY_AMOUNT = 2.0; // $2.00 per human model generation
 
 /**
  * POST /api/render
@@ -24,15 +24,15 @@ const ROYALTY_AMOUNT = 2.0; // $2.00 per human model generation
  * 
  * Supports both AI Avatar and Human Model rendering:
  * - AI Avatar: Uses credits (1 credit per render)
- * - Human Model: Requires consent, charges $2.00 royalty, no credits
+ * - Human Model: Uses credits (1 credit per render) - models earn from purchases only
  * 
  * Steps:
  * 1. Determine model type (AI Avatar or Human Model)
- * 2. Check consent (for human models) or credits (for AI avatars)
+ * 2. Check credits (both types use credits)
  * 3. Validate garment upload
  * 4. Call FASHN API
  * 5. Save generation to database
- * 6. Deduct credits (AI) or add royalty (Human Model) atomically
+ * 6. Deduct credits atomically (both types)
  * 7. Return rendered image URL
  */
 export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequest) => {
@@ -110,24 +110,9 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       );
     }
 
-    // Step 1: Check consent (for human models) or credits (for AI avatars)
+    // Step 1: Check credits (for AI avatars) or verify model (for human models)
     if (isHumanModel) {
-      // Check consent for human model
-      const consentCheck = await checkConsentStatus(userId, modelId);
-      
-      if (!consentCheck.hasConsent) {
-        return NextResponse.json(
-          {
-            status: "error",
-            message: consentCheck.message || "Consent required to use this model",
-            code: "CONSENT_REQUIRED",
-            consentStatus: consentCheck.consentRequest?.status || "NO_REQUEST",
-          },
-          { status: 403 }
-        );
-      }
-
-      // Verify model exists and is active
+      // Verify model exists and is active (no consent required for generation/preview)
       const modelProfile = await ModelProfile.findById(modelId);
       if (!modelProfile || modelProfile.status !== "active") {
         return NextResponse.json(
@@ -140,24 +125,41 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
         );
       }
 
-      logger.info("Starting human model render", { userId, modelId, garmentImageUrl });
+      logger.info("Starting human model render (preview - no consent required)", { userId, modelId, garmentImageUrl });
     } else {
-      // Check credits for AI avatar
-      const creditsRequired = 1;
-      if (user.credits < creditsRequired) {
+      // Check credits for AI avatar using BusinessProfile
+      const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+      if (!businessProfile) {
         return NextResponse.json(
           {
             status: "error",
-            message: "Insufficient credits",
-            code: "INSUFFICIENT_CREDITS",
-            creditsRequired,
-            creditsAvailable: user.credits,
+            message: "Business profile not found",
+            code: "PROFILE_NOT_FOUND",
+          },
+          { status: 404 }
+        );
+      }
+
+      // Check if user can generate (includes subscription status and credit checks)
+      const canGen = await canGenerate(businessProfile);
+      if (!canGen.can) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: canGen.reason || "Cannot generate",
+            code: "GENERATION_BLOCKED",
+            creditsAvailable: businessProfile.aiCreditsRemaining,
           },
           { status: 402 }
         );
       }
 
-      logger.info("Starting AI avatar render", { userId, avatarId, garmentImageUrl });
+      logger.info("Starting AI avatar render", { 
+        userId, 
+        avatarId, 
+        garmentImageUrl,
+        creditsRemaining: businessProfile.aiCreditsRemaining 
+      });
     }
 
     // Step 2 & 3: Create generation record and call FASHN API atomically
@@ -195,7 +197,41 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
           );
         }
 
-        // Create generation record with transaction
+        // Get BusinessProfile for credit deduction (human models also use credits)
+        const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        if (!businessProfile) {
+          return NextResponse.json(
+            {
+              status: "error",
+              message: "Business profile not found",
+              code: "PROFILE_NOT_FOUND",
+            },
+            { status: 404 }
+          );
+        }
+
+        // Check if user can generate (includes subscription status and credit checks)
+        const canGen = await canGenerate(businessProfile);
+        if (!canGen.can) {
+          return NextResponse.json(
+            {
+              status: "error",
+              message: canGen.reason || "Cannot generate",
+              code: "GENERATION_BLOCKED",
+              creditsAvailable: businessProfile.aiCreditsRemaining,
+            },
+            { status: 402 }
+          );
+        }
+
+        logger.info("Starting human model render", { 
+          userId, 
+          modelId, 
+          garmentImageUrl,
+          creditsRemaining: businessProfile.aiCreditsRemaining 
+        });
+
+        // Create generation record and deduct credits (human models also use credits)
         const result = await withTransaction(async (session) => {
           const gen = await Generation.create(
             [
@@ -205,17 +241,17 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                 modelType: "HUMAN_MODEL",
                 garmentImageUrl,
                 status: "processing",
-                creditsUsed: 0, // No credits for human models
-                royaltyPaid: ROYALTY_AMOUNT,
+                creditsUsed: 1, // Human models also use credits
+                royaltyPaid: 0, // No royalties - models only earn from purchases
               },
             ],
             { session }
           );
 
-          // Add royalty to model's balance
-          await ModelProfile.findByIdAndUpdate(
-            modelProfile._id,
-            { $inc: { royaltyBalance: ROYALTY_AMOUNT } },
+          // Deduct credits from BusinessProfile (same as AI avatars)
+          await BusinessProfile.findByIdAndUpdate(
+            businessProfile._id,
+            { $inc: { aiCreditsRemaining: -1 } },
             { session }
           );
 
@@ -225,6 +261,19 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
         generation = result;
       } else {
         // AI Avatar Flow - Use Render model (backward compatible)
+        // Get BusinessProfile for credit deduction
+        const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        if (!businessProfile) {
+          return NextResponse.json(
+            {
+              status: "error",
+              message: "Business profile not found",
+              code: "PROFILE_NOT_FOUND",
+            },
+            { status: 404 }
+          );
+        }
+
         const result = await withTransaction(async (session) => {
           const render = await Render.create(
             [
@@ -239,10 +288,10 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
             { session }
           );
 
-          // Deduct credits
-          await User.findOneAndUpdate(
-            { id: userId },
-            { $inc: { credits: -1 } },
+          // Deduct credits from BusinessProfile
+          await BusinessProfile.findByIdAndUpdate(
+            businessProfile._id,
+            { $inc: { aiCreditsRemaining: -1 } },
             { session }
           );
 
@@ -299,21 +348,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
               const arrayBuffer = await imageResponse.arrayBuffer();
               let imageBuffer: Buffer = Buffer.from(arrayBuffer);
               
-              // Apply watermark for free plan users
-              const { applyWatermark, shouldApplyWatermark } = await import("@/lib/watermark");
-              if (shouldApplyWatermark(user.plan?.id, user.plan?.isPremium)) {
-                try {
-                  imageBuffer = await applyWatermark(imageBuffer, "ModelSnap.ai") as Buffer;
-                  logger.info("Watermark applied for free user", {
-                    userId,
-                    planId: user.plan?.id,
-                  });
-                } catch (watermarkError) {
-                  logger.error("Failed to apply watermark, using original image", watermarkError as Error);
-                  // Continue with original image if watermarking fails
-                }
-              }
-              
+              // Store original non-watermarked image in S3
+              // Watermarking will be applied on-the-fly when needed
               const s3Key = generateS3Key("generated", userId);
               
               // Optimize before upload
@@ -330,11 +366,10 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                 }
               );
               
-              logger.info("Generated image stored in S3", {
+              logger.info("Generated image stored in S3 (non-watermarked original)", {
                 generationId: generation._id,
                 s3Key,
                 url: finalImageUrl,
-                watermarked: shouldApplyWatermark(user.plan?.id, user.plan?.isPremium),
               });
               s3UploadSucceeded = true; // Mark S3 upload as successful
             }
@@ -523,14 +558,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                 { session }
               );
             } else {
-              // Refund royalty to model
-              await ModelProfile.findByIdAndUpdate(
-                gen.modelId,
-                { $inc: { royaltyBalance: -ROYALTY_AMOUNT } },
-                { session }
-              );
-
-              // Update generation status
+              // Update generation status (no royalties to refund)
               await Generation.findByIdAndUpdate(
                 generation._id,
                 {
@@ -538,7 +566,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                   errorMessage: errorMessage,
                   failureReason: errorMessage,
                   failureCode: isTransientError ? "TRANSIENT_ERROR" : "PERMANENT_ERROR",
-                  royaltyPaid: 0, // Refunded
+                  royaltyPaid: 0, // No royalties for human models
                   updatedAt: new Date(),
                 },
                 { session }
@@ -627,15 +655,20 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
     }
 
     // Step 6: Return rendered image URL
-    // Prioritize S3 URL (watermarked) for free users, FASHN URL for premium users
-    const { shouldApplyWatermark } = await import("@/lib/watermark");
-    const needsWatermark = shouldApplyWatermark(user.plan?.id, user.plan?.isPremium);
+    // Always return watermarked preview URL for display
+    // Original S3 URL is stored for download (non-watermarked for authorized users)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     
-    // For free users, use S3 URL (watermarked) if upload succeeded, otherwise FASHN URL
-    // For premium users, prefer S3 URL but fallback to FASHN URL
-    const displayImageUrl = needsWatermark && s3UploadSucceeded
-      ? renderedImageUrl // S3 URL with watermark
-      : (s3UploadSucceeded ? renderedImageUrl : fashnResponse?.image_url); // S3 URL or FASHN URL
+    // Generate watermarked preview URL if S3 upload succeeded
+    // Otherwise fallback to FASHN URL (which will be watermarked on-the-fly if needed)
+    const previewImageUrl = s3UploadSucceeded && renderedImageUrl
+      ? `${baseUrl}/api/images/${generation._id}/watermarked?type=${isHumanModel ? "human" : "ai"}`
+      : fashnResponse?.image_url; // Fallback to FASHN URL if S3 upload failed
+    
+    // Get updated credits for all renders (after deduction)
+    // Both AI avatars and human models use credits
+    const updatedBusinessProfile = await BusinessProfile.findOne({ userId: user._id });
+    const creditsRemaining = updatedBusinessProfile?.aiCreditsRemaining ?? 0;
     
     return NextResponse.json(
       {
@@ -643,16 +676,17 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
         message: "Generation completed",
         data: {
           generationId: generation._id,
-          renderedImageUrl: displayImageUrl, // Primary URL for display
-          outputS3Url: renderedImageUrl !== fashnResponse?.image_url ? renderedImageUrl : undefined, // S3 URL if different from FASHN
+          renderedImageUrl: previewImageUrl, // Watermarked preview URL for display (always watermarked)
+          previewImageUrl: previewImageUrl, // Explicit preview URL (always watermarked)
+          outputS3Url: renderedImageUrl, // Original non-watermarked S3 URL (for download endpoint)
           fashnImageUrl: fashnResponse?.image_url, // Original FASHN URL
           fashnRequestId: fashnResponse?.request_id,
           status: "completed",
           type: isHumanModel ? "HUMAN_MODEL" : "AI_AVATAR",
-          watermarked: needsWatermark && renderedImageUrl !== fashnResponse?.image_url,
-          ...(isHumanModel
-            ? { royaltyPaid: ROYALTY_AMOUNT }
-            : { creditsUsed: 1, creditsRemaining: user.credits - 1 }),
+          watermarked: true, // Preview is always watermarked
+          creditsUsed: 1, // All generations use 1 credit
+          creditsRemaining, // Updated credits after deduction
+          ...(isHumanModel ? { royaltyPaid: 0 } : {}),
         },
       },
       { status: 200 }

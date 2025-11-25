@@ -129,12 +129,19 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       );
     }
 
+    // Initialize all new fields with proper defaults for free tier
+    const currentDate = new Date();
     const businessProfile = await BusinessProfile.create({
       userId: user._id,
       businessName,
       description: description || "",
-      aiCredits: user.credits || 0,
-      subscriptionStatus: user.plan?.type === "free" ? "FREE" : "STARTER",
+      aiCredits: user.credits || 0, // Legacy field for backward compatibility
+      subscriptionTier: "free",
+      aiCreditsRemaining: 3,
+      aiCreditsTotal: 3,
+      subscriptionStatus: "active",
+      lastCreditReset: currentDate,
+      creditResetDay: currentDate.getDate(),
       approvedModels: [],
     });
 

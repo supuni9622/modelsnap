@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/db";
 import Feedback from "@/models/feedback";
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
 import { Credits } from "@/lib/config/pricing";
@@ -92,6 +93,19 @@ export const GET = async (req: NextRequest) => {
     // Get user's plan type
     const plan = user.plan.planType;
 
+    // For business users, get credits from BusinessProfile
+    let credits = user.credits || 0;
+    let totalCredits = credits;
+    let renewalDate: Date | null = null;
+    if (user.role === "BUSINESS") {
+      const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+      if (businessProfile) {
+        credits = businessProfile.aiCreditsRemaining || 0;
+        totalCredits = businessProfile.aiCreditsTotal || credits;
+        renewalDate = businessProfile.subscriptionCurrentPeriodEnd || null;
+      }
+    }
+
     // Get user's feedback details if any exist
     const feedback = await Feedback.findOne({ userId });
 
@@ -101,7 +115,9 @@ export const GET = async (req: NextRequest) => {
         billing: {
           plan,
           details: user.plan,
-          credits: user.credits || 0,
+          credits,
+          totalCredits,
+          renewalDate: renewalDate ? renewalDate.toISOString() : null,
         },
         myFeedback: {
           submited: feedback?.id ? true : false,

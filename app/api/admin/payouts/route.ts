@@ -175,7 +175,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
         status: "success",
         message: `Payout request ${action}d successfully`,
         data: {
-          payoutRequest: payoutRequest
+          payoutRequest: payoutRequest && !Array.isArray(payoutRequest)
             ? {
                 _id: payoutRequest._id,
                 transactionReference: payoutRequest.transactionReference,

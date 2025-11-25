@@ -28,6 +28,14 @@ const InvoiceSchema = new Schema(
       index: true,
     },
 
+    // Lemon Squeezy order ID (for invoices)
+    lemonsqueezyOrderId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+
     // Human-readable invoice number
     invoiceNumber: {
       type: String,
@@ -94,9 +102,14 @@ const InvoiceSchema = new Schema(
 InvoiceSchema.index({ userId: 1, createdAt: -1 }); // User's invoice history
 InvoiceSchema.index({ status: 1, createdAt: -1 }); // Status queries
 InvoiceSchema.index({ stripeInvoiceId: 1 });
+InvoiceSchema.index({ lemonsqueezyOrderId: 1 });
 
-const Invoice =
-  mongoose.models.Invoice || mongoose.model("Invoice", InvoiceSchema);
+// Delete existing model if it exists to ensure fresh schema compilation
+if (mongoose.models.Invoice) {
+  delete mongoose.models.Invoice;
+}
+
+const Invoice = mongoose.model("Invoice", InvoiceSchema);
 
 export default Invoice;
 

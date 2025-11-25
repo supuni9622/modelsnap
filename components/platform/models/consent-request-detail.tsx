@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,11 +48,7 @@ export function ConsentRequestDetail({ requestId }: { requestId: string }) {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
 
-  useEffect(() => {
-    fetchRequest();
-  }, [requestId]);
-
-  const fetchRequest = async () => {
+  const fetchRequest = useCallback(async () => {
     try {
       const response = await fetch(`/api/consent/${requestId}`);
       const data = await response.json();
@@ -68,7 +64,11 @@ export function ConsentRequestDetail({ requestId }: { requestId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [requestId]);
+
+  useEffect(() => {
+    fetchRequest();
+  }, [fetchRequest]);
 
   const handleApprove = async () => {
     setShowApproveDialog(false);
