@@ -11,7 +11,7 @@ import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiter";
  * Update user's role (BUSINESS or MODEL)
  * Requires authentication
  */
-export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequest) => {
+export const POST = (async (req: NextRequest) => {
   try {
     await connectDB();
 
@@ -147,7 +147,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
  * Get current user's role
  * Requires authentication
  */
-export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequest) => {
+export const GET = (async (req: NextRequest) => {
   try {
     await connectDB();
 

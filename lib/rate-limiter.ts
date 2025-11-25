@@ -31,8 +31,8 @@ export const RATE_LIMIT_CONFIGS = {
   
   // Public endpoints - Moderate limits
   PUBLIC: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 20, // 20 requests per 15 minutes
+    windowMs: 60 * 1000, // 15 minutes
+    maxRequests: 120, // 20 requests per 15 minutes
     message: "Too many requests. Please try again later.",
   },
   
