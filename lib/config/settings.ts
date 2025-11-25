@@ -38,7 +38,7 @@ export const SiteSettings: SiteSettingsType = {
   domainUrl:
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : "https://modelsnap-oqja41jn2-model-snap-ai.vercel.app/en",
+      : "https://modelsnapapp.com/en",
 };
 
 /**
