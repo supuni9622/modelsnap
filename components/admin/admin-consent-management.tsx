@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,11 +71,7 @@ export function AdminConsentManagement() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [processing, setProcessing] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchRequests();
-  }, [statusFilter]);
-
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
       const url =
@@ -96,7 +92,11 @@ export function AdminConsentManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const handleStatusChange = async (requestId: string, newStatus: "APPROVED" | "REJECTED") => {
     setProcessing(requestId);

@@ -75,11 +75,7 @@ export function ModelProfileEdit() {
   const [error, setError] = useState<string | null>(null);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
 
-  useEffect(() => {
-    fetchModelProfile();
-  }, []);
-
-  const fetchModelProfile = async () => {
+  const fetchModelProfile = useCallback(async () => {
     try {
       const response = await fetch("/api/model/profile");
       const data = await response.json();
@@ -112,7 +108,11 @@ export function ModelProfileEdit() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    fetchModelProfile();
+  }, [fetchModelProfile]);
 
   const handleFileUpload = useCallback(
     async (file: File) => {

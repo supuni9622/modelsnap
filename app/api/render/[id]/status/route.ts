@@ -32,7 +32,7 @@ export async function GET(
 
       // Try Generation first (human model)
       let generation = await Generation.findById(id).lean();
-      if (generation) {
+      if (generation && !Array.isArray(generation)) {
         const user = await (await import("@/models/user")).default.findOne({ id: userId });
         if (!user || generation.userId.toString() !== user._id.toString()) {
           return NextResponse.json(
@@ -49,7 +49,7 @@ export async function GET(
           {
             status: "success",
             data: {
-              id: generation._id.toString(),
+              id: (generation._id as { toString(): string }).toString(),
               status: generation.status,
               modelType: generation.modelType,
               outputS3Url: generation.outputS3Url,
@@ -68,7 +68,7 @@ export async function GET(
 
       // Try Render (AI avatar)
       const render = await Render.findById(id).lean();
-      if (render) {
+      if (render && !Array.isArray(render)) {
         if (render.userId !== userId) {
           return NextResponse.json(
             {
@@ -84,7 +84,7 @@ export async function GET(
           {
             status: "success",
             data: {
-              id: render._id.toString(),
+              id: (render._id as { toString(): string }).toString(),
               status: render.status,
               modelType: "AI_AVATAR",
               renderedImageUrl: render.renderedImageUrl,

@@ -27,7 +27,7 @@ export function ModelProfileCheck() {
   }
 
   if (data) {
-    return <ModelProfileEdit modelId={data._id} />;
+    return <ModelProfileEdit />;
   }
 
   return <ModelProfileCreate />;

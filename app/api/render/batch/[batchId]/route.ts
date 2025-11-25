@@ -31,7 +31,7 @@ export async function GET(
 
       const batch = await RenderQueue.findOne({ batchId }).lean();
 
-      if (!batch) {
+      if (!batch || Array.isArray(batch)) {
         return NextResponse.json(
           {
             status: "error",

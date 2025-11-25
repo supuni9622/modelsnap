@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,7 +146,7 @@ export function AdminCreditAdjustment() {
     }
   };
 
-  const loadTransactionHistory = async () => {
+  const loadTransactionHistory = useCallback(async () => {
     if (!selectedUser) return;
 
     setLoadingHistory(true);
@@ -167,13 +167,13 @@ export function AdminCreditAdjustment() {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, [selectedUser]);
 
   useEffect(() => {
     if (showHistory && selectedUser) {
       loadTransactionHistory();
     }
-  }, [showHistory, selectedUser]);
+  }, [showHistory, selectedUser, loadTransactionHistory]);
 
   return (
     <div className="space-y-6">

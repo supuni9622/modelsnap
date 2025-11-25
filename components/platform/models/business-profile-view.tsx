@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -43,13 +43,7 @@ export function BusinessProfileView({
   const [business, setBusiness] = useState<BusinessProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (open && businessId) {
-      fetchBusinessProfile();
-    }
-  }, [open, businessId]);
-
-  const fetchBusinessProfile = async () => {
+  const fetchBusinessProfile = useCallback(async () => {
     try {
       const response = await fetch(`/api/business/${businessId}`);
       const data = await response.json();
@@ -62,7 +56,13 @@ export function BusinessProfileView({
     } finally {
       setLoading(false);
     }
-  };
+  }, [businessId]);
+
+  useEffect(() => {
+    if (open && businessId) {
+      fetchBusinessProfile();
+    }
+  }, [open, businessId, fetchBusinessProfile]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

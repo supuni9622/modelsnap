@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
@@ -17,14 +17,14 @@ export function OnboardingCheck({ children }: { children: React.ReactNode }) {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   // Skip onboarding check for these routes
-  const skipRoutes = [
+  const skipRoutes = useMemo(() => [
     "/onboarding",
     "/redirect",
     "/sign-in",
     "/sign-up",
     "/api",
     "/setup",
-  ];
+  ], []);
 
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -103,7 +103,7 @@ export function OnboardingCheck({ children }: { children: React.ReactNode }) {
     };
 
     checkOnboarding();
-  }, [userId, isLoaded, pathname, router]);
+  }, [userId, isLoaded, pathname, router, skipRoutes]);
 
   if (isChecking) {
     return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -93,15 +93,15 @@ function PhotoLightbox({
 }) {
   const currentImage = images[currentIndex];
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
     onIndexChange(newIndex);
-  };
+  }, [currentIndex, images.length, onIndexChange]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     const newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
     onIndexChange(newIndex);
-  };
+  }, [currentIndex, images.length, onIndexChange]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -113,7 +113,7 @@ function PhotoLightbox({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, currentIndex, images.length]);
+  }, [open, handlePrevious, handleNext, onOpenChange]);
 
   if (!currentImage) return null;
 
@@ -219,13 +219,7 @@ export function ModelProfileView({ modelId }: { modelId: string }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  useEffect(() => {
-    fetchModelProfile();
-    checkConsentStatus();
-    checkPurchaseStatus();
-  }, [modelId]);
-
-  const fetchModelProfile = async () => {
+  const fetchModelProfile = useCallback(async () => {
     try {
       const response = await fetch(`/api/models/${modelId}`);
       const data = await response.json();
@@ -241,9 +235,9 @@ export function ModelProfileView({ modelId }: { modelId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [modelId]);
 
-  const checkConsentStatus = async () => {
+  const checkConsentStatus = useCallback(async () => {
     try {
       const response = await fetch(`/api/consent?type=sent`);
       const data = await response.json();
@@ -266,19 +260,9 @@ export function ModelProfileView({ modelId }: { modelId: string }) {
     } catch (error) {
       console.error("Failed to check consent status:", error);
     }
-  };
+  }, [modelId]);
 
-  const handleConsentRequest = async () => {
-    setShowDialog(true);
-  };
-
-  const handleRequestSuccess = () => {
-    checkConsentStatus();
-    setShowDialog(false);
-    toast.success("Consent request sent successfully!");
-  };
-
-  const checkPurchaseStatus = async () => {
+  const checkPurchaseStatus = useCallback(async () => {
     try {
       const response = await fetch(`/api/models/${modelId}/purchase-status`);
       const data = await response.json();
@@ -291,6 +275,22 @@ export function ModelProfileView({ modelId }: { modelId: string }) {
     } catch (error) {
       console.error("Failed to check purchase status:", error);
     }
+  }, [modelId]);
+
+  useEffect(() => {
+    fetchModelProfile();
+    checkConsentStatus();
+    checkPurchaseStatus();
+  }, [fetchModelProfile, checkConsentStatus, checkPurchaseStatus]);
+
+  const handleConsentRequest = async () => {
+    setShowDialog(true);
+  };
+
+  const handleRequestSuccess = () => {
+    checkConsentStatus();
+    setShowDialog(false);
+    toast.success("Consent request sent successfully!");
   };
 
   const handlePurchase = async () => {
