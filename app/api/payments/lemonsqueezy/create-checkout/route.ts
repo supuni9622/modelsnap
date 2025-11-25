@@ -18,7 +18,7 @@ import { PricingPlans } from "@/lib/config/pricing";
 
 // Get public URL from site settings
 // Note: domainUrl may already include /en in production, so we normalize it
-let publicUrl = SiteSettings.domainUrl;
+let publicUrl = process.env.NEXT_PUBLIC_APP_URL || SiteSettings.domainUrl;
 // Remove trailing /en if present to avoid double locale
 if (publicUrl.endsWith("/en")) {
   publicUrl = publicUrl.slice(0, -3);
