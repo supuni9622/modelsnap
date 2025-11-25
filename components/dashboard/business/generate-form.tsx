@@ -329,6 +329,7 @@ export function GenerateForm() {
                         alt={uploadedFile.name}
                         fill
                         className="object-cover"
+                        unoptimized
                       />
                     ) : (
                       <FileImage className="w-6 h-6 text-muted-foreground" />
