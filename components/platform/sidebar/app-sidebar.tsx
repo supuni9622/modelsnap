@@ -123,12 +123,12 @@ const sidebarItems = [
   {
     label: "Invoice",
     icon: <FileTextIcon className="w-4 h-4" />,
-    path: "/app/item-1",
+    path: "/app/invoices",
   },
   {
-    label: "Customers",
+    label: "Models",
     icon: <User className="w-4 h-4" />,
-    path: "/app/customers",
+    path: "/app/models",
   },
   {
     label: "Emails",

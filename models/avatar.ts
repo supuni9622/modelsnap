@@ -19,7 +19,7 @@ const AvatarSchema = new Schema(
     skinTone: { type: String, required: true }, // SL-01, SL-02, etc.
     
     // Image information
-    imageUrl: { type: String, required: true }, // Path relative to public folder
+    imageUrl: { type: String, required: true }, // S3 URL (publicly accessible) or path relative to public folder
     modelId: { type: String }, // FASHN model ID if available
     
     // Metadata

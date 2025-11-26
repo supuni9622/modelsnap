@@ -57,8 +57,16 @@ export interface FashnModelGenerateResponse {
 export interface FashnVirtualTryOnRequest {
   garment_image: string | File; // URL or file
   model_image: string | File; // URL or file
-  prompt?: string;
-  resolution?: number;
+  // Optional parameters for tryon-v1.6 (see https://docs.fashn.ai/api-reference/tryon-v1-6)
+  category?: "auto" | "tops" | "bottoms" | "one-pieces";
+  segmentation_free?: boolean;
+  moderation_level?: "conservative" | "permissive" | "none";
+  garment_photo_type?: "auto" | "flat-lay" | "model";
+  mode?: "performance" | "balanced" | "quality";
+  seed?: number;
+  num_samples?: number;
+  output_format?: "png" | "jpeg";
+  return_base64?: boolean;
 }
 
 export interface FashnVirtualTryOnResponse {
@@ -367,7 +375,8 @@ export class FashnClient {
 
   /**
    * Virtual try-on using FASHN API
-   * POST /api/v1/virtual-try-on
+   * POST /v1/virtual-try-on
+   * Based on: https://docs.fashn.ai/api-reference/virtual-try-on
    */
   async virtualTryOn(
     params: FashnVirtualTryOnRequest
@@ -376,42 +385,144 @@ export class FashnClient {
       throw new Error("FASHN_API_KEY is not configured");
     }
 
-    logger.info("Processing virtual try-on");
+    logger.info("Processing virtual try-on", {
+      garmentIsFile: params.garment_image instanceof File,
+      modelIsFile: params.model_image instanceof File,
+    });
 
-    // Handle file uploads vs URLs
-    const formData = new FormData();
+    // Helper function to convert relative URL to absolute URL
+    const resolveImageUrl = (url: string): string => {
+      // If already absolute URL (starts with http:// or https://), return as is
+      if (url.startsWith("http://") || url.startsWith("https://")) {
+        return url;
+      }
+      
+      // If relative URL (starts with /), prepend base URL
+      if (url.startsWith("/")) {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        return `${baseUrl}${url}`;
+      }
+      
+      // If it's a relative path without leading slash, assume it's from public folder
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      return `${baseUrl}/${url}`;
+    };
 
-    if (params.garment_image instanceof File) {
-      formData.append("garment_image", params.garment_image);
+    // Use /v1/run endpoint with model_name: "tryon-v1.6"
+    // See: https://docs.fashn.ai/api-reference/tryon-v1-6
+    const runRequest: any = {
+      model_name: "tryon-v1.6",
+      inputs: {},
+    };
+
+    // Resolve URLs to absolute URLs (required for /v1/run endpoint)
+    let garmentImageUrl: string;
+    let modelImageUrl: string;
+
+    if (typeof params.garment_image === "string") {
+      garmentImageUrl = resolveImageUrl(params.garment_image);
+      runRequest.inputs.garment_image = garmentImageUrl;
     } else {
-      formData.append("garment_image", params.garment_image);
+      throw new Error("garment_image must be a URL string. File uploads should be converted to URLs first.");
     }
 
-    if (params.model_image instanceof File) {
-      formData.append("model_image", params.model_image);
+    if (typeof params.model_image === "string") {
+      modelImageUrl = resolveImageUrl(params.model_image);
+      runRequest.inputs.model_image = modelImageUrl;
     } else {
-      formData.append("model_image", params.model_image);
+      throw new Error("model_image must be a URL string. File uploads should be converted to URLs first.");
     }
 
-    if (params.prompt) {
-      formData.append("prompt", params.prompt);
+    // Add optional parameters if provided (see https://docs.fashn.ai/api-reference/tryon-v1-6)
+    if (params.category) {
+      runRequest.inputs.category = params.category;
+    }
+    if (params.segmentation_free !== undefined) {
+      runRequest.inputs.segmentation_free = params.segmentation_free;
+    }
+    if (params.moderation_level) {
+      runRequest.inputs.moderation_level = params.moderation_level;
+    }
+    if (params.garment_photo_type) {
+      runRequest.inputs.garment_photo_type = params.garment_photo_type;
+    }
+    if (params.mode) {
+      runRequest.inputs.mode = params.mode;
+    }
+    if (params.seed !== undefined) {
+      runRequest.inputs.seed = params.seed;
+    }
+    if (params.num_samples !== undefined) {
+      runRequest.inputs.num_samples = params.num_samples;
+    }
+    if (params.output_format) {
+      runRequest.inputs.output_format = params.output_format;
+    }
+    if (params.return_base64 !== undefined) {
+      runRequest.inputs.return_base64 = params.return_base64;
     }
 
-    if (params.resolution) {
-      formData.append("resolution", params.resolution.toString());
-    }
+    logger.debug("FASHN virtual try-on request", {
+      model_name: runRequest.model_name,
+      garmentImageUrl,
+      modelImageUrl,
+    });
 
-    return this.makeRequest<FashnVirtualTryOnResponse>(
-      "/api/v1/virtual-try-on",
+    // Submit the request using /v1/run endpoint
+    const runResponse = await this.makeRequest<FashnRunResponse | FashnStatusResponse>(
+      "/v1/run",
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          // Don't set Content-Type for FormData, browser will set it with boundary
-        },
-        body: formData,
+        body: JSON.stringify(runRequest),
       }
     );
+
+    logger.debug("FASHN /v1/run response", { 
+      id: "id" in runResponse ? runResponse.id : undefined,
+      status: "status" in runResponse ? runResponse.status : undefined,
+      hasError: "error" in runResponse ? !!runResponse.error : false,
+    });
+
+    // Check if response already contains status and output
+    if ("status" in runResponse && (runResponse.status === "succeeded" || runResponse.status === "completed")) {
+      const statusResponse = runResponse as FashnStatusResponse;
+      if (statusResponse.output && statusResponse.output.length > 0) {
+        return {
+          image_url: statusResponse.output[0],
+          request_id: statusResponse.id,
+        };
+      }
+    }
+
+    // If it's just an ID response, poll for status
+    if ("id" in runResponse && !("status" in runResponse)) {
+      if (runResponse.error) {
+        throw new Error(runResponse.error.message || "Virtual try-on failed");
+      }
+
+      logger.info("Polling for virtual try-on status", { predictionId: runResponse.id });
+
+      // Poll for status using the ID
+      const statusResponse = await this.pollStatus(runResponse.id);
+      
+      if (!statusResponse.output || statusResponse.output.length === 0) {
+        throw new Error("No output image URL returned from virtual try-on");
+      }
+
+      // Return in the expected format
+      return {
+        image_url: statusResponse.output[0],
+        request_id: statusResponse.id,
+      };
+    }
+
+    // If we get here, the response format is unexpected
+    logger.error("Unexpected response format from FASHN virtual try-on API", new Error("Invalid response structure"), {
+      hasId: "id" in runResponse,
+      hasStatus: "status" in runResponse,
+      hasError: "error" in runResponse,
+    });
+    throw new Error("Unexpected response format from FASHN virtual try-on API");
   }
 }
 

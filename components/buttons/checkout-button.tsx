@@ -150,6 +150,16 @@ export default function CheckoutButton({
         paymentProvider
       });
       
+      // Show user-friendly error message
+      if (errorMessage.includes("No such price") || errorMessage.includes("price") || errorMessage.includes("variant")) {
+        const providerName = paymentProvider === "lemonsqueezy" ? "Lemon Squeezy" : paymentProvider === "stripe" ? "Stripe" : "payment";
+        alert(`${providerName} pricing is not configured yet. Please contact support or check back later.`);
+      } else if (errorMessage.includes("variant ID is required")) {
+        alert("Payment configuration error: Variant ID is missing. Please contact support.");
+      } else {
+        alert(`Failed to start checkout: ${errorMessage}`);
+      }
+      
       // Track purchase failed for analytics
       trackEvent("purchase_failed", "checkout", `${priceId}: ${errorMessage}`);
     } finally {

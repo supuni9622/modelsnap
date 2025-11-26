@@ -4,7 +4,9 @@ import Stripe from "stripe";
 import { connectDB } from "@/lib/db";
 import { clerkClient } from "@clerk/nextjs/server";
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
 import { Credits, PricingPlans } from "@/lib/config/pricing";
+import { getCreditsForPlan } from "@/lib/credit-utils";
 import { stripe } from "@/lib/stripe";
 import {
   createStripePaymentHistory,
@@ -13,8 +15,11 @@ import {
 import { createLogger } from "@/lib/utils/logger";
 import { withTransaction, withTransactionAndExternal } from "@/lib/transaction-utils";
 import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiter";
+import { createOrUpdateInvoiceFromStripe } from "@/lib/invoice-utils";
+import { sendInvoiceNotificationEmail } from "@/lib/email-notifications";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 // Create logger with context for this webhook handler
 const logger = createLogger({ component: "stripe-webhook" });
@@ -102,8 +107,81 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           return NextResponse.json({ error: "Invalid pricing plan" }, { status: 400 });
         }
 
-        // Update user's plan and add any free credits atomically
+        // Find or create BusinessProfile
+        let businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        if (!businessProfile) {
+          // Create BusinessProfile if it doesn't exist
+          businessProfile = await BusinessProfile.create({
+            userId: user._id,
+            businessName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Business",
+            subscriptionTier: plan.id as "free" | "starter" | "growth",
+            aiCreditsRemaining: plan.isFreeCredits || 0,
+            aiCreditsTotal: plan.isFreeCredits || 0,
+            subscriptionStatus: "active",
+            lastCreditReset: new Date(),
+            creditResetDay: new Date().getDate(),
+          });
+        }
+
+        const oldTier = businessProfile.subscriptionTier;
+        const newTier = plan.id as "free" | "starter" | "growth";
+        const creditsForNewPlan = getCreditsForPlan(plan.id);
+
+        // Determine if upgrade or downgrade
+        const tierOrder = { free: 0, starter: 1, growth: 2 };
+        const isUpgrade = tierOrder[newTier] > tierOrder[oldTier as keyof typeof tierOrder];
+        const isDowngrade = tierOrder[newTier] < tierOrder[oldTier as keyof typeof tierOrder];
+
         await withTransaction(async (session) => {
+          if (isUpgrade) {
+            // Upgrade: Grant full credits for new tier immediately
+            await BusinessProfile.findByIdAndUpdate(
+              businessProfile!._id,
+              {
+                $set: {
+                  subscriptionTier: newTier,
+                  aiCreditsRemaining: creditsForNewPlan,
+                  aiCreditsTotal: creditsForNewPlan,
+                  stripeSubscriptionId: subscription.id,
+                  subscriptionCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                  subscriptionStatus: subscription.status === "active" ? "active" : subscription.status === "past_due" ? "past_due" : "active",
+                },
+              },
+              { session }
+            );
+          } else if (isDowngrade) {
+            // Downgrade: Cap credits at new tier limit (keep remaining if less than limit)
+            const cappedCredits = Math.min(businessProfile!.aiCreditsRemaining, creditsForNewPlan);
+            await BusinessProfile.findByIdAndUpdate(
+              businessProfile!._id,
+              {
+                $set: {
+                  subscriptionTier: newTier,
+                  aiCreditsRemaining: cappedCredits,
+                  aiCreditsTotal: creditsForNewPlan,
+                  stripeSubscriptionId: subscription.id,
+                  subscriptionCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                  subscriptionStatus: subscription.status === "active" ? "active" : subscription.status === "past_due" ? "past_due" : "active",
+                },
+              },
+              { session }
+            );
+          } else {
+            // Same tier: Just update subscription details
+            await BusinessProfile.findByIdAndUpdate(
+              businessProfile!._id,
+              {
+                $set: {
+                  stripeSubscriptionId: subscription.id,
+                  subscriptionCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                  subscriptionStatus: subscription.status === "active" ? "active" : subscription.status === "past_due" ? "past_due" : "active",
+                },
+              },
+              { session }
+            );
+          }
+
+          // Also update User model for backward compatibility
           await User.updateOne(
             { emailAddress: customer.email },
             {
@@ -114,40 +192,149 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
                 "plan.price": plan.price,
                 "plan.isPremium": plan.popular || false,
               },
-              $inc: {
-                credits: plan.isFreeCredits || 0,
-              },
             },
             { session }
           );
         });
 
-        logger.info("Successfully updated user subscription plan", { 
-          userId: user.id, 
+        logger.info("Successfully updated subscription plan", { 
+          userId: user.id,
+          businessProfileId: businessProfile._id,
+          oldTier,
+          newTier,
           planName: plan.name,
-          creditsAdded: plan.isFreeCredits || 0
+          isUpgrade,
+          isDowngrade,
+          creditsGranted: isUpgrade ? creditsForNewPlan : undefined
         });
+        break;
+      }
+
+      case "invoice.paid":
+      case "invoice.created":
+      case "invoice.updated": {
+        // Handle invoice events - create or update invoice record
+        const stripeInvoice = data.object as Stripe.Invoice;
+        
+        if (!stripeInvoice.customer) {
+          logger.warn("Invoice event missing customer ID", { invoiceId: stripeInvoice.id });
+          break;
+        }
+
+        const customer = await stripe.customers.retrieve(
+          stripeInvoice.customer as string
+        );
+        
+        if (!("email" in customer) || !customer.email) {
+          logger.warn("Customer record missing email for invoice", { 
+            invoiceId: stripeInvoice.id,
+            customerId: stripeInvoice.customer 
+          });
+          break;
+        }
+
+        const user = await User.findOne({ emailAddress: customer.email });
+        if (!user) {
+          logger.warn("User not found for invoice customer email", { 
+            invoiceId: stripeInvoice.id,
+            customerEmail: customer.email 
+          });
+          break;
+        }
+
+        try {
+          await createOrUpdateInvoiceFromStripe(stripeInvoice, user.id);
+          logger.info("Invoice synced successfully", {
+            invoiceId: stripeInvoice.id,
+            userId: user.id,
+            status: stripeInvoice.status,
+            eventType
+          });
+
+          // Handle credit reset for monthly subscription renewal
+          if (eventType === "invoice.paid" && stripeInvoice.billing_reason === "subscription_cycle") {
+            const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+            if (businessProfile && businessProfile.subscriptionTier !== "free") {
+              // Get subscription to determine current plan
+              if (stripeInvoice.subscription && typeof stripeInvoice.subscription === "string") {
+                const subscription = await stripe.subscriptions.retrieve(stripeInvoice.subscription);
+                const priceId = subscription.items.data[0]?.price?.id;
+                const plan = PricingPlans.find((p) => p.priceId === priceId);
+                
+                if (plan) {
+                  const creditsForPlan = getCreditsForPlan(plan.id);
+                  
+                  await withTransaction(async (session) => {
+                    await BusinessProfile.findByIdAndUpdate(
+                      businessProfile._id,
+                      {
+                        $set: {
+                          aiCreditsRemaining: creditsForPlan,
+                          aiCreditsTotal: creditsForPlan,
+                          subscriptionCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                          subscriptionStatus: "active",
+                        },
+                      },
+                      { session }
+                    );
+                  });
+
+                  logger.info("Credits reset for monthly renewal", {
+                    userId: user.id,
+                    businessProfileId: businessProfile._id,
+                    planId: plan.id,
+                    creditsReset: creditsForPlan,
+                    invoiceId: stripeInvoice.id,
+                  });
+                }
+              }
+            }
+          }
+
+          // Send invoice notification email (only for created or paid invoices)
+          if (eventType === "invoice.created" || eventType === "invoice.paid") {
+            if (user.emailAddress?.[0]) {
+              const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
+              const invoiceUrl = stripeInvoice.hosted_invoice_url || `${APP_URL}/app/invoices/${stripeInvoice.id}`;
+              
+              sendInvoiceNotificationEmail(
+                user.emailAddress[0],
+                userName,
+                stripeInvoice.number || stripeInvoice.id,
+                stripeInvoice.amount_due / 100,
+                stripeInvoice.currency,
+                invoiceUrl,
+                stripeInvoice.invoice_pdf || undefined
+              ).catch((err) => logger.error("Failed to send invoice notification email", err as Error));
+            }
+          }
+        } catch (error) {
+          logger.error("Failed to sync invoice", error as Error, {
+            invoiceId: stripeInvoice.id,
+            userId: user.id
+          });
+        }
         break;
       }
 
       case "checkout.session.completed": {
         // Handle successful checkout sessions (one-time purchases or subscription starts)
-        const session = await stripe.checkout.sessions.retrieve(
+        const checkoutSession = await stripe.checkout.sessions.retrieve(
           (data.object as Stripe.Checkout.Session).id,
-          { expand: ["line_items"] }
+          { expand: ["line_items", "invoice"] }
         );
 
-        if (session.payment_status !== "paid") {
+        if (checkoutSession.payment_status !== "paid") {
           logger.warn("Checkout session completed but payment not confirmed", { 
-            sessionId: session.id,
-            paymentStatus: session.payment_status 
+            sessionId: checkoutSession.id,
+            paymentStatus: checkoutSession.payment_status 
           });
           return NextResponse.json({ error: "Payment not completed" }, { status: 400 });
         }
 
-        const customerId = session.customer as string;
+        const customerId = checkoutSession.customer as string;
         if (!customerId) {
-          logger.error("Checkout session missing customer ID", undefined, { sessionId: session.id });
+          logger.error("Checkout session missing customer ID", undefined, { sessionId: checkoutSession.id });
           return NextResponse.json({ error: "Invalid session data" }, { status: 400 });
         }
 
@@ -163,24 +350,132 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
-        const priceId = session.line_items?.data[0]?.price?.id;
+        // If there's an invoice in the session, sync it
+        if (checkoutSession.invoice && typeof checkoutSession.invoice === "string") {
+          try {
+            const invoice = await stripe.invoices.retrieve(checkoutSession.invoice);
+            await createOrUpdateInvoiceFromStripe(invoice, user.id);
+            logger.info("Invoice synced from checkout session", {
+              invoiceId: invoice.id,
+              sessionId: checkoutSession.id,
+              userId: user.id
+            });
+          } catch (error) {
+            logger.error("Failed to sync invoice from checkout session", error as Error, {
+              invoiceId: checkoutSession.invoice,
+              sessionId: checkoutSession.id
+            });
+          }
+        }
+
+        // Check if this is a model purchase (one-time payment)
+        if (checkoutSession.mode === "payment" && checkoutSession.metadata?.type === "model_purchase") {
+          // Handle model purchase
+          const modelId = checkoutSession.metadata.modelId;
+          const businessId = checkoutSession.metadata.businessId;
+          const amount = parseInt(checkoutSession.metadata.amount || "0");
+          const platformCommission = parseInt(checkoutSession.metadata.platformCommission || "0");
+          const modelEarnings = parseInt(checkoutSession.metadata.modelEarnings || "0");
+
+          if (!modelId || !businessId) {
+            logger.error("Model purchase metadata missing", undefined, {
+              sessionId: checkoutSession.id,
+              metadata: checkoutSession.metadata,
+            });
+            return NextResponse.json({ error: "Invalid purchase metadata" }, { status: 400 });
+          }
+
+          // Import ModelPurchase and ModelProfile
+          const ModelPurchase = (await import("@/models/model-purchase")).default;
+          const ModelProfile = (await import("@/models/model-profile")).default;
+
+          await withTransaction(async (dbSession) => {
+            // Update purchase record to completed
+            const purchase = await ModelPurchase.findOneAndUpdate(
+              {
+                stripeCheckoutSessionId: checkoutSession.id,
+                status: "pending",
+              },
+              {
+                $set: {
+                  status: "completed",
+                  completedAt: new Date(),
+                  stripePaymentIntentId: checkoutSession.payment_intent as string || checkoutSession.id,
+                },
+              },
+              { new: true, session: dbSession }
+            );
+
+            if (!purchase) {
+              logger.warn("Model purchase record not found for checkout session", {
+                sessionId: checkoutSession.id,
+                modelId,
+                businessId,
+              });
+              // Create purchase record if it doesn't exist
+              await ModelPurchase.create([{
+                businessId,
+                modelId,
+                stripePaymentIntentId: checkoutSession.payment_intent as string || checkoutSession.id,
+                stripeCheckoutSessionId: checkoutSession.id,
+                amount,
+                currency: "usd",
+                platformCommission,
+                modelEarnings,
+                status: "completed",
+                completedAt: new Date(),
+              }], { session: dbSession });
+            }
+
+            // Add model to business's purchasedModels array
+            await BusinessProfile.findByIdAndUpdate(
+              businessId,
+              {
+                $addToSet: { purchasedModels: modelId },
+              },
+              { session: dbSession }
+            );
+
+            // Update model's availableBalance (90% of purchase price)
+            await ModelProfile.findByIdAndUpdate(
+              modelId,
+              {
+                $inc: { availableBalance: modelEarnings },
+              },
+              { session: dbSession }
+            );
+          });
+
+          logger.info("Model purchase completed successfully", {
+            sessionId: checkoutSession.id,
+            modelId,
+            businessId,
+            amount,
+            modelEarnings,
+            platformCommission,
+          });
+
+          return NextResponse.json({ received: true, type: "model_purchase" });
+        }
+
+        const priceId = checkoutSession.line_items?.data[0]?.price?.id;
         const creditPlan = Credits.plans.find((c) => c.priceId === priceId);
         const plan = PricingPlans.find((p) => p.priceId === priceId);
 
         if (creditPlan) {
           // Handle credit package purchase atomically
-          await withTransaction(async (session) => {
+          await withTransaction(async (dbSession) => {
             await User.updateOne(
               { emailAddress: customer.email },
               { $inc: { credits: creditPlan.credits } },
-              { session }
+              { session: dbSession }
             );
 
             // Create payment history record
             await createStripePaymentHistory(
               user.id,
               {
-                paymentIntentId: session.id?.toString() || "unknown", // Use session ID as payment intent ID
+                paymentIntentId: checkoutSession.id?.toString() || "unknown", // Use session ID as payment intent ID
                 customerId: customerId,
                 amount: 0, // Amount will be set from plan data
                 currency: "usd", // Default currency
@@ -192,10 +487,10 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
                 creditsAllocated: creditPlan.credits,
                 billingEmail: customer.email || undefined,
                 billingName: customer.name || undefined,
-                webhookData: session as unknown as Record<string, unknown>,
+                webhookData: checkoutSession as unknown as Record<string, unknown>,
               },
               "succeeded",
-              session
+              dbSession
             );
           });
 
@@ -208,7 +503,63 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           // Handle subscription plan purchase with transaction and external API call
           await withTransactionAndExternal(
             // Database operations
-            async (session) => {
+            async (dbSession) => {
+              // Find or create BusinessProfile
+              let businessProfile = await BusinessProfile.findOne({ userId: user._id }).session(dbSession);
+              
+              if (!businessProfile) {
+                // Create BusinessProfile if it doesn't exist
+                businessProfile = await BusinessProfile.create([{
+                  userId: user._id,
+                  businessName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Business",
+                  subscriptionTier: plan.id as "free" | "starter" | "growth",
+                  aiCreditsRemaining: plan.isFreeCredits || 0,
+                  aiCreditsTotal: plan.isFreeCredits || 0,
+                  subscriptionStatus: "active",
+                  lastCreditReset: new Date(),
+                  creditResetDay: new Date().getDate(),
+                }], { session: dbSession });
+                businessProfile = businessProfile[0];
+              } else {
+                // Update existing BusinessProfile
+                const creditsForPlan = getCreditsForPlan(plan.id);
+                
+                // Get subscription ID if this is a subscription
+                let subscriptionId: string | undefined;
+                let subscriptionPeriodEnd: Date | undefined;
+                
+                if (checkoutSession.mode === "subscription" && checkoutSession.subscription) {
+                  subscriptionId = typeof checkoutSession.subscription === "string" 
+                    ? checkoutSession.subscription 
+                    : checkoutSession.subscription.id;
+                  
+                  if (subscriptionId && stripe) {
+                    try {
+                      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+                      subscriptionPeriodEnd = new Date(subscription.current_period_end * 1000);
+                    } catch (err) {
+                      logger.warn("Failed to retrieve subscription for period end", { subscriptionId });
+                    }
+                  }
+                }
+
+                await BusinessProfile.findByIdAndUpdate(
+                  businessProfile._id,
+                  {
+                    $set: {
+                      subscriptionTier: plan.id as "free" | "starter" | "growth",
+                      aiCreditsRemaining: creditsForPlan,
+                      aiCreditsTotal: creditsForPlan,
+                      subscriptionStatus: "active",
+                      ...(subscriptionId && { stripeSubscriptionId: subscriptionId }),
+                      ...(subscriptionPeriodEnd && { subscriptionCurrentPeriodEnd: subscriptionPeriodEnd }),
+                    },
+                  },
+                  { session: dbSession }
+                );
+              }
+
+              // Update User model for backward compatibility
               await User.updateOne(
                 { emailAddress: customer.email },
                 {
@@ -223,14 +574,14 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
                     credits: plan.isFreeCredits || 0,
                   },
                 },
-                { session }
+                { session: dbSession }
               );
 
               // Create payment history record for subscription
               await createStripePaymentHistory(
                 user.id,
                 {
-                  paymentIntentId: session.id?.toString() || "unknown", // Use session ID as payment intent ID
+                  paymentIntentId: checkoutSession.id?.toString() || "unknown", // Use session ID as payment intent ID
                   customerId: customerId,
                   amount: 0, // Amount will be set from plan data
                   currency: "usd", // Default currency
@@ -244,13 +595,13 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
                   billingName: customer.name || undefined,
                   subscriptionInterval: plan.billingCycle,
                   subscriptionStatus: "active",
-                  webhookData: session as unknown as Record<string, unknown>,
+                  webhookData: checkoutSession as unknown as Record<string, unknown>,
                 },
                 "succeeded",
-                session
+                dbSession
               );
 
-              return { user, plan, session };
+              return { user, plan, checkoutSession, businessProfile };
             },
             // External API operations
             async (dbResult) => {
@@ -263,8 +614,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
                   oneTimePayment: {
                     priceId: priceId,
                     paymentDate: new Date().toISOString(),
-                    paymentAmount: session.amount_subtotal,
-                    sessionId: session.id,
+                    paymentAmount: dbResult.checkoutSession.amount_subtotal,
+                    sessionId: dbResult.checkoutSession.id,
                   },
                 },
                 publicMetadata: {
@@ -289,24 +640,57 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
         const subscription = await stripe.subscriptions.retrieve(
           (data.object as { id: string }).id
         );
-        const user = await User.findOne({
-          stripeCustomerId: subscription.customer,
-        });
+        const customerId = subscription.customer as string;
+        
+        const customer = await stripe.customers.retrieve(customerId);
+        if (!("email" in customer) || !customer.email) {
+          logger.error("Customer record missing email for subscription deletion", undefined, { 
+            customerId,
+            subscriptionId: subscription.id 
+          });
+          return NextResponse.json({ error: "Invalid customer data" }, { status: 400 });
+        }
 
+        const user = await User.findOne({ emailAddress: customer.email });
         if (!user) {
           logger.error("User not found for subscription cancellation", undefined, { 
-            customerId: subscription.customer,
+            customerId,
             subscriptionId: subscription.id 
           });
           return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
+        // Find BusinessProfile
+        const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        
         // Reset user's plan to free tier with transaction and external API call
         await withTransactionAndExternal(
           // Database operations
           async (session) => {
+            // Update BusinessProfile to free tier
+            if (businessProfile) {
+              const currentDate = new Date();
+              await BusinessProfile.findByIdAndUpdate(
+                businessProfile._id,
+                {
+                  $set: {
+                    subscriptionTier: "free",
+                    aiCreditsRemaining: 3,
+                    aiCreditsTotal: 3,
+                    subscriptionStatus: "canceled",
+                    lastCreditReset: currentDate,
+                    creditResetDay: currentDate.getDate(),
+                    stripeSubscriptionId: null,
+                    subscriptionCurrentPeriodEnd: null,
+                  },
+                },
+                { session }
+              );
+            }
+
+            // Update User model for backward compatibility
             await User.updateOne(
-              { stripeCustomerId: subscription.customer },
+              { emailAddress: customer.email },
               {
                 $set: {
                   "plan.id": null,
@@ -319,7 +703,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
               { session }
             );
 
-            return { user };
+            return { user, businessProfile };
           },
           // External API operations
           async (dbResult) => {
@@ -335,8 +719,62 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
 
         logger.info("Subscription successfully canceled, user downgraded to free plan", {
           userId: user.id,
+          businessProfileId: businessProfile?._id,
           subscriptionId: subscription.id
         });
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        // Handle failed payment attempts
+        const stripeInvoice = data.object as Stripe.Invoice;
+        
+        if (!stripeInvoice.customer) {
+          logger.warn("Invoice payment failed event missing customer ID", { invoiceId: stripeInvoice.id });
+          break;
+        }
+
+        const customer = await stripe.customers.retrieve(
+          stripeInvoice.customer as string
+        );
+        
+        if (!("email" in customer) || !customer.email) {
+          logger.warn("Customer record missing email for payment failure", { 
+            invoiceId: stripeInvoice.id,
+            customerId: stripeInvoice.customer 
+          });
+          break;
+        }
+
+        const user = await User.findOne({ emailAddress: customer.email });
+        if (!user) {
+          logger.warn("User not found for payment failure", { 
+            invoiceId: stripeInvoice.id,
+            customerEmail: customer.email 
+          });
+          break;
+        }
+
+        // Update BusinessProfile subscription status to past_due
+        const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+        if (businessProfile) {
+          await BusinessProfile.findByIdAndUpdate(
+            businessProfile._id,
+            {
+              $set: {
+                subscriptionStatus: "past_due",
+              },
+            }
+          );
+
+          logger.info("Subscription marked as past_due due to payment failure", {
+            userId: user.id,
+            businessProfileId: businessProfile._id,
+            invoiceId: stripeInvoice.id,
+          });
+        }
+
+        // Optionally send notification email (can be implemented later)
         break;
       }
 

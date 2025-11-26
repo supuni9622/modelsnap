@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SignOutButton, useUser } from "@clerk/nextjs";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { CreditCard, LogOutIcon, PanelsTopLeft, UserIcon } from "lucide-react";
+import { LogOutIcon, PanelsTopLeft } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -37,21 +37,11 @@ export default function AccountButton() {
           <DropdownMenuContent className="min-w-[200px]">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <Link href="/app">
+            {/* <Link href="/dashboard/business/generate">
               <DropdownMenuItem>
                 <PanelsTopLeft /> Dashboard
               </DropdownMenuItem>
-            </Link>
-            <Link href="/profile">
-              <DropdownMenuItem>
-                <UserIcon /> Profile
-              </DropdownMenuItem>
-            </Link>
-            <Link href="/app/billing">
-              <DropdownMenuItem>
-                <CreditCard /> Billing
-              </DropdownMenuItem>
-            </Link>
+            </Link> */}
             <SignOutButton>
               <DropdownMenuItem>
                 <LogOutIcon /> Logout

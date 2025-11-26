@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useReducer } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Menu } from "lucide-react";
 import useSWR from "swr";
@@ -14,7 +12,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/logo";
 import { useAuth } from "@clerk/nextjs";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { useAppContext } from "@/context/app";
 import AccountButton from "@/components/buttons/account-button";
 
@@ -27,7 +25,13 @@ const navItems = [
 // Fetcher function for SWR
 const fetcher = async (url: string) => {
   const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch");
+  if (!res.ok) {
+    // Create error with status for better error handling
+    const error: any = new Error("Failed to fetch");
+    error.status = res.status;
+    error.response = { status: res.status };
+    throw error;
+  }
   return res.json();
 };
 
@@ -44,7 +48,27 @@ export default function Header1() {
   // Only fetch /api/app if user is signed in and auth is loaded
   const { data, error } = useSWR(
     isLoaded && isSignedIn ? "/api/app" : null,
-    fetcher
+    fetcher,
+    {
+      // Don't retry on 401/404 errors (user not authenticated or not found)
+      shouldRetryOnError: (error) => {
+        if (!error) return false;
+        // Only retry on server errors (5xx), not client errors (4xx)
+        const status = error.status || error.response?.status;
+        return status >= 500;
+      },
+      // Don't show errors for 401/404 - these are expected when not signed in
+      onError: (error) => {
+        // Silently handle 401/404 - these are expected states
+        if (error?.status === 401 || error?.status === 404) {
+          return;
+        }
+        // Only log unexpected errors
+        if (process.env.NODE_ENV === "development") {
+          console.debug("Failed to fetch user data:", error);
+        }
+      },
+    }
   );
 
   useEffect(() => {
@@ -118,7 +142,7 @@ export default function Header1() {
             <div className="flex items-center space-x-4">
               <ThemeToggle />
           {/* Sign in and sign up buttons are hidden for now */}
-              {/* {isSignedIn ? (
+              {isSignedIn ? (
                 <AccountButton />
               ) : isLoaded ? (
                 <>
@@ -135,7 +159,7 @@ export default function Header1() {
                     </Link>
                   </div>
                 </>
-              ) : null} */}
+              ) : null}
 
               {/* Mobile Menu Toggle */}
               <div className="flex md:hidden">

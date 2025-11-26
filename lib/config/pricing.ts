@@ -11,6 +11,12 @@ export const paymentProvider: "stripe" | "lemonsqueezy" | "webxpay" = "lemonsque
  */
 export const DEFAULT_CURRENCY = "usd";
 export const DEFAULT_CURRENCY_SYMBOL = "$";
+export const LEMON_STARTER_VARIANT =
+  process.env.LEMON_SQUEEZY_VARIANT_STARTER || "";
+
+export const LEMON_GROWTH_VARIANT =
+  process.env.LEMON_SQUEEZY_VARIANT_GROWTH || "";
+
 
 /**
  * Interface defining the structure for pricing plans
@@ -110,8 +116,8 @@ export const PricingPlans: PricingPlanTypes[] = [
     currency: "usd",
     currencySymbol: "$",
     billingCycle: "monthly",
-    priceId: "", // Replace with actual Stripe price ID
-    variantId: "", // Replace with actual Lemon Squeezy variant ID
+    priceId: "price_1SWWGuAxKGgV505GHghhGupi", // TODO: Replace with actual Stripe price ID (starts with 'price_')
+    variantId: LEMON_STARTER_VARIANT ||"1106959", // Replace with actual Lemon Squeezy variant ID
     features: [
       {
         active: true,
@@ -151,8 +157,8 @@ export const PricingPlans: PricingPlanTypes[] = [
     currency: "usd",
     currencySymbol: "$",
     billingCycle: "monthly",
-    priceId: "", // Replace with actual Stripe price ID
-    variantId: "", // Replace with actual Lemon Squeezy variant ID
+    priceId: "price_1SWWIsAxKGgV505G2kL5ha8d", // TODO: Replace with actual Stripe price ID (starts with 'price_')
+    variantId: LEMON_GROWTH_VARIANT || "1106971", // Replace with actual Lemon Squeezy variant ID
     features: [
       {
         active: true,
@@ -199,17 +205,17 @@ export const Credits = {
   /** Available credit packages for purchase */
   plans: [
     {
-      title: "50 Credits",
-      price: "4.99",
+      title: "40 Credits",
+      price: "5999.99",
       priceId: "", // Replace with actual Stripe price ID
-      variantId: "", // Replace with actual Lemon Squeezy variant ID
-      credits: 50,
+      variantId: LEMON_STARTER_VARIANT || "1106959", // Replace with actual Lemon Squeezy variant ID
+      credits: 40,
     },
     {
       title: "100 Credits",
-      price: "8.99",
+      price: "15099.99",
       priceId: "", // Replace with actual Stripe price ID
-      variantId: "", // Replace with actual Lemon Squeezy variant ID
+      variantId: LEMON_GROWTH_VARIANT || "1106971", // Replace with actual Lemon Squeezy variant ID
       credits: 100,
     },
   ],

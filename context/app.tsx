@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
 // Define the Billing interface
@@ -16,6 +18,8 @@ interface Billing {
     priceId: string;
   };
   credits: number;
+  totalCredits?: number;
+  renewalDate?: string | null;
 }
 
 // Define the User interface

@@ -269,7 +269,8 @@ function SidebarTrigger({
       variant="ghost"
       size="icon"
       className={cn(
-        "hover:bg-transparent hover:scale-[1.04] duration-200",
+        "hover:bg-muted/50 transition-all duration-300 rounded-lg",
+        "hover:scale-105 active:scale-95",
         className
       )}
       onClick={(event) => {
@@ -277,17 +278,19 @@ function SidebarTrigger({
         toggleSidebar();
       }}
       {...props}
+      aria-label={state === "collapsed" ? "Show navigation" : "Hide navigation"}
     >
-      {!isMobile && (
-        <div className="flex items-center dark:hover:text-white hover:text-black">
-          {state === "collapsed" ? <ChevronRightIcon /> : <ChevronLeft />}
-          <p className="text-sm ">
-            {state === "collapsed" ? "Show" : "Hide"} Sidebar
-          </p>
+      {!isMobile ? (
+        <div className="flex items-center gap-1.5">
+          {state === "collapsed" ? (
+            <ChevronRightIcon className="h-5 w-5 transition-transform duration-300" />
+          ) : (
+            <ChevronLeft className="h-5 w-5 transition-transform duration-300" />
+          )}
         </div>
+      ) : (
+        <MenuIcon className="h-5 w-5" />
       )}
-
-      {isMobile && <MenuIcon />}
     </Button>
   );
 }

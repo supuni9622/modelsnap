@@ -2,15 +2,17 @@
 
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 export function DemoModelSnap() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoError, setVideoError] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
 
   useEffect(() => {
     // Try to play the video when component mounts
     const playVideo = async () => {
-      if (videoRef.current) {
+      if (videoRef.current && !videoError) {
         try {
           await videoRef.current.play();
         } catch (error) {
@@ -19,8 +21,10 @@ export function DemoModelSnap() {
         }
       }
     };
-    playVideo();
-  }, []);
+    if (videoLoaded) {
+      playVideo();
+    }
+  }, [videoLoaded, videoError]);
 
   return (
     <section className="py-20 px-4 md:px-24 bg-[#1A1A1A] text-white">
@@ -73,22 +77,38 @@ export function DemoModelSnap() {
               
               <CardContent className="p-0 relative z-0">
                 <div className="aspect-video relative bg-gradient-to-br from-[#356DFF]/20 to-[#4BE4C1]/20">
-                <video
-                  ref={videoRef}
-                  className="w-full h-full object-cover"
-                  controls
-                  playsInline
-                  muted
-                  loop
-                  autoPlay
-                  preload="auto"
-                  onError={(e) => {
-                    console.error("Video error:", e);
-                  }}
-                >
-                  <source src="/demo.mp4" type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
+                  {videoError ? (
+                    // Fallback UI when video fails to load
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-center p-8">
+                        <p className="text-white/80 mb-4">Video preview unavailable</p>
+                        <p className="text-white/60 text-sm">
+                          Experience the full demo by signing up
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full object-cover"
+                      controls
+                      playsInline
+                      muted
+                      loop
+                      autoPlay
+                      preload="auto"
+                      onError={() => {
+                        // Video failed to load - show fallback UI
+                        setVideoError(true);
+                      }}
+                      onLoadedData={() => {
+                        setVideoLoaded(true);
+                      }}
+                    >
+                      <source src="/demo.mp4" type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                  )}
                 </div>
               </CardContent>
             </Card>

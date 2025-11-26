@@ -18,6 +18,24 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "api.fashn.ai",
       },
+      {
+        protocol: 'https',
+        hostname: process.env.AWS_CLOUDFRONT_DOMAIN || 'd20g0cz6lqgecm.cloudfront.net',
+      },
+       // Production CloudFront
+       {
+        protocol: 'https',
+        hostname: 'd20jwr453fixw8.cloudfront.net', // Your prod domain
+      },
+      // If you also have S3 direct URLs, add them too:
+      {
+        protocol: 'https',
+        hostname: '*.s3.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.s3.*.amazonaws.com',
+      },
     ],
     formats: ["image/webp", "image/avif"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],

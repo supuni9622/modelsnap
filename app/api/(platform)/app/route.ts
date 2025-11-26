@@ -1,8 +1,10 @@
 import { connectDB } from "@/lib/db";
 import Feedback from "@/models/feedback";
 import User from "@/models/user";
+import BusinessProfile from "@/models/business-profile";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
+import { Credits } from "@/lib/config/pricing";
 
 /**
  * GET endpoint to retrieve user data including billing, feedback and account info
@@ -17,10 +19,66 @@ export const GET = async (req: NextRequest) => {
     // Get authenticated user ID from Clerk
     const { userId } = await auth();
 
-    // Find user document in database
-    const user = await User.findOne({ id: userId });
+    // Return 401 if not authenticated
+    if (!userId) {
+      return Response.json(
+        {
+          status: "error",
+          message: "Unauthorized",
+          code: "UNAUTHORIZED",
+        },
+        { status: 401 }
+      );
+    }
 
-    // Return 404 if user not found
+    // Find user document in database
+    let user = await User.findOne({ id: userId });
+
+    // If user not found, try to create them (fallback if webhook failed)
+    if (!user) {
+      console.log(`⚠️ User ${userId} not found in database, attempting fallback creation`);
+      
+      try {
+        // Fetch user from Clerk
+        const { clerkClient } = await import("@clerk/nextjs/server");
+        const clerkUser = await (await clerkClient()).users.getUser(userId);
+        
+        if (clerkUser) {
+          // Get role from metadata - check if admin, otherwise null for onboarding
+          let role = clerkUser.publicMetadata?.role || clerkUser.privateMetadata?.role;
+          
+          // Check if admin via ADMIN_EMAILS
+          if (!role) {
+            const email = clerkUser.emailAddresses[0]?.emailAddress;
+            if (email) {
+              const adminEmails = process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) || [];
+              if (adminEmails.includes(email)) {
+                role = "ADMIN";
+              }
+            }
+          }
+          
+          // Create user in MongoDB - role is null for new users (unless admin)
+          user = await User.create({
+            id: userId,
+            firstName: clerkUser.firstName || "",
+            lastName: clerkUser.lastName || "",
+            emailAddress: clerkUser.emailAddresses.map((email) => email.emailAddress),
+            picture: clerkUser.imageUrl || "",
+            role: role === "ADMIN" ? "ADMIN" : null, // Explicitly null for non-admins
+            plan: { planType: "free", id: "free" },
+            credits: Credits.freeCredits,
+          });
+          
+          console.log(`✅ Fallback: User created in MongoDB: ${userId}`);
+        }
+      } catch (fallbackError) {
+        console.error("❌ Fallback user creation failed:", fallbackError);
+        // Continue to return 404 if fallback fails
+      }
+    }
+
+    // Return 404 if user still not found
     if (!user) {
       return Response.json(
         {
@@ -28,12 +86,25 @@ export const GET = async (req: NextRequest) => {
           message: "User Not Found",
           code: "USER_NOT_FOUND",
         },
-        { status: 401 }
+        { status: 404 }
       );
     }
 
     // Get user's plan type
     const plan = user.plan.planType;
+
+    // For business users, get credits from BusinessProfile
+    let credits = user.credits || 0;
+    let totalCredits = credits;
+    let renewalDate: Date | null = null;
+    if (user.role === "BUSINESS") {
+      const businessProfile = await BusinessProfile.findOne({ userId: user._id });
+      if (businessProfile) {
+        credits = businessProfile.aiCreditsRemaining || 0;
+        totalCredits = businessProfile.aiCreditsTotal || credits;
+        renewalDate = businessProfile.subscriptionCurrentPeriodEnd || null;
+      }
+    }
 
     // Get user's feedback details if any exist
     const feedback = await Feedback.findOne({ userId });
@@ -44,7 +115,9 @@ export const GET = async (req: NextRequest) => {
         billing: {
           plan,
           details: user.plan,
-          credits: user.credits || 0,
+          credits,
+          totalCredits,
+          renewalDate: renewalDate ? renewalDate.toISOString() : null,
         },
         myFeedback: {
           submited: feedback?.id ? true : false,

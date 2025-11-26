@@ -1,41 +1,34 @@
-"use client";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { DashboardSidebar } from "@/components/dashboard/sidebar/dashboard-sidebar";
+import { DashboardTopBar } from "@/components/dashboard/top-bar";
+import { DashboardProviders } from "@/components/dashboard/dashboard-providers";
+import { getUserRole } from "@/lib/auth-utils";
+import { redirect } from "next/navigation";
 
-import { FeedbackDialog } from "@/components/feedback-dialog";
-import LoadUserData from "@/components/load-user-data";
-import { AppSidebar } from "@/components/platform/sidebar/app-sidebar";
-import SidebarHeader from "@/components/platform/sidebar/sidebar-header";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppProvider } from "@/context/app";
-import { usePathname } from "@/i18n/navigation";
-import { cn } from "@/lib/utils";
-
-interface Layout {
+export default async function PlatformLayout({
+  children,
+}: {
   children: React.ReactNode;
-}
+}) {
+  const role = await getUserRole();
 
-export default function PlatformLayout({ children }: Layout) {
-  const pathname = usePathname();
+  // If no role, redirect to onboarding (OnboardingCheck will handle this, but double-check)
+  if (!role) {
+    redirect("/onboarding");
+  }
+
   return (
-    <>
-      <AppProvider>
-        <SidebarProvider>
-          <AppSidebar />
-          <main className="w-full">
-            <SidebarHeader />
-            <div
-              className={cn(
-                "mx-auto  mt-10",
-                pathname !== "/profile" && "max-w-screen-xl px-4 md:px-10"
-              )}
-            >
-              {children}
-            </div>
-            <LoadUserData />
-            <FeedbackDialog />
+    <DashboardProviders>
+      <SidebarProvider>
+        <DashboardSidebar role={role} />
+        <SidebarInset>
+          <DashboardTopBar role={role} />
+          <main className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+            {children}
           </main>
-        </SidebarProvider>
-      </AppProvider>
-      ;
-    </>
+        </SidebarInset>
+      </SidebarProvider>
+    </DashboardProviders>
   );
 }
+

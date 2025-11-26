@@ -66,6 +66,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
 
   // Route event to appropriate handler based on type
   try {
+    console.log(`📨 Received webhook event: ${eventType}`);
+    
     switch (eventType) {
       case "user.created":
         await handleUserCreated(evt.data);
@@ -77,14 +79,25 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
         await handleUserDeleted(evt.data);
         break;
       default:
-        console.log(`Unhandled event type: ${eventType}`);
+        console.log(`⚠️ Unhandled event type: ${eventType}`);
     }
+    
+    console.log(`✅ Successfully processed event: ${eventType}`);
+    return new NextResponse("Webhook received", { status: 200 });
   } catch (error) {
-    console.error(`Error processing event ${eventType}:`, error);
-    return new NextResponse("Error processing event", { status: 500 });
+    console.error(`❌ Error processing event ${eventType}:`, error);
+    // Return 500 to let Clerk know the webhook failed (they will retry)
+    return new NextResponse(
+      JSON.stringify({ 
+        error: "Error processing event", 
+        message: error instanceof Error ? error.message : "Unknown error" 
+      }),
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   }
-
-  return new NextResponse("Webhook received", { status: 200 });
 });
 
 /**
@@ -168,43 +181,83 @@ async function handleUserCreated(data: any) {
     }
   }
 
-  // Update Clerk user and create MongoDB user atomically
-  await withTransactionAndExternal(
-    // Database operations
-    async (session) => {
-      // Create new user document in MongoDB
-      await User.create([{
-        id,
-        firstName: first_name,
-        lastName: last_name,
-        emailAddress: email_addresses.map((mail: any) => mail.email_address),
-        picture: image_url,
-        stripeCustomerId,
-        lemonsqueezyCustomerId: lemonCustomerId,
-        plan: { planType: "free" },
-        credits: Credits.freeCredits,
-      }], { session });
+  // Check if user is admin via ADMIN_EMAILS
+  let role = data.public_metadata?.role || data.privateMetadata?.role;
+  
+  if (!role) {
+    // Check if email is in ADMIN_EMAILS
+    const email = email_addresses[0]?.email_address;
+    if (email) {
+      const adminEmails = process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) || [];
+      if (adminEmails.includes(email)) {
+        role = "ADMIN";
+        console.log("🔑 User is admin via ADMIN_EMAILS:", email);
+      } else {
+        console.log("👤 Regular user signup, role will be null for onboarding:", email);
+      }
+    } else {
+      console.log("👤 Regular user signup (no email), role will be null for onboarding");
+    }
+    // Don't set default role - let user choose in onboarding
+    // role will be null/undefined, which will trigger onboarding flow
+  } else {
+    console.log("👤 User has existing role in metadata:", role);
+  }
 
-      return { id, stripeCustomerId, lemonCustomerId };
-    },
-    // External API operations
-    async (dbResult) => {
-      // Update Clerk user with Stripe or LemonSqueezy customer ID and initial plan
-      await (
-        await clerkClient()
-      ).users.updateUser(dbResult.id, {
+  try {
+    // Check if user already exists (prevent duplicates)
+    const existingUser = await User.findOne({ id });
+    if (existingUser) {
+      console.log(`⚠️ User ${id} already exists in database, skipping creation`);
+      return;
+    }
+
+    console.log("📝 Creating user in MongoDB:", id);
+    
+    // Create new user document in MongoDB
+    // CRITICAL: Only set role if ADMIN, otherwise explicitly set to null for onboarding
+    const userData: any = {
+      id,
+      firstName: first_name || "",
+      lastName: last_name || "",
+      emailAddress: email_addresses.map((mail: any) => mail.email_address),
+      picture: image_url || "",
+      stripeCustomerId,
+      lemonsqueezyCustomerId: lemonCustomerId,
+      role: role === "ADMIN" ? "ADMIN" : null, // Explicitly null for non-admins
+      plan: { planType: "free", id: "free" },
+      credits: Credits.freeCredits,
+    };
+    
+    console.log("📝 Creating user with role:", userData.role);
+    
+    // Create user directly (simplified - no transaction to avoid rollback issues)
+    const newUser = await User.create(userData);
+    console.log("✅ User created in MongoDB:", newUser._id, "with role:", newUser.role);
+    
+    // Update Clerk user metadata separately (don't fail user creation if this fails)
+    try {
+      await (await clerkClient()).users.updateUser(id, {
         privateMetadata: {
-          stripeCustomerId: dbResult.stripeCustomerId,
-          lemonCustomerId: dbResult.lemonCustomerId,
+          stripeCustomerId,
+          lemonCustomerId,
           plan: "free",
         },
       });
+      console.log("✅ Clerk user metadata updated");
+    } catch (clerkError) {
+      console.error("❌ Error updating Clerk user metadata (non-fatal):", clerkError);
+      // Don't throw - user is already created in DB
     }
-  );
 
-  console.log(
-    `✅ User created: ${id} | Stripe ID: ${stripeCustomerId || "Not configured"} | LemonSqueezy ID: ${lemonCustomerId || "Not configured"}`
-  );
+    console.log(
+      `✅ User created successfully: ${id} | Stripe ID: ${stripeCustomerId || "Not configured"} | LemonSqueezy ID: ${lemonCustomerId || "Not configured"}`
+    );
+  } catch (error) {
+    console.error("❌ Error in handleUserCreated:", error);
+    // Re-throw to ensure webhook returns error status
+    throw error;
+  }
 }
 
 /**

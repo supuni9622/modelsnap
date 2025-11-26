@@ -6,8 +6,9 @@ import { AvatarSelector } from "@/components/platform/avatar/avatar-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppContext } from "@/context/app";
-import { Loader2, Download, CheckCircle2, XCircle, Sparkles } from "lucide-react";
+import { Loader2, Download, CheckCircle2, XCircle, Sparkles, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PreviewImageDialog } from "@/components/platform/preview-image-dialog";
 
 interface Avatar {
   _id: string;
@@ -33,6 +34,7 @@ export function RenderInterface() {
   const [isRendering, setIsRendering] = useState(false);
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const handleUploadComplete = (imageUrl: string) => {
     setGarmentImageUrl(imageUrl);
@@ -215,6 +217,14 @@ export function RenderInterface() {
             </div>
 
             <div className="flex gap-2">
+              <Button
+                onClick={() => setPreviewOpen(true)}
+                variant="outline"
+                className="flex-1"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Preview
+              </Button>
               <Button onClick={handleDownload} className="flex-1">
                 <Download className="mr-2 h-4 w-4" />
                 Download
@@ -223,6 +233,16 @@ export function RenderInterface() {
                 New Render
               </Button>
             </div>
+            
+            <PreviewImageDialog
+              open={previewOpen}
+              onOpenChange={setPreviewOpen}
+              imageUrl={renderResult.renderedImageUrl}
+              imageTitle="Rendered Image Preview"
+              downloadFileName={`render-${renderResult.renderId}.jpg`}
+              generationId={renderResult.renderId}
+              type="ai"
+            />
           </CardContent>
         </Card>
       )}

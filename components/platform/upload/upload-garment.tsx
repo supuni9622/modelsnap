@@ -38,6 +38,7 @@ export function UploadGarment({ onUploadComplete, className }: UploadGarmentProp
       setError(null);
 
       try {
+        // Step 1: Get pre-signed URL or upload endpoint
         const formData = new FormData();
         formData.append("file", file);
 
@@ -52,7 +53,45 @@ export function UploadGarment({ onUploadComplete, className }: UploadGarmentProp
           throw new Error(data.message || "Upload failed");
         }
 
-        const imageUrl = data.data.url;
+        let imageUrl: string;
+
+        // Check if S3 pre-signed URL is returned
+        if (data.data.uploadUrl && data.data.method === "PUT") {
+          // Step 2: Upload directly to S3 using pre-signed URL
+          const fileBuffer = await file.arrayBuffer();
+          const uploadResponse = await fetch(data.data.uploadUrl, {
+            method: "PUT",
+            body: fileBuffer,
+            headers: {
+              "Content-Type": file.type,
+            },
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error("Failed to upload to S3");
+          }
+
+          // Step 3: Confirm upload and get public URL
+          const confirmResponse = await fetch("/api/upload/confirm", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ s3Key: data.data.s3Key }),
+          });
+
+          const confirmData = await confirmResponse.json();
+
+          if (!confirmResponse.ok || confirmData.status !== "success") {
+            throw new Error(confirmData.message || "Failed to confirm upload");
+          }
+
+          imageUrl = confirmData.data.url;
+        } else {
+          // Local filesystem storage (fallback)
+          imageUrl = data.data.url;
+        }
+
         setUploadedImage(imageUrl);
         onUploadComplete?.(imageUrl);
       } catch (err) {

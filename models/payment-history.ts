@@ -4,14 +4,14 @@ import mongoose, { Schema } from "mongoose";
 const PaymentHistorySchema = new Schema(
   {
     // User reference
-    userId: { type: String, required: true, index: true },
+    userId: { type: String, required: true }, // Indexed in compound indexes below
 
     // Payment provider information
     provider: {
       type: String,
       required: true,
       enum: ["stripe", "lemonsqueezy", "webxpay"],
-      index: true,
+      // Indexed in compound indexes below
     },
 
     // Payment status
@@ -27,7 +27,7 @@ const PaymentHistorySchema = new Schema(
         "refunded",
       ],
       default: "pending",
-      index: true,
+      // Indexed in compound indexes below
     },
 
     // Payment amount and currency

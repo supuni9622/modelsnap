@@ -31,14 +31,14 @@ export interface SiteSettingsType {
  */
 export const SiteSettings: SiteSettingsType = {
   name: "ModelSnap.ai",
-  logoUrlLight: "/static/images/dark-logo.png",
-  logoUrlDark: "/static/images/dark-logo.png",
+  logoUrlLight: "/static/images/dark-logo.jpeg",
+  logoUrlDark: "/static/images/dark-logo.jpeg",
   defaultTheme: "light",
   domainName: "Founderflow.online",
   domainUrl:
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : "https://modelsnap-oqja41jn2-model-snap-ai.vercel.app/en",
+      : "https://modelsnapapp.com/en",
 };
 
 /**
@@ -119,5 +119,5 @@ export const SocialLink = {
  * ⚠️  IMPORTANT: Replace these with your actual Lemon Squeezy store details
  * Get these values from your Lemon Squeezy dashboard
  */
-export const lemonSqueezyStoreId = 0; // Replace with your actual store ID
-export const lemonSqueezyStoreUrl = ""; // Replace with your store URL
+export const lemonSqueezyStoreId = 247074; // Replace with your actual store ID
+export const lemonSqueezyStoreUrl = "https://modelsnap.lemonsqueezy.com"; // Replace with your store URL
