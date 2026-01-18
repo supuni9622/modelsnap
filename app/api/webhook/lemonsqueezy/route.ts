@@ -125,6 +125,9 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
   try {
     switch (eventType) {
       case "subscription_payment_success": {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:127',message:'subscription_payment_success handler entry',data:{eventType:'subscription_payment_success',hasData:!!data},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+        // #endregion
         // Handle subscription payment success (monthly renewal)
         const subscriptionInvoice = data;
         const customerId = subscriptionInvoice.attributes?.customer_id;
@@ -143,6 +146,9 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
 
         // Try multiple methods to find the user
         let user = await findUser(customerId, userEmail, customUserId);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:145',message:'subscription_payment_success user found',data:{userFound:!!user,userId:user?.id,userPlanId:user?.plan?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+        // #endregion
 
         if (!user) {
           console.error("🚨 User not found with any identifier:", {
@@ -172,30 +178,38 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           console.log("✅ Updated user with lemonsqueezyCustomerId:", customerId);
         }
 
-        // IMPORTANT: Always fetch subscription from Lemon Squeezy API first
-        // Don't rely on BusinessProfile.subscriptionTier as it might not be updated yet (race condition)
+        // IMPORTANT: Get variantId from webhook payload first (if available in subscription_payment_success)
+        // Fallback to API call if not available
         let plan;
+        let variantId: number | string | undefined;
         
-        if (subscriptionId) {
+        // Try to get variantId from webhook payload (subscription_payment_success might have it in attributes)
+        // Note: subscription_payment_success payload structure may differ from subscription_created
+        variantId = subscriptionInvoice.attributes?.variant_id;
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:175',message:'subscription_payment_success variantId from payload',data:{variantId,variantIdString:String(variantId),hasVariantId:!!variantId},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+        // #endregion
+        
+        // If not in webhook payload, fetch from API
+        if (!variantId && subscriptionId) {
           console.log("⚠️ Fetching subscription from Lemon Squeezy:", subscriptionId);
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:180',message:'subscription_payment_success before API call',data:{subscriptionId:String(subscriptionId)},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+          // #endregion
           try {
             const { data: subscriptionData, error: subError } = await getSubscription(String(subscriptionId));
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:183',message:'subscription_payment_success after API call',data:{hasError:!!subError,hasData:!!subscriptionData?.data},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+            // #endregion
             if (!subError && subscriptionData?.data) {
               const subscription = subscriptionData.data;
-              const firstItem = subscription.attributes.first_subscription_item as any;
-              const variantId = firstItem?.variant_id;
+              // Try variant_id from attributes first, then first_subscription_item
+              variantId = subscription.attributes.variant_id || 
+                         (subscription.attributes.first_subscription_item as any)?.variant_id;
               console.log("🔍 Fetched subscription, variantId:", variantId);
-              
-              if (variantId) {
-                plan = PricingPlans.find(
-                  (p) => p.variantId === String(variantId)
-                );
-                console.log("🔍 Found plan from subscription variantId:", {
-                  planId: plan?.id,
-                  planName: plan?.name,
-                  credits: plan?.isFreeCredits,
-                });
-              }
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:190',message:'subscription_payment_success variantId from API',data:{variantId,variantIdString:String(variantId)},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+              // #endregion
             } else {
               console.error("❌ Error fetching subscription:", subError);
             }
@@ -204,12 +218,31 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           }
         }
         
+        // Look up plan using variantId
+        if (variantId) {
+          plan = PricingPlans.find(
+            (p) => p.variantId === String(variantId)
+          );
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:198',message:'subscription_payment_success plan lookup',data:{planFound:!!plan,planId:plan?.id,planName:plan?.name,variantId:String(variantId)},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+          // #endregion
+          if (plan) {
+            console.log("🔍 Found plan from subscription variantId:", {
+              planId: plan.id,
+              planName: plan.name,
+              credits: plan.isFreeCredits,
+            });
+          }
+        }
+        
         // Fallback: Try to get plan from BusinessProfile if API call failed
         if (!plan) {
           const businessProfile = await BusinessProfile.findOne({ 
             userId: new mongoose.Types.ObjectId(user._id) 
           });
-          
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:210',message:'subscription_payment_success fallback to BusinessProfile',data:{hasBusinessProfile:!!businessProfile,currentTier:businessProfile?.subscriptionTier},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+          // #endregion
           if (businessProfile?.subscriptionTier) {
             plan = PricingPlans.find((p) => p.id === businessProfile.subscriptionTier);
             console.log("🔍 Fallback: Found plan from BusinessProfile:", {
@@ -220,9 +253,12 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           }
         }
         
-        // Final fallback: Use user's current plan
+        // Final fallback: Use user's current plan (WARNING: This might be stale!)
         if (!plan && user.plan?.id) {
           plan = PricingPlans.find((p) => p.id === user.plan.id);
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:225',message:'subscription_payment_success fallback to user.plan (WARNING)',data:{planId:plan?.id,userPlanId:user.plan.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+          // #endregion
           console.log("🔍 Using plan from user.plan (fallback):", {
             planId: plan?.id,
             planName: plan?.name,
@@ -243,24 +279,33 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           planName: plan.name,
           creditsToSet: plan.isFreeCredits || 0,
         });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:241',message:'subscription_payment_success before transaction',data:{planId:plan.id,planName:plan.name,planCredits:plan.isFreeCredits||0,subscriptionId},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+        // #endregion
 
         // Update user and business profile
         await withTransaction(async (session) => {
           // Update user's plan and reset credits
+          const userUpdateData = {
+            "plan.id": plan.id,
+            "plan.type": plan.type || "subscription",
+            "plan.planType": plan.id, // Legacy field - frontend reads this
+            "plan.name": plan.name,
+            "plan.price": plan.price,
+            "plan.isPremium": plan.popular || false,
+            credits: plan.isFreeCredits || 0, // Reset credits on renewal
+          };
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:250',message:'subscription_payment_success user update data',data:userUpdateData,timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+          // #endregion
           const updateResult = await User.updateOne(
             { id: user.id },
-            {
-              $set: {
-                "plan.id": plan.id,
-                "plan.type": plan.type || "subscription",
-                "plan.name": plan.name,
-                "plan.price": plan.price,
-                "plan.isPremium": plan.popular || false,
-                credits: plan.isFreeCredits || 0, // Reset credits on renewal
-              },
-            },
+            { $set: userUpdateData },
             { session }
           );
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:264',message:'subscription_payment_success user update result',data:{matched:updateResult.matchedCount,modified:updateResult.modifiedCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+          // #endregion
 
           console.log("✅ User update result:", {
             matched: updateResult.matchedCount,
@@ -271,24 +316,32 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           let businessProfile = await BusinessProfile.findOne({ 
             userId: new mongoose.Types.ObjectId(user._id) 
           }).session(session);
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:272',message:'subscription_payment_success businessProfile before update',data:{found:!!businessProfile,currentTier:businessProfile?.subscriptionTier,currentCredits:businessProfile?.aiCreditsRemaining},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+          // #endregion
 
           // Update BusinessProfile credits
           if (businessProfile) {
+            const businessUpdateData = {
+              aiCredits: plan.isFreeCredits || 0, // Update legacy aiCredits field
+              aiCreditsRemaining: plan.isFreeCredits || 0,
+              aiCreditsTotal: plan.isFreeCredits || 0,
+              subscriptionStatus: "active",
+              subscriptionTier: plan.id,
+              lemonsqueezySubscriptionId: String(subscriptionId),
+              lastCreditReset: new Date(), // Update reset timestamp
+            };
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:278',message:'subscription_payment_success businessProfile update data',data:businessUpdateData,timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+            // #endregion
             const businessUpdateResult = await BusinessProfile.findByIdAndUpdate(
               businessProfile._id,
-              {
-                $set: {
-                  aiCredits: plan.isFreeCredits || 0, // Update legacy aiCredits field
-                  aiCreditsRemaining: plan.isFreeCredits || 0,
-                  aiCreditsTotal: plan.isFreeCredits || 0,
-                  subscriptionStatus: "active",
-                  subscriptionTier: plan.id,
-                  lemonsqueezySubscriptionId: String(subscriptionId),
-                  lastCreditReset: new Date(), // Update reset timestamp
-                },
-              },
+              { $set: businessUpdateData },
               { session, new: true }
             );
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:292',message:'subscription_payment_success businessProfile after update',data:{subscriptionTier:businessUpdateResult?.subscriptionTier,aiCreditsRemaining:businessUpdateResult?.aiCreditsRemaining,subscriptionStatus:businessUpdateResult?.subscriptionStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+            // #endregion
             console.log("✅ BusinessProfile updated:", {
               businessId: businessUpdateResult?._id,
               aiCredits: businessUpdateResult?.aiCredits,
@@ -322,6 +375,17 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
             });
           }
         });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:325',message:'subscription_payment_success transaction completed',data:{planId:plan.id,userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+        // #endregion
+        
+        // Verify the update actually persisted
+        const verifyBusinessProfile = await BusinessProfile.findOne({ 
+          userId: new mongoose.Types.ObjectId(user._id) 
+        });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:330',message:'subscription_payment_success database verification',data:{subscriptionTier:verifyBusinessProfile?.subscriptionTier,aiCreditsRemaining:verifyBusinessProfile?.aiCreditsRemaining,subscriptionStatus:verifyBusinessProfile?.subscriptionStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
+        // #endregion
 
         console.log(`✅ Subscription payment processed successfully`, {
           userId: user.id,
@@ -368,28 +432,245 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
       }
 
       case "subscription_created": {
-        // [Keep your existing subscription_created logic]
+        // Handle new subscription creation
         const subscription = data;
         const customerId = subscription.attributes.customer_id;
+        const subscriptionId = subscription.id; // Subscription ID is at root level for subscription_created
         const userEmail = subscription.attributes?.user_email;
         const customUserId = meta.custom_data?.user_id;
-        
+
+        console.log("🔍 subscription_created - Looking for user with:", {
+          customerId,
+          userEmail,
+          customUserId,
+          subscriptionId,
+        });
+
+        // Try multiple methods to find the user
         let user = await findUser(customerId?.toString(), userEmail, customUserId);
 
         if (!user) {
-          console.error("🚨 User not found");
-          break;
+          console.error("🚨 User not found with any identifier:", {
+            customerId,
+            userEmail,
+            customUserId,
+          });
+          return NextResponse.json({ 
+            error: "User not found",
+            details: "Could not locate user by customer ID, email, or user ID"
+          }, { status: 404 });
         }
+
+        console.log("✅ Found user:", {
+          userId: user.id,
+          email: user.emailAddress,
+          currentPlan: user.plan?.id,
+          currentCredits: user.credits,
+        });
 
         // Update lemonsqueezyCustomerId if not set
         if (!user.lemonsqueezyCustomerId && customerId) {
           await User.updateOne(
             { id: user.id },
-            { $set: { lemonsqueezyCustomerId: customerId.toString() } }
+            { $set: { lemonsqueezyCustomerId: String(customerId) } }
           );
+          console.log("✅ Updated user with lemonsqueezyCustomerId:", customerId);
         }
 
-        // [Rest of your subscription_created logic...]
+        // IMPORTANT: Get variantId from webhook payload first (it's already in subscription.attributes.variant_id)
+        // Fallback to API call if not available
+        let plan;
+        let variantId: number | string | undefined;
+        
+        // First, try to get variantId directly from webhook payload
+        variantId = subscription.attributes?.variant_id;
+        
+        // If not in webhook payload, fetch from API
+        if (!variantId && subscriptionId) {
+          console.log("⚠️ Fetching subscription from Lemon Squeezy:", subscriptionId);
+          try {
+            const { data: subscriptionData, error: subError } = await getSubscription(String(subscriptionId));
+            if (!subError && subscriptionData?.data) {
+              const subscriptionDataObj = subscriptionData.data;
+              // Try variant_id from attributes first, then first_subscription_item
+              variantId = subscriptionDataObj.attributes.variant_id || 
+                         (subscriptionDataObj.attributes.first_subscription_item as any)?.variant_id;
+              console.log("🔍 Fetched subscription, variantId:", variantId);
+            } else {
+              console.error("❌ Error fetching subscription:", subError);
+            }
+          } catch (error) {
+            console.error("❌ Exception fetching subscriptimage.pngion:", error);
+          }
+        }
+        
+        // Look up plan using variantId
+        if (variantId) {
+          plan = PricingPlans.find(
+            (p) => p.variantId === String(variantId)
+          );
+          if (plan) {
+            console.log("🔍 Found plan from subscription variantId:", {
+              planId: plan.id,
+              planName: plan.name,
+              credits: plan.isFreeCredits,
+            });
+          }
+        }
+        
+        // Fallback: Try to get plan from BusinessProfile if API call failed
+        if (!plan) {
+          const businessProfile = await BusinessProfile.findOne({ 
+            userId: new mongoose.Types.ObjectId(user._id) 
+          });
+          
+          if (businessProfile?.subscriptionTier) {
+            plan = PricingPlans.find((p) => p.id === businessProfile.subscriptionTier);
+            console.log("🔍 Fallback: Found plan from BusinessProfile:", {
+              planId: plan?.id,
+              planName: plan?.name,
+              credits: plan?.isFreeCredits,
+            });
+          }
+        }
+        
+        // Final fallback: Use user's current plan
+        if (!plan && user.plan?.id) {
+          plan = PricingPlans.find((p) => p.id === user.plan.id);
+          console.log("🔍 Using plan from user.plan (fallback):", {
+            planId: plan?.id,
+            planName: plan?.name,
+            credits: plan?.isFreeCredits,
+          });
+        }
+
+        if (!plan) {
+          console.error("🚨 Could not determine plan. Subscription ID:", subscriptionId);
+          return NextResponse.json({ 
+            error: "Plan not found",
+            details: "Could not determine subscription plan"
+          }, { status: 404 });
+        }
+
+        console.log("💳 Processing subscription creation with plan:", {
+          planId: plan.id,
+          planName: plan.name,
+          creditsToSet: plan.isFreeCredits || 0,
+        });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:492',message:'before transaction - plan determined',data:{planId:plan.id,planName:plan.name,planCredits:plan.isFreeCredits||0,subscriptionId},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
+
+        // Update user and business profile
+        await withTransaction(async (session) => {
+          // Update user's plan and set credits
+          const userUpdateData = {
+            "plan.id": plan.id,
+            "plan.type": plan.type || "subscription",
+            "plan.planType": plan.id, // Legacy field - frontend reads this
+            "plan.name": plan.name,
+            "plan.price": plan.price,
+            "plan.isPremium": plan.popular || false,
+            credits: plan.isFreeCredits || 0,
+          };
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:500',message:'user update data being set',data:userUpdateData,timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
+          // #endregion
+          const updateResult = await User.updateOne(
+            { id: user.id },
+            { $set: userUpdateData },
+            { session }
+          );
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:515',message:'user update result',data:{matched:updateResult.matchedCount,modified:updateResult.modifiedCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
+          // #endregion
+
+          console.log("✅ User update result:", {
+            matched: updateResult.matchedCount,
+            modified: updateResult.modifiedCount,
+          });
+
+          // Get or create BusinessProfile
+          let businessProfile = await BusinessProfile.findOne({ 
+            userId: new mongoose.Types.ObjectId(user._id) 
+          }).session(session);
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:523',message:'businessProfile before update',data:{found:!!businessProfile,currentTier:businessProfile?.subscriptionTier,currentCredits:businessProfile?.aiCreditsRemaining},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
+          // #endregion
+
+          // Update BusinessProfile credits
+          if (businessProfile) {
+            const businessUpdateData = {
+              aiCredits: plan.isFreeCredits || 0, // Update legacy aiCredits field
+              aiCreditsRemaining: plan.isFreeCredits || 0,
+              aiCreditsTotal: plan.isFreeCredits || 0,
+              subscriptionStatus: "active",
+              subscriptionTier: plan.id,
+              lemonsqueezySubscriptionId: String(subscriptionId),
+              lastCreditReset: new Date(), // Update reset timestamp
+            };
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:531',message:'businessProfile update data being set',data:businessUpdateData,timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
+            // #endregion
+            const businessUpdateResult = await BusinessProfile.findByIdAndUpdate(
+              businessProfile._id,
+              { $set: businessUpdateData },
+              { session, new: true }
+            );
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:543',message:'businessProfile after update (in transaction)',data:{businessId:businessUpdateResult?._id?.toString(),subscriptionTier:businessUpdateResult?.subscriptionTier,aiCreditsRemaining:businessUpdateResult?.aiCreditsRemaining,subscriptionStatus:businessUpdateResult?.subscriptionStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
+            // #endregion
+            console.log("✅ BusinessProfile updated:", {
+              businessId: businessUpdateResult?._id,
+              aiCredits: businessUpdateResult?.aiCredits,
+              aiCreditsRemaining: businessUpdateResult?.aiCreditsRemaining,
+              aiCreditsTotal: businessUpdateResult?.aiCreditsTotal,
+              subscriptionTier: businessUpdateResult?.subscriptionTier,
+              subscriptionStatus: businessUpdateResult?.subscriptionStatus,
+            });
+          } else {
+            // Create BusinessProfile if it doesn't exist
+            const newBusinessProfile = await BusinessProfile.create([{
+              userId: user._id,
+              businessName: user.firstName && user.lastName 
+                ? `${user.firstName} ${user.lastName}` 
+                : "Business",
+              lemonsqueezySubscriptionId: String(subscriptionId),
+              subscriptionStatus: "active",
+              subscriptionTier: plan.id,
+              aiCredits: plan.isFreeCredits || 0, // Legacy field
+              aiCreditsRemaining: plan.isFreeCredits || 0,
+              aiCreditsTotal: plan.isFreeCredits || 0,
+              lastCreditReset: new Date(),
+              creditResetDay: new Date().getDate(),
+            }], { session });
+            console.log("✅ Created BusinessProfile for user:", {
+              userId: user.id,
+              businessId: newBusinessProfile[0]._id,
+              aiCredits: plan.isFreeCredits || 0,
+              aiCreditsRemaining: plan.isFreeCredits || 0,
+              subscriptionTier: plan.id,
+            });
+          }
+        });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:576',message:'transaction completed - verifying database',data:{planId:plan.id,userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
+        
+        // Verify the update actually persisted to database
+        const verifyBusinessProfile = await BusinessProfile.findOne({ 
+          userId: new mongoose.Types.ObjectId(user._id) 
+        });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:580',message:'database verification after transaction',data:{subscriptionTier:verifyBusinessProfile?.subscriptionTier,aiCreditsRemaining:verifyBusinessProfile?.aiCreditsRemaining,subscriptionStatus:verifyBusinessProfile?.subscriptionStatus,lemonsqueezySubscriptionId:verifyBusinessProfile?.lemonsqueezySubscriptionId},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
+        // #endregion
+
+        console.log(`✅ Subscription created successfully`, {
+          userId: user.id,
+          planId: plan.id,
+          planName: plan.name,
+          creditsSet: plan.isFreeCredits || 0,
+        });
         break;
       }
 
