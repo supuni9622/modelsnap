@@ -18,11 +18,12 @@ flowchart TD
 
     subgraph External_Services_Tier_4 [4. External Services Tier - APIs]
         H[Clerk - Auth & User Management]
-        I[Vertex AI - Virtual Try-On, Gemini, Imagen]
-        J[Stripe - Payments, Subscriptions, Payout Tracking]
+        I[Fashn.ai - Virtual Try-On API]
+        J[Lemon Squeezy - Payments, Subscriptions]
         K[Resend - Email/Notifications]
-        L[Google Analytics - Tag Manager]
-        M[Grafana - Vercel Logs]
+        L[Google Analytics - Event Tracking]
+        M[Vercel Logs - Grafana Integration]
+        N[PostHog - Product Analytics]
     end
 
     %% Flow Connections

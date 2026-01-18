@@ -1,7 +1,7 @@
 # ModelSnap.ai - Complete Project Documentation
 
 **Version:** 1.0  
-**Last Updated:** 2025-01-27  
+**Last Updated:** 2026.01.18  
 **Status:** MVP Implementation
 
 ---
@@ -23,11 +23,11 @@
 
 ## Overview
 
-ModelSnap.ai is an AI-powered fashion photography platform designed specifically for Sri Lankan fashion brands. The platform enables businesses to upload clothing items and render them on AI-generated Sri Lankan models or human models with proper consent and royalty management.
+ModelSnap.ai is an AI-powered fashion photography platform designed specifically for Sri Lankan fashion brands but can use in the globle context as well. The platform enables businesses to upload clothing items and render them on AI-generated models or human models with proper consent and royalty management.
 
 ### Key Features
 
-- **AI Avatar Gallery**: 32 pre-generated Sri Lankan avatars (4 body types × 4 skin tones × 2 genders)
+- **AI Avatar Gallery**: 32 pre-generated avatars (4 body types × 4 skin tones × 2 genders)
 - **Human Model Marketplace**: Ethical consent workflow with one-time approval per business-model pair
 - **Credit-Based System**: Pay-per-render with subscription plans
 - **Royalty Management**: Automatic royalty tracking and payout for human models
@@ -472,7 +472,7 @@ flowchart TB
     A --> M[Footer]
     
     J --> N[Checkout Flow]
-    N --> O[Stripe/LemonSqueezy]
+    N --> O[LemonSqueezy]
 ```
 
 ### Business Dashboard Routes
@@ -840,9 +840,6 @@ NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-...
 - White-label options
 
 ### Phase 4
-- International expansion
-- Multi-language support
-- Additional payment methods
 - Mobile app
 
 ---
