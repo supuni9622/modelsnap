@@ -395,7 +395,7 @@ export function GenerateForm() {
                       >
                         <Image
                           src={avatar.imageUrl}
-                          alt={avatar.name}
+                          alt={avatar.name || "AI Avatar"}
                           fill
                           className="object-cover"
                         />
@@ -455,7 +455,7 @@ export function GenerateForm() {
                         {model.referenceImages?.[0] ? (
                           <Image
                             src={model.referenceImages[0]}
-                            alt={model.name}
+                            alt={model.name || "Human Model"}
                             fill
                             className="object-cover"
                           />

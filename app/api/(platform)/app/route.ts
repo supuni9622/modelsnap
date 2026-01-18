@@ -93,21 +93,38 @@ export const GET = async (req: NextRequest) => {
     // Get user's plan type
     const plan = user.plan.planType;
 
+    // Parallelize database queries for better performance
+    const [businessProfileResult, feedbackResult] = await Promise.all([
+      // Only fetch BusinessProfile if user is a business
+      user.role === "BUSINESS"
+        ? BusinessProfile.findOne({ userId: user._id }).lean()
+        : Promise.resolve(null),
+      // Always fetch feedback (lightweight query)
+      Feedback.findOne({ userId }).lean(),
+    ]);
+
+    // Type assertions for lean() results - TypeScript doesn't infer Mongoose schema types
+    const businessProfile = businessProfileResult as {
+      aiCreditsRemaining?: number;
+      aiCreditsTotal?: number;
+      subscriptionCurrentPeriodEnd?: Date | null;
+    } | null;
+    const feedback = feedbackResult as {
+      id?: any;
+      avatar?: any;
+      star?: any;
+      comment?: any;
+    } | null;
+
     // For business users, get credits from BusinessProfile
     let credits = user.credits || 0;
     let totalCredits = credits;
     let renewalDate: Date | null = null;
-    if (user.role === "BUSINESS") {
-      const businessProfile = await BusinessProfile.findOne({ userId: user._id });
-      if (businessProfile) {
-        credits = businessProfile.aiCreditsRemaining || 0;
-        totalCredits = businessProfile.aiCreditsTotal || credits;
-        renewalDate = businessProfile.subscriptionCurrentPeriodEnd || null;
-      }
+    if (businessProfile) {
+      credits = businessProfile.aiCreditsRemaining ?? 0;
+      totalCredits = businessProfile.aiCreditsTotal ?? credits;
+      renewalDate = businessProfile.subscriptionCurrentPeriodEnd ?? null;
     }
-
-    // Get user's feedback details if any exist
-    const feedback = await Feedback.findOne({ userId });
 
     // Return combined user profile data
     return Response.json(

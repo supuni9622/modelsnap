@@ -32,10 +32,10 @@ CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
 MONGO_URI=mongodb://localhost:27017/modelsnap
 # OR MongoDB Atlas: mongodb+srv://user:pass@cluster.mongodb.net/modelsnap
 
-# Stripe (Test Mode)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
+# Lemon Squeezy Payments
+LEMON_SQUEEZY_API_KEY=your_api_key
+LEMON_SQUEEZY_STORE_ID=your_store_id
+LEMON_SQUEEZY_WEBHOOK_SECRET=your_webhook_secret
 
 # FASHN AI API
 FASHN_API_KEY=your_fashn_api_key
@@ -50,33 +50,23 @@ AWS_SECRET_ACCESS_KEY=your_secret_access_key
 RESEND_API_KEY=re_...
 ```
 
-### 2. Stripe Test Mode Setup
+### 2. Lemon Squeezy Setup
 
-1. **Get Test Keys:**
-   - Go to [Stripe Dashboard](https://dashboard.stripe.com/test/apikeys)
-   - Copy `Publishable key` and `Secret key`
+1. **Get API Keys:**
+   - Go to [Lemon Squeezy Dashboard](https://app.lemonsqueezy.com/settings/api)
+   - Copy `API Key` and `Store ID`
 
-2. **Set Up Webhook for Local Testing:**
-   ```bash
-   # Install Stripe CLI
-   # macOS: brew install stripe/stripe-cli/stripe
-   # Windows: Download from https://stripe.com/docs/stripe-cli
-   
-   # Login to Stripe
-   stripe login
-   
-   # Forward webhooks to local server
-   stripe listen --forward-to localhost:3000/api/webhook/stripe
-   ```
-   - Copy the webhook signing secret from the output
-   - Add it to `.env.local` as `STRIPE_WEBHOOK_SECRET`
+2. **Set Up Webhook:**
+   - Go to [Lemon Squeezy Webhooks](https://app.lemonsqueezy.com/settings/webhooks)
+   - Add webhook URL: `https://your-domain.com/api/webhook/lemonsqueezy`
+   - Copy the webhook secret and add it to `.env.local` as `LEMON_SQUEEZY_WEBHOOK_SECRET`
 
-3. **Create Test Products in Stripe:**
-   - Go to [Products](https://dashboard.stripe.com/test/products)
+3. **Create Products in Lemon Squeezy:**
+   - Go to [Products](https://app.lemonsqueezy.com/products)
    - Create products matching your pricing plans:
      - **Starter Plan**: $X/month (recurring)
      - **Growth Plan**: $Y/month (recurring)
-   - Note the Price IDs (you'll need to add them to `lib/config/pricing.ts`)
+   - Note the Variant IDs (you'll need to add them to `lib/config/pricing.ts`)
 
 ### 3. Start the Application
 
@@ -454,20 +444,20 @@ curl http://localhost:3000/api/business/profile
 5. **Duplicate subscriptions created:**
    - ✅ FIXED (November 23, 2025): System now checks for existing subscriptions before creating new ones
    - ✅ FIXED: Updates existing subscription instead of creating duplicate
-   - Verify `BusinessProfile.stripeSubscriptionId` is set correctly
-   - Check Stripe Dashboard: Should only see ONE active subscription per customer
+   - Verify `BusinessProfile.lemonsqueezySubscriptionId` is set correctly
+   - Check Lemon Squeezy Dashboard: Should only see ONE active subscription per customer
    - If you see multiple subscriptions, check server logs for subscription detection
 
-6. **Duplicate customers in Stripe:**
+6. **Duplicate customers in Lemon Squeezy:**
    - ✅ FIXED (November 23, 2025): System now checks for existing customers by email before creating new ones
-   - ✅ FIXED: Reuses existing Stripe customer if found
-   - Check Stripe Dashboard: Should only see ONE customer per email address
+   - ✅ FIXED: Reuses existing Lemon Squeezy customer if found
+   - Check Lemon Squeezy Dashboard: Should only see ONE customer per email address
 
 7. **Success page not redirecting after payment:**
    - ✅ FIXED (November 23, 2025): Success URLs now include locale prefix (`/en/`)
    - Verify URL format: `${publicUrl}/en/dashboard/business/billing/success-payment`
    - Check browser console for redirect errors
-   - Verify Stripe checkout session has correct `success_url` in logs
+   - Verify Lemon Squeezy checkout has correct `success_url` in logs
 
 ---
 
@@ -504,8 +494,8 @@ Test 13: Watermarking System      [ ] Pass [ ] Fail
 
 **Before Testing:**
 - [ ] Environment variables set up
-- [ ] Stripe test mode configured
-- [ ] Stripe CLI running for webhooks
+- [ ] Lemon Squeezy configured
+- [ ] Lemon Squeezy webhook configured
 - [ ] MongoDB connected
 - [ ] Application running (`npm run dev`)
 
@@ -531,9 +521,9 @@ Test 13: Watermarking System      [ ] Pass [ ] Fail
 
 ## 📝 Notes
 
-- Use Stripe test mode for all payment testing
-- Test cards don't charge real money
-- Webhooks require Stripe CLI or ngrok for local testing
+- Use Lemon Squeezy test mode for all payment testing
+- Test payments don't charge real money
+- Webhooks require ngrok or similar for local testing
 - Database changes persist between tests (reset if needed)
 - Check browser console and server logs for errors
 

@@ -63,7 +63,7 @@ const UserSchema = new Schema(
 );
 
 // Indexes for efficient queries
-UserSchema.index({ id: 1 }); // Primary lookup by Clerk ID
+// Note: id field already has an index from unique: true, so we don't need to define it again
 UserSchema.index({ role: 1 }); // Role-based queries
 UserSchema.index({ stripeCustomerId: 1 }); // Payment lookups
 UserSchema.index({ emailAddress: 1 }); // Email lookups
