@@ -50,8 +50,8 @@ cp .env.example .env.local
 ```
 
 **📚 For complete setup instructions, see:**
-- **Quick Setup**: `docs/LOCAL_SETUP_GUIDE.md`
-- **Environment Variables**: `docs/ENVIRONMENT_VARIABLES.md`
+- **Quick Setup**: `docs/SETUP/LOCAL_SETUP_GUIDE.md`
+- **Environment Variables**: `docs/SETUP/ENVIRONMENT_VARIABLES.md`
 
 **Required environment variables:**
 
@@ -206,7 +206,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push:
 ## 📚 Documentation
 
 - `docs/PRD.md` - Product Requirements Document
-- `docs/FASHIONAI_GUIDE.md` - FASHN API integration guide
+- `docs/INTEGRATIONS/FASHIONAI_GUIDE.md` - FASHN API integration guide
 - `docs/LANDING_PAGE_GUIDE.md` - Landing page design guide
 - `ROADMAP.md` - Implementation roadmap and progress
 

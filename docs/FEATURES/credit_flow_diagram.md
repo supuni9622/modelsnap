@@ -164,11 +164,11 @@ Remove Stripe references
 
 | Aspect | Free Tier | Paid Tier |
 |--------|-----------|-----------|
-| **Credit Source** | MongoDB only | Stripe webhooks |
+| **Credit Source** | MongoDB only | Payment webhooks |
 | **Reset Trigger** | Cron job (daily check) | Stripe invoice.paid |
 | **Reset Timing** | Monthly from signup date | Monthly from subscription start |
 | **Payment Required** | ❌ No | ✅ Yes |
-| **Stripe Integration** | ❌ Not needed | ✅ Required |
+| **Payment Integration** | ❌ Not needed | ✅ Required |
 | **Auto-reset on Usage** | ✅ Yes (if 30 days passed) | ❌ No (waits for webhook) |
 | **Rollover Credits** | ❌ No | ❌ No |
 

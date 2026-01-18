@@ -112,9 +112,9 @@ await withTransactionAndExternal(
 Updated payment history creation functions to support transactions:
 
 ```typescript
-export async function createStripePaymentHistory(
+export async function createPaymentHistory(
   userId: string,
-  data: StripePaymentData,
+  data: LemonsqueezePaymentData,
   status: PaymentStatus = "pending",
   session?: ClientSession  // Added session parameter
 ) {

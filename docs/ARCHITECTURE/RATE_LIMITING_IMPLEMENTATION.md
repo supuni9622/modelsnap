@@ -76,11 +76,9 @@ export const RATE_LIMIT_CONFIGS = {
 ### 2. **Protected Endpoints**
 
 #### **Payment Endpoints (Strict Limits)**
-- `/api/payments/stripe/create-intent` - 5 requests per 15 minutes
 - `/api/payments/lemonsqueezy/create-checkout` - 5 requests per 15 minutes
 
 #### **Webhook Endpoints (Moderate Limits)**
-- `/api/webhook/stripe` - 10 requests per minute
 - `/api/webhook/clerk` - 10 requests per minute
 - `/api/webhook/lemonsqueezy` - 10 requests per minute
 
