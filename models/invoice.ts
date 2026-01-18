@@ -11,7 +11,7 @@ const InvoiceSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
+      // Note: index is created via compound index below, no need for index: true here
     },
 
     // Business profile (optional, for future use)
@@ -58,7 +58,7 @@ const InvoiceSchema = new Schema(
       type: String,
       enum: ["draft", "open", "paid", "uncollectible", "void"],
       required: true,
-      index: true,
+      // Note: index is created via compound index below, no need for index: true here
     },
 
     // URLs
