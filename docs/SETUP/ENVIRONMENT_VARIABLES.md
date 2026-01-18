@@ -125,7 +125,7 @@ ADMIN_EMAILS=your-email@example.com
 
 **Example:** `d1234567890.cloudfront.net`
 
-**Setup:** See `docs/CDN_SETUP.md`
+**Setup:** See `docs/INTEGRATIONS/CDN_SETUP.md`
 
 ### Admin Access
 
@@ -280,7 +280,7 @@ Environment variables are validated on startup. Check validation:
 
 ## 📚 Related Documentation
 
-- **Local Setup Guide**: `docs/LOCAL_SETUP_GUIDE.md`
-- **CDN Setup**: `docs/CDN_SETUP.md`
+- **Local Setup Guide**: `docs/SETUP/LOCAL_SETUP_GUIDE.md`
+- **CDN Setup**: `docs/INTEGRATIONS/CDN_SETUP.md`
 - **Deployment Guide**: `VERCEL_DEPLOYMENT.md`
 

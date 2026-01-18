@@ -175,7 +175,7 @@ Human Models:
 
 **CloudFront Lambda@Edge Status:**
 - ❌ **NOT IMPLEMENTED** - Currently using Next.js API routes
-- 📋 **Future Enhancement**: Documented in `docs/WATERMARK_ARCHITECTURE.md`
+- 📋 **Future Enhancement**: Documented in `docs/ARCHITECTURE/WATERMARK_ARCHITECTURE.md`
 - 💡 **Recommendation**: Can be implemented later for better performance and lower costs
 
 ### 1. Frontend Download Buttons
