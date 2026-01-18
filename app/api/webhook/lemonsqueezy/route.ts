@@ -14,6 +14,10 @@ import { withTransaction } from "@/lib/transaction-utils";
 import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiter";
 import { createLogger } from "@/lib/utils/logger";
 import { getSubscription, lemonSqueezySetup } from "@lemonsqueezy/lemonsqueezy.js";
+import {
+  createOrUpdateInvoiceFromLemonSqueezySubscriptionInvoice,
+  createOrUpdateInvoiceFromLemonSqueezyOrder,
+} from "@/lib/invoice-utils";
 
 const logger = createLogger({ component: "lemonsqueezy-webhook" });
 
@@ -125,9 +129,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
   try {
     switch (eventType) {
       case "subscription_payment_success": {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:127',message:'subscription_payment_success handler entry',data:{eventType:'subscription_payment_success',hasData:!!data},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-        // #endregion
         // Handle subscription payment success (monthly renewal)
         const subscriptionInvoice = data;
         const customerId = subscriptionInvoice.attributes?.customer_id;
@@ -146,9 +147,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
 
         // Try multiple methods to find the user
         let user = await findUser(customerId, userEmail, customUserId);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:145',message:'subscription_payment_success user found',data:{userFound:!!user,userId:user?.id,userPlanId:user?.plan?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-        // #endregion
 
         if (!user) {
           console.error("🚨 User not found with any identifier:", {
@@ -186,30 +184,18 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
         // Try to get variantId from webhook payload (subscription_payment_success might have it in attributes)
         // Note: subscription_payment_success payload structure may differ from subscription_created
         variantId = subscriptionInvoice.attributes?.variant_id;
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:175',message:'subscription_payment_success variantId from payload',data:{variantId,variantIdString:String(variantId),hasVariantId:!!variantId},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-        // #endregion
         
         // If not in webhook payload, fetch from API
         if (!variantId && subscriptionId) {
           console.log("⚠️ Fetching subscription from Lemon Squeezy:", subscriptionId);
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:180',message:'subscription_payment_success before API call',data:{subscriptionId:String(subscriptionId)},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-          // #endregion
           try {
             const { data: subscriptionData, error: subError } = await getSubscription(String(subscriptionId));
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:183',message:'subscription_payment_success after API call',data:{hasError:!!subError,hasData:!!subscriptionData?.data},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-            // #endregion
             if (!subError && subscriptionData?.data) {
               const subscription = subscriptionData.data;
               // Try variant_id from attributes first, then first_subscription_item
               variantId = subscription.attributes.variant_id || 
                          (subscription.attributes.first_subscription_item as any)?.variant_id;
               console.log("🔍 Fetched subscription, variantId:", variantId);
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:190',message:'subscription_payment_success variantId from API',data:{variantId,variantIdString:String(variantId)},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-              // #endregion
             } else {
               console.error("❌ Error fetching subscription:", subError);
             }
@@ -223,9 +209,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           plan = PricingPlans.find(
             (p) => p.variantId === String(variantId)
           );
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:198',message:'subscription_payment_success plan lookup',data:{planFound:!!plan,planId:plan?.id,planName:plan?.name,variantId:String(variantId)},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-          // #endregion
           if (plan) {
             console.log("🔍 Found plan from subscription variantId:", {
               planId: plan.id,
@@ -240,9 +223,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           const businessProfile = await BusinessProfile.findOne({ 
             userId: new mongoose.Types.ObjectId(user._id) 
           });
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:210',message:'subscription_payment_success fallback to BusinessProfile',data:{hasBusinessProfile:!!businessProfile,currentTier:businessProfile?.subscriptionTier},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-          // #endregion
           if (businessProfile?.subscriptionTier) {
             plan = PricingPlans.find((p) => p.id === businessProfile.subscriptionTier);
             console.log("🔍 Fallback: Found plan from BusinessProfile:", {
@@ -256,9 +236,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
         // Final fallback: Use user's current plan (WARNING: This might be stale!)
         if (!plan && user.plan?.id) {
           plan = PricingPlans.find((p) => p.id === user.plan.id);
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:225',message:'subscription_payment_success fallback to user.plan (WARNING)',data:{planId:plan?.id,userPlanId:user.plan.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-          // #endregion
           console.log("🔍 Using plan from user.plan (fallback):", {
             planId: plan?.id,
             planName: plan?.name,
@@ -279,9 +256,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           planName: plan.name,
           creditsToSet: plan.isFreeCredits || 0,
         });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:241',message:'subscription_payment_success before transaction',data:{planId:plan.id,planName:plan.name,planCredits:plan.isFreeCredits||0,subscriptionId},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-        // #endregion
 
         // Update user and business profile
         await withTransaction(async (session) => {
@@ -295,17 +269,11 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
             "plan.isPremium": plan.popular || false,
             credits: plan.isFreeCredits || 0, // Reset credits on renewal
           };
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:250',message:'subscription_payment_success user update data',data:userUpdateData,timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-          // #endregion
           const updateResult = await User.updateOne(
             { id: user.id },
             { $set: userUpdateData },
             { session }
           );
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:264',message:'subscription_payment_success user update result',data:{matched:updateResult.matchedCount,modified:updateResult.modifiedCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-          // #endregion
 
           console.log("✅ User update result:", {
             matched: updateResult.matchedCount,
@@ -316,9 +284,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           let businessProfile = await BusinessProfile.findOne({ 
             userId: new mongoose.Types.ObjectId(user._id) 
           }).session(session);
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:272',message:'subscription_payment_success businessProfile before update',data:{found:!!businessProfile,currentTier:businessProfile?.subscriptionTier,currentCredits:businessProfile?.aiCreditsRemaining},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-          // #endregion
 
           // Update BusinessProfile credits
           if (businessProfile) {
@@ -331,17 +296,11 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
               lemonsqueezySubscriptionId: String(subscriptionId),
               lastCreditReset: new Date(), // Update reset timestamp
             };
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:278',message:'subscription_payment_success businessProfile update data',data:businessUpdateData,timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-            // #endregion
             const businessUpdateResult = await BusinessProfile.findByIdAndUpdate(
               businessProfile._id,
               { $set: businessUpdateData },
               { session, new: true }
             );
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:292',message:'subscription_payment_success businessProfile after update',data:{subscriptionTier:businessUpdateResult?.subscriptionTier,aiCreditsRemaining:businessUpdateResult?.aiCreditsRemaining,subscriptionStatus:businessUpdateResult?.subscriptionStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-            // #endregion
             console.log("✅ BusinessProfile updated:", {
               businessId: businessUpdateResult?._id,
               aiCredits: businessUpdateResult?.aiCredits,
@@ -375,17 +334,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
             });
           }
         });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:325',message:'subscription_payment_success transaction completed',data:{planId:plan.id,userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-        // #endregion
-        
-        // Verify the update actually persisted
-        const verifyBusinessProfile = await BusinessProfile.findOne({ 
-          userId: new mongoose.Types.ObjectId(user._id) 
-        });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:330',message:'subscription_payment_success database verification',data:{subscriptionTier:verifyBusinessProfile?.subscriptionTier,aiCreditsRemaining:verifyBusinessProfile?.aiCreditsRemaining,subscriptionStatus:verifyBusinessProfile?.subscriptionStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{});
-        // #endregion
 
         console.log(`✅ Subscription payment processed successfully`, {
           userId: user.id,
@@ -393,6 +341,19 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           planName: plan.name,
           creditsSet: plan.isFreeCredits || 0,
         });
+
+        // Create invoice from subscription invoice
+        try {
+          await createOrUpdateInvoiceFromLemonSqueezySubscriptionInvoice(
+            subscriptionInvoice,
+            user.id
+          );
+          console.log("✅ Invoice created/updated for subscription payment");
+        } catch (invoiceError: any) {
+          console.error("⚠️ Failed to create invoice:", invoiceError.message);
+          // Don't fail the webhook if invoice creation fails
+        }
+
         break;
       }
 
@@ -408,6 +369,12 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
         const variantId = order.attributes?.first_order_item.variant_id;
         const status = order.attributes?.status;
         const orderId = order.id;
+        const firstOrderItem = order.attributes?.first_order_item;
+        
+        // Check if this is a subscription order by matching variantId to subscription plans
+        const isSubscription = variantId ? PricingPlans.some(
+          (plan) => plan.variantId === String(variantId) && plan.type === "subscription"
+        ) : false;
 
         let user = await findUser(customerId?.toString(), userEmail, customUserId);
 
@@ -422,6 +389,37 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
             { id: user.id },
             { $set: { lemonsqueezyCustomerId: customerId.toString() } }
           );
+        }
+
+        // Check if invoice already exists for this order
+        const existingInvoice = await Invoice.findOne({ lemonsqueezyOrderId: String(orderId) });
+
+        // Skip invoice creation for subscription orders (subscription_payment_success will handle it)
+        // Store the order ID in business profile so subscription_payment_success can use it
+        if (isSubscription) {
+          console.log("⏭️ Skipping invoice creation for subscription order (subscription_payment_success will handle it)");
+          // Store order ID in business profile for subscription_payment_success to use
+          const businessProfile = await BusinessProfile.findOne({ 
+            userId: new mongoose.Types.ObjectId(user._id) 
+          });
+          if (businessProfile) {
+            await BusinessProfile.findByIdAndUpdate(
+              businessProfile._id,
+              { $set: { lastOrderId: String(orderId) } }
+            );
+            console.log("💾 Stored order ID in business profile for subscription invoice:", orderId);
+          }
+        } else if (existingInvoice) {
+          console.log("⏭️ Invoice already exists for this order, skipping creation");
+        } else {
+          // Create invoice from order (only for non-subscription orders)
+          try {
+            await createOrUpdateInvoiceFromLemonSqueezyOrder(order, user.id);
+            console.log("✅ Invoice created/updated for order");
+          } catch (invoiceError: any) {
+            console.error("⚠️ Failed to create invoice:", invoiceError.message);
+            // Don't fail the webhook if invoice creation fails
+          }
         }
 
         // [Rest of your order_created logic...]
@@ -557,9 +555,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           planName: plan.name,
           creditsToSet: plan.isFreeCredits || 0,
         });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:492',message:'before transaction - plan determined',data:{planId:plan.id,planName:plan.name,planCredits:plan.isFreeCredits||0,subscriptionId},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
-        // #endregion
 
         // Update user and business profile
         await withTransaction(async (session) => {
@@ -573,17 +568,11 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
             "plan.isPremium": plan.popular || false,
             credits: plan.isFreeCredits || 0,
           };
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:500',message:'user update data being set',data:userUpdateData,timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
-          // #endregion
           const updateResult = await User.updateOne(
             { id: user.id },
             { $set: userUpdateData },
             { session }
           );
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:515',message:'user update result',data:{matched:updateResult.matchedCount,modified:updateResult.modifiedCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
-          // #endregion
 
           console.log("✅ User update result:", {
             matched: updateResult.matchedCount,
@@ -594,9 +583,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
           let businessProfile = await BusinessProfile.findOne({ 
             userId: new mongoose.Types.ObjectId(user._id) 
           }).session(session);
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:523',message:'businessProfile before update',data:{found:!!businessProfile,currentTier:businessProfile?.subscriptionTier,currentCredits:businessProfile?.aiCreditsRemaining},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
-          // #endregion
 
           // Update BusinessProfile credits
           if (businessProfile) {
@@ -609,17 +595,11 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
               lemonsqueezySubscriptionId: String(subscriptionId),
               lastCreditReset: new Date(), // Update reset timestamp
             };
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:531',message:'businessProfile update data being set',data:businessUpdateData,timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
-            // #endregion
             const businessUpdateResult = await BusinessProfile.findByIdAndUpdate(
               businessProfile._id,
               { $set: businessUpdateData },
               { session, new: true }
             );
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:543',message:'businessProfile after update (in transaction)',data:{businessId:businessUpdateResult?._id?.toString(),subscriptionTier:businessUpdateResult?.subscriptionTier,aiCreditsRemaining:businessUpdateResult?.aiCreditsRemaining,subscriptionStatus:businessUpdateResult?.subscriptionStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
-            // #endregion
             console.log("✅ BusinessProfile updated:", {
               businessId: businessUpdateResult?._id,
               aiCredits: businessUpdateResult?.aiCredits,
@@ -653,17 +633,6 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.WEBHOOK)(async (req: NextRe
             });
           }
         });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:576',message:'transaction completed - verifying database',data:{planId:plan.id,userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
-        // #endregion
-        
-        // Verify the update actually persisted to database
-        const verifyBusinessProfile = await BusinessProfile.findOne({ 
-          userId: new mongoose.Types.ObjectId(user._id) 
-        });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d76de0d5-92ce-4c87-bc8d-680f197c00a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'webhook/lemonsqueezy/route.ts:580',message:'database verification after transaction',data:{subscriptionTier:verifyBusinessProfile?.subscriptionTier,aiCreditsRemaining:verifyBusinessProfile?.aiCreditsRemaining,subscriptionStatus:verifyBusinessProfile?.subscriptionStatus,lemonsqueezySubscriptionId:verifyBusinessProfile?.lemonsqueezySubscriptionId},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
-        // #endregion
 
         console.log(`✅ Subscription created successfully`, {
           userId: user.id,
