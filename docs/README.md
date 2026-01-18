@@ -39,7 +39,11 @@ Technical architecture, database schemas, and system design documentation.
 - **[TRANSACTION_IMPROVEMENTS.md](./ARCHITECTURE/TRANSACTION_IMPROVEMENTS.md)** - Transaction improvements and atomic operations
 - **[RATE_LIMITING_IMPLEMENTATION.md](./ARCHITECTURE/RATE_LIMITING_IMPLEMENTATION.md)** - Rate limiting implementation
 - **[PERFORMANCE_ANALYSIS.md](./ARCHITECTURE/PERFORMANCE_ANALYSIS.md)** - Performance analysis and optimization
-- **[diagrams/](./diagrams/)** - Architecture diagrams (ER diagrams, tech diagrams, sequence diagrams)
+- **[diagrams/](./diagrams/)** - Architecture and data flow diagrams
+  - **[system_architecture.md](./diagrams/system_architecture.md)** - ⭐ **Complete System Architecture** - All tiers, components, and interactions
+  - **[data_flow_diagram.md](./diagrams/data_flow_diagram.md)** - ⭐ **Complete Data Flow Diagrams** - All major process flows
+  - **[architecture_diagram.md](./diagrams/architecture_diagram.md)** - High-level architecture overview
+  - ER diagrams, tech diagrams, sequence diagrams
 
 ### ✨ Features (`FEATURES/`)
 
