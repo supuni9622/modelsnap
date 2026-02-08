@@ -14,7 +14,16 @@ import React from "react";
 
 const logger = createLogger({ component: "email-notifications" });
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-initialize Resend to avoid build failures when RESEND_API_KEY is not set (e.g. CI)
+let _resend: Resend | null = null;
+
+function getResend(): Resend | null {
+  if (!process.env.RESEND_API_KEY) return null;
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "noreply@modelsnap.ai";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -29,7 +38,8 @@ export async function sendConsentRequestEmail(
   consentRequestId: string
 ): Promise<void> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (!resend) {
       logger.warn("RESEND_API_KEY not configured, skipping email");
       return;
     }
@@ -73,7 +83,8 @@ export async function sendConsentApprovedEmail(
   modelName: string
 ): Promise<void> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (!resend) {
       logger.warn("RESEND_API_KEY not configured, skipping email");
       return;
     }
@@ -114,7 +125,8 @@ export async function sendConsentRejectedEmail(
   modelName: string
 ): Promise<void> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (!resend) {
       logger.warn("RESEND_API_KEY not configured, skipping email");
       return;
     }
@@ -156,7 +168,8 @@ export async function sendPayoutApprovedEmail(
   payoutRequestId: string
 ): Promise<void> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (!resend) {
       logger.warn("RESEND_API_KEY not configured, skipping email");
       return;
     }
@@ -201,7 +214,8 @@ export async function sendPayoutCompletedEmail(
   paymentMethod: string
 ): Promise<void> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (!resend) {
       logger.warn("RESEND_API_KEY not configured, skipping email");
       return;
     }
@@ -247,7 +261,8 @@ export async function sendPayoutFailedEmail(
   failureReason: string
 ): Promise<void> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (!resend) {
       logger.warn("RESEND_API_KEY not configured, skipping email");
       return;
     }
@@ -298,7 +313,8 @@ export async function sendRenderCompletionEmail(
   modelName?: string
 ): Promise<void> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (!resend) {
       logger.warn("RESEND_API_KEY not configured, skipping email");
       return;
     }
@@ -347,7 +363,8 @@ export async function sendInvoiceNotificationEmail(
   pdfUrl?: string
 ): Promise<void> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (!resend) {
       logger.warn("RESEND_API_KEY not configured, skipping email");
       return;
     }
@@ -394,7 +411,8 @@ export async function sendLowCreditWarningEmail(
   threshold: number = 5
 ): Promise<void> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (!resend) {
       logger.warn("RESEND_API_KEY not configured, skipping email");
       return;
     }
