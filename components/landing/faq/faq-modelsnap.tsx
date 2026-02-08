@@ -10,9 +10,9 @@ import {
 
 const faqs = [
   {
-    question: "What is ModelSnap?",
+    question: "What is ModelSnapper?",
     answer:
-      "ModelSnap lets you create studio-quality on-model photos in minutes using AI models or real human models — without doing a photoshoot.",
+      "ModelSnapper lets you create studio-quality on-model photos in minutes using AI models or real human models — without doing a photoshoot.",
   },
   {
     question: "How does the waitlist work?",
@@ -25,14 +25,14 @@ const faqs = [
       "We are onboarding users in batches. Once your turn comes, you'll receive an email with your login link and setup instructions.",
   },
   {
-    question: "Where do ModelSnap's AI and Human models come from?",
+    question: "Where do ModelSnapper's AI and Human models come from?",
     answer:
       "Our AI models are created using ethically trained fashion datasets. Human models join through our verified Model Marketplace and provide full consent.",
   },
   {
     question: "Can I upload my clothing photos and get instant on-model images?",
     answer:
-      "Yes. Just upload a clear photo of your product — ModelSnap will generate on-model photos in minutes using AI or Human models.",
+      "Yes. Just upload a clear photo of your product — ModelSnapper will generate on-model photos in minutes using AI or Human models.",
   },
   {
     question: "Can I choose the model's body type, skin tone, or look?",
@@ -41,7 +41,7 @@ const faqs = [
   },
 ];
 
-export function FAQModelSnap() {
+export function FAQModelSnapper() {
   return (
     <section className="py-20 px-4 md:px-24 bg-white text-[#1A1A1A]">
       <div className="max-w-4xl mx-auto">

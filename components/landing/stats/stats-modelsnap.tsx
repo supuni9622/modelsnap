@@ -102,7 +102,7 @@ function AnimatedStatCounter({
   );
 }
 
-export function StatsModelSnap() {
+export function StatsModelSnapper() {
   return (
     <section className="py-20 px-4 md:px-24 bg-[#F7F7F7] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-white">
       <div className="max-w-6xl mx-auto">
@@ -113,7 +113,7 @@ export function StatsModelSnap() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          What Brands Achieve With ModelSnap
+          What Brands Achieve With ModelSnapper
         </motion.h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mt-12" style={{ perspective: "1000px" }}>

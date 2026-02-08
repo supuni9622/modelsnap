@@ -1,4 +1,4 @@
-# ModelSnap User Flow Diagrams (Business & Model)
+# ModelSnapper User Flow Diagrams (Business & Model)
 
 Below are the full user flow diagrams in Markdown format, covering both roles:
 - **Business Flow** (AI Avatar & Human Model usage)

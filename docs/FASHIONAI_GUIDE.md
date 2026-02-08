@@ -1,4 +1,4 @@
-# FashnAI Documentation - ModelSnap.ai Hackathon Guide
+# FashnAI Documentation - ModelSnapper.ai Hackathon Guide
 
 ## Introduction
 Your hackathon timeframe is **2–3 days**.  

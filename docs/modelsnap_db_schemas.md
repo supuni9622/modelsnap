@@ -1,4 +1,4 @@
-# ModelSnap Database Schemas
+# ModelSnapper Database Schemas
 
 Below is the complete, structured MongoDB schema documentation for all collections.
 

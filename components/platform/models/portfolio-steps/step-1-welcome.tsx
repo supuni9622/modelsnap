@@ -41,7 +41,7 @@ export function Step1Welcome({
 
       {/* Header */}
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold">👋 Welcome to ModelSnap!</h2>
+        <h2 className="text-3xl font-bold">👋 Welcome to ModelSnapper!</h2>
         <p className="text-muted-foreground">
           Let's create your model profile. This will help fashion brands find and work with you.
         </p>

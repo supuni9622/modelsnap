@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { AdminAnalyticsDashboard } from "@/components/admin/admin-analytics-dashboard";
 
 export const metadata: Metadata = {
-  title: "Analytics | Admin | ModelSnap.ai",
+  title: "Analytics | Admin | ModelSnapper.ai",
   description: "View platform analytics and generation statistics",
 };
 

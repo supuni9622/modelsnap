@@ -1,6 +1,6 @@
 # Environment Variables Reference
 
-Complete reference for all environment variables used in ModelSnap.ai.
+Complete reference for all environment variables used in ModelSnapper.ai.
 
 ## 📋 Quick Reference
 

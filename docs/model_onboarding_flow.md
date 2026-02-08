@@ -15,7 +15,7 @@
 ┌─────────────────────────────────────────┐
 │  Progress: ●○○○○ (1/5)                 │
 │                                         │
-│  👋 Welcome to ModelSnap!               │
+│  👋 Welcome to ModelSnapper!               │
 │                                         │
 │  Let's create your model profile.      │
 │  This will help fashion brands find     │
@@ -226,7 +226,7 @@
 │  │ ✓ You confirm you own rights to    ││
 │  │   the uploaded photos               ││
 │  │                                     ││
-│  │ ✓ You authorize ModelSnap to use   ││
+│  │ ✓ You authorize ModelSnapper to use   ││
 │  │   your likeness for AI generation   ││
 │  │                                     ││
 │  │ ✓ All generated images will be     ││

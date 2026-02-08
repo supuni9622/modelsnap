@@ -1,6 +1,6 @@
 # Local Development Setup Guide
 
-Complete guide to set up and run ModelSnap.ai locally for testing and development.
+Complete guide to set up and run ModelSnapper.ai locally for testing and development.
 
 ## 📋 Prerequisites
 

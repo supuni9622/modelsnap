@@ -33,7 +33,7 @@ const milestones = [
   },
 ];
 
-export function RoadmapModelSnap() {
+export function RoadmapModelSnapper() {
   return (
     <section className="py-20 px-4 md:px-24 bg-[#F7F7F7] text-[#1A1A1A]">
       <div className="max-w-4xl mx-auto">

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { AdminSubscriptionsList } from "@/components/admin/admin-subscriptions-list";
 
 export const metadata: Metadata = {
-  title: "Subscriptions | Admin | ModelSnap.ai",
+  title: "Subscriptions | Admin | ModelSnapper.ai",
   description: "View and manage all user subscriptions",
 };
 

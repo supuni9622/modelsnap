@@ -1,4 +1,4 @@
-# ModelSnap Credit Management Flow
+# ModelSnapper Credit Management Flow
 
 ## 🆓 FREE TIER (3 Credits/Month)
 

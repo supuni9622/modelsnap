@@ -1,6 +1,6 @@
 # Image Optimization Guide
 
-ModelSnap.ai automatically optimizes all images before uploading to S3, reducing file sizes by 40-70% while maintaining visual quality.
+ModelSnapper.ai automatically optimizes all images before uploading to S3, reducing file sizes by 40-70% while maintaining visual quality.
 
 ## Features
 

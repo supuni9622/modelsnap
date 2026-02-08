@@ -1,4 +1,4 @@
-# Remaining Tasks - ModelSnap.ai
+# Remaining Tasks - ModelSnapper.ai
 
 **Last Updated:** 2025-11-22  
 **Status:** MVP Implementation Complete | Testing Phase Active  
