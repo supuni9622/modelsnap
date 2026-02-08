@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -118,20 +118,17 @@ export function MobileMenu({ isOpen, onClose, navItems }: MobileMenuProps) {
                 variants={itemVariants}
                 className="mt-12 flex flex-col items-center space-y-4"
               >
-                <Link href="/sign-in">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full max-w-xs"
-                  >
-                    {t("SignIn")}
-                  </Button>
-                </Link>
-                <Link href="/sign-up">
-                  <Button size="lg" className="w-full max-w-xs">
-                    {t("SignUp")}
-                  </Button>
-                </Link>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="w-full max-w-xs"
+                >
+                  <Link href="/sign-in">{t("SignIn")}</Link>
+                </Button>
+                <Button asChild size="lg" className="w-full max-w-xs">
+                  <Link href="/sign-up">{t("SignUp")}</Link>
+                </Button>
               </motion.div>
             )}
           </>
