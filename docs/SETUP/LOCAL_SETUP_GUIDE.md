@@ -194,7 +194,7 @@ AWS_CLOUDFRONT_DOMAIN=d1234567890.cloudfront.net
 **Setup Steps:**
 1. Create CloudFront distribution pointing to S3 bucket
 2. Copy distribution domain
-3. See `docs/CDN_SETUP.md` for detailed setup
+3. See `docs/INTEGRATIONS/CDN_SETUP.md` for detailed setup
 
 #### Render Worker Secret (Optional)
 ```env
@@ -420,7 +420,7 @@ npm run dev
    ```
    - For CDN image delivery
    - Improves global performance
-   - See `docs/CDN_SETUP.md` for setup
+   - See `docs/INTEGRATIONS/CDN_SETUP.md` for setup
 
 2. **Render Worker Secret** (Optional)
    ```env

@@ -91,7 +91,7 @@ This roadmap tracks the implementation of ModelSnapper.ai MVP following the plan
 - [x] Create invoice model
 
 ### Phase 12: Testing & Quality Assurance 🧪
-- [x] Create testing documentation (docs/TESTING.md)
+- [x] Create testing documentation (docs/TESTING/TESTING.md)
 - [x] Fix onboarding flow redirect issues
 - [x] Fix user creation with role: null
 - [x] Verify sign up → onboarding → dashboard flow
@@ -124,7 +124,7 @@ None currently.
 - ✅ Fixed redirect logic - new signups go to onboarding, existing users to dashboards
 - ✅ Added fallback user creation in redirect page
 - ✅ Fixed all fallback user creation endpoints to use `role: null`
-- ✅ Created comprehensive testing documentation (docs/TESTING.md)
+- ✅ Created comprehensive testing documentation (docs/TESTING/TESTING.md)
 - ✅ Verified onboarding flow is working end-to-end
 
 ## Previous Completions (2025-01-27)
@@ -150,8 +150,8 @@ None currently.
 
 ## Testing Documentation
 
-- **Testing Status:** See `docs/TESTING.md` for detailed feature testing status
-- **Testing Checklist:** See `TESTING_CHECKLIST.md` for comprehensive test checklist
+- **Testing Status:** See `docs/TESTING/TESTING.md` for detailed feature testing status
+- **Testing Checklist:** See `docs/TESTING/TESTING_CHECKLIST.md` for comprehensive test checklist
 - **Current Progress:** 15/58 features tested (26%)
 
 ## Next Steps

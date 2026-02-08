@@ -260,7 +260,7 @@
    - Finally, end-to-end user journeys
 
 2. **Fix Any Issues Found During Testing**
-   - Document bugs in `docs/TESTING.md`
+   - Document bugs in `docs/TESTING/TESTING.md`
    - Fix critical issues immediately
    - Track non-critical issues for later
 
@@ -280,7 +280,7 @@
 
 - All core implementation is complete
 - Focus should be on **testing** to ensure everything works correctly
-- Update `docs/TESTING.md` as you test each feature
+- Update `docs/TESTING/TESTING.md` as you test each feature
 - Document any bugs or issues found during testing
 - Prioritize fixing critical issues before moving to enhancements
 

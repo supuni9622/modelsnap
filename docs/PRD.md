@@ -1,6 +1,6 @@
 
 **Key Variables:**  
-- Model ethnicity: Sri Lankan / South Asian  
+- Model ethnicity: Sri Lankan / Global 
 - Body type: slim / medium / plus-size  
 - Pose: front-facing studio pose  
 - Lighting: soft studio  
@@ -31,8 +31,7 @@
 - Clerk  
 
 **Payments:**  
-- Stripe  
-- Bank transfer (manual admin update)  
+- LemonSqueeze  
 
 **Email:**  
 - Resend (transactional notifications)  
