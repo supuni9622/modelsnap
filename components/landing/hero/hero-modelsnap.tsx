@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 
 interface Avatar {
@@ -23,8 +23,6 @@ const HERO_AVATARS: Avatar[] = [
   { _id: "5", gender: "male", bodyType: "slim", skinTone: "SL-03", imageUrl: "/avatars/male/slim/SL-03.jpg" },
   { _id: "6", gender: "male", bodyType: "dad-bod", skinTone: "SL-02", imageUrl: "/avatars/male/dad-bod/SL-02.jpg" },
 ];
-
-const WAITLIST_FORM_URL = "https://tally.so/r/kddz1e";
 
 export function HeroModelSnapper() {
   return (
@@ -110,12 +108,14 @@ export function HeroModelSnapper() {
               whileTap={{ scale: 0.95 }}
             >
               <Button
+                asChild
                 size="lg"
                 className="bg-[#356DFF] hover:bg-[#356DFF]/90 text-white font-semibold px-8 py-6 text-lg gap-2"
-                onClick={() => window.open(WAITLIST_FORM_URL, "_blank", "noopener,noreferrer")}
               >
-                Get Early Access
-                <ArrowRight className="h-5 w-5" />
+                <Link href="/sign-up">
+                  Get Started
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
               </Button>
             </motion.div>
             {/* <Link href="#demo">
