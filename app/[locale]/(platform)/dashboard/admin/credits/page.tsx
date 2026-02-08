@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { AdminCreditAdjustment } from "@/components/admin/admin-credit-adjustment";
 
 export const metadata: Metadata = {
-  title: "Credit Management | Admin | ModelSnap.ai",
+  title: "Credit Management | Admin | ModelSnapper.ai",
   description: "Adjust user credits and view credit transaction history",
 };
 

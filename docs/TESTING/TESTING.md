@@ -1,4 +1,4 @@
-# ModelSnap.ai - Testing Documentation
+# ModelSnapper.ai - Testing Documentation
 
 This document tracks the testing status of all features as we verify the platform functionality.
 

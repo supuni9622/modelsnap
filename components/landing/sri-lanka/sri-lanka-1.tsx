@@ -25,7 +25,7 @@ const stats = [
   },
 ];
 
-export function SriLankaModelSnap() {
+export function SriLankaModelSnapper() {
   return (
     <section className="py-20 px-4 md:px-24 bg-white text-[#1A1A1A]">
       <motion.div

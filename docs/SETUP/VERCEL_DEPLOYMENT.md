@@ -1,6 +1,6 @@
-# Vercel Deployment Guide for ModelSnap.ai
+# Vercel Deployment Guide for ModelSnapper.ai
 
-This guide will help you deploy ModelSnap.ai to Vercel successfully.
+This guide will help you deploy ModelSnapper.ai to Vercel successfully.
 
 ## ✅ Pre-Deployment Checklist
 
@@ -254,7 +254,7 @@ After deployment, monitor:
 
 ## 🎉 Success!
 
-Once deployed, your ModelSnap.ai MVP will be live at:
+Once deployed, your ModelSnapper.ai MVP will be live at:
 `https://your-project.vercel.app`
 
 ## Next Steps

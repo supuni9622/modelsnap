@@ -1,4 +1,4 @@
-# ModelSnap.ai MVP Testing Checklist
+# ModelSnapper.ai MVP Testing Checklist
 
 Use this checklist to verify all MVP features are working correctly.
 

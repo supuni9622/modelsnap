@@ -152,7 +152,7 @@ export async function GET(
       try {
         const arrayBuffer = await imageResponse.arrayBuffer();
         const imageBuffer = Buffer.from(arrayBuffer);
-        const watermarkedBuffer = await applyWatermark(imageBuffer, "ModelSnap.ai");
+        const watermarkedBuffer = await applyWatermark(imageBuffer, "ModelSnapper.ai");
         
         const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
 

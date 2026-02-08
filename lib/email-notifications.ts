@@ -46,7 +46,7 @@ export async function sendConsentRequestEmail(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: modelEmail,
-      subject: `New Consent Request from ${businessName} - ModelSnap.ai`,
+      subject: `New Consent Request from ${businessName} - ModelSnapper.ai`,
       html: emailHtml,
     });
 
@@ -89,7 +89,7 @@ export async function sendConsentApprovedEmail(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: businessEmail,
-      subject: `Consent Request Approved by ${modelName} - ModelSnap.ai`,
+      subject: `Consent Request Approved by ${modelName} - ModelSnapper.ai`,
       html: emailHtml,
     });
 
@@ -130,7 +130,7 @@ export async function sendConsentRejectedEmail(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: businessEmail,
-      subject: `Consent Request Rejected by ${modelName} - ModelSnap.ai`,
+      subject: `Consent Request Rejected by ${modelName} - ModelSnapper.ai`,
       html: emailHtml,
     });
 
@@ -173,7 +173,7 @@ export async function sendPayoutApprovedEmail(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: modelEmail,
-      subject: `Payout Request Approved - $${amount.toFixed(2)} - ModelSnap.ai`,
+      subject: `Payout Request Approved - $${amount.toFixed(2)} - ModelSnapper.ai`,
       html: emailHtml,
     });
 
@@ -219,7 +219,7 @@ export async function sendPayoutCompletedEmail(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: modelEmail,
-      subject: `Payout Completed - $${amount.toFixed(2)} - ModelSnap.ai`,
+      subject: `Payout Completed - $${amount.toFixed(2)} - ModelSnapper.ai`,
       html: emailHtml,
     });
 
@@ -268,7 +268,7 @@ export async function sendPayoutFailedEmail(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: modelEmail,
-      subject: `Payout Processing Failed - $${amount.toFixed(2)} - ModelSnap.ai`,
+      subject: `Payout Processing Failed - $${amount.toFixed(2)} - ModelSnapper.ai`,
       html: emailHtml,
     });
 
@@ -317,7 +317,7 @@ export async function sendRenderCompletionEmail(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: userEmail,
-      subject: `Your Fashion Image is Ready! - ModelSnap.ai`,
+      subject: `Your Fashion Image is Ready! - ModelSnapper.ai`,
       html: emailHtml,
     });
 
@@ -367,7 +367,7 @@ export async function sendInvoiceNotificationEmail(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: userEmail,
-      subject: `Invoice ${invoiceNumber} - ${currency.toUpperCase()} ${amount.toFixed(2)} - ModelSnap.ai`,
+      subject: `Invoice ${invoiceNumber} - ${currency.toUpperCase()} ${amount.toFixed(2)} - ModelSnapper.ai`,
       html: emailHtml,
     });
 
@@ -414,7 +414,7 @@ export async function sendLowCreditWarningEmail(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: userEmail,
-      subject: `Low Credit Warning - ${currentCredits} Credits Remaining - ModelSnap.ai`,
+      subject: `Low Credit Warning - ${currentCredits} Credits Remaining - ModelSnapper.ai`,
       html: emailHtml,
     });
 

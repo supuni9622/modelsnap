@@ -5,9 +5,9 @@
 # **AGENT.md**
 
 ```md
-# AGENT Instructions — ModelSnap.ai
+# AGENT Instructions — ModelSnapper.ai
 
-You are a Cursor agent responsible for implementing the entire MVP of ModelSnap.ai using the PRD, boilerplate, and project guidelines.
+You are a Cursor agent responsible for implementing the entire MVP of ModelSnapper.ai using the PRD, boilerplate, and project guidelines.
 
 ---
 

@@ -42,7 +42,7 @@ export function LowCreditWarningEmail({
       </Text>
 
       <Text style={{ fontSize: "16px", color: "#374151", marginBottom: "20px" }}>
-        You'll need credits to generate AI avatar images. To continue using ModelSnap.ai, consider
+        You'll need credits to generate AI avatar images. To continue using ModelSnapper.ai, consider
         upgrading your plan or purchasing additional credits.
       </Text>
 

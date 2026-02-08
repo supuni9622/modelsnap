@@ -54,7 +54,7 @@ Create subscription products for your pricing plans:
 #### Starter Plan ($19/month)
 1. Go to **Products** in Lemon Squeezy dashboard
 2. Click **New Product**
-3. Set product name: "ModelSnap Starter Plan"
+3. Set product name: "ModelSnapper Starter Plan"
 4. Set product type: **Subscription**
 5. Set price: **$19.00**
 6. Set billing cycle: **Monthly**
@@ -62,7 +62,7 @@ Create subscription products for your pricing plans:
 8. **Copy the Variant ID** (numeric ID, e.g., `123456`)
 
 #### Growth Plan ($49/month)
-1. Create another product: "ModelSnap Growth Plan"
+1. Create another product: "ModelSnapper Growth Plan"
 2. Set price: **$49.00**
 3. Set billing cycle: **Monthly**
 4. **Copy the Variant ID**

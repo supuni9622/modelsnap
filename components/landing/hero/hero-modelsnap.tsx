@@ -26,7 +26,7 @@ const HERO_AVATARS: Avatar[] = [
 
 const WAITLIST_FORM_URL = "https://tally.so/r/kddz1e";
 
-export function HeroModelSnap() {
+export function HeroModelSnapper() {
   return (
     <section className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-[#1A1A1A] text-white">
       {/* Background gradient overlay */}
@@ -79,7 +79,7 @@ export function HeroModelSnap() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <span className="block">ModelSnap.ai</span>
+            <span className="block">ModelSnapper.ai</span>
             <span className="block mt-2 text-[#4BE4C1]">
             AI Models + Human Models Marketplace
             </span>

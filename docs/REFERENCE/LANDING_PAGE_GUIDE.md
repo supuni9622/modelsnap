@@ -1,4 +1,4 @@
-ModelSnap.ai Landing Page Guidance
+ModelSnapper.ai Landing Page Guidance
 1. Brand Identity & Theme
 
 Colors
@@ -44,7 +44,7 @@ Sri Lankan context: local skin tones, modest wear, LKR pricing
 
 Content
 
-ModelSnap.ai
+ModelSnapper.ai
 AI-powered model photos for small fashion brands
 Upload clothing → Choose AI/Human model → Get studio-quality photos in minutes
 CTA: “Get Early Access”
@@ -100,7 +100,7 @@ Motion: scroll-triggered reveal
 
 Content
 
-ModelSnap.ai makes fashion photography simple:
+ModelSnapper.ai makes fashion photography simple:
 1. Upload clothing photo
 2. Select AI or consented human model
 3. Generate studio-quality images in minutes
@@ -343,7 +343,7 @@ export default function Hero() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-        ModelSnap.ai
+        ModelSnapper.ai
       </motion.h1>
       <motion.p
         className="text-xl md:text-2xl mb-8"

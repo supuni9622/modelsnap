@@ -1,4 +1,4 @@
-# ModelSnap.ai - Complete Project Documentation
+# ModelSnapper.ai - Complete Project Documentation
 
 **Version:** 1.0  
 **Last Updated:** 2026.01.18  
@@ -23,7 +23,7 @@
 
 ## Overview
 
-ModelSnap.ai is an AI-powered fashion photography platform designed specifically for Sri Lankan fashion brands but can use in the globle context as well. The platform enables businesses to upload clothing items and render them on AI-generated models or human models with proper consent and royalty management.
+ModelSnapper.ai is an AI-powered fashion photography platform designed specifically for Sri Lankan fashion brands. The platform enables businesses to upload clothing items and render them on AI-generated Sri Lankan models or human models with proper consent and royalty management.
 
 ### Key Features
 

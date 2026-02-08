@@ -5,7 +5,7 @@ import CurrentPlanCard from "@/components/platform/billing/current-plan-card";
 import MonthlyCreditsCard from "@/components/platform/billing/monthly-credits-card";
 
 export const metadata: Metadata = {
-  title: "Billing | ModelSnap.ai",
+  title: "Billing | ModelSnapper.ai",
   description: "Manage your subscription, credits, and invoices",
 };
 

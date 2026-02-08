@@ -102,7 +102,7 @@ export function Step5Consent({
             </li>
             <li className="flex items-start gap-2">
               <span>✓</span>
-              <span>You authorize ModelSnap to use your likeness for AI generation</span>
+              <span>You authorize ModelSnapper to use your likeness for AI generation</span>
             </li>
             <li className="flex items-start gap-2">
               <span>✓</span>

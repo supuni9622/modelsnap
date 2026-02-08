@@ -196,7 +196,7 @@ export function PaymentFailedEmail({
       >
         Best regards,
         <br />
-        The ModelSnap.ai Team
+        The ModelSnapper.ai Team
       </Text>
     </BaseEmail>
   );

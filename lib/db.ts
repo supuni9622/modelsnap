@@ -1,7 +1,7 @@
 /**
  * MongoDB Connection Module
  * 
- * Centralized database connection management for ModelSnap.ai
+ * Centralized database connection management for ModelSnapper.ai
  * 
  * Usage:
  * 

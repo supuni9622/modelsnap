@@ -54,7 +54,7 @@ export function BaseEmail({ preview, title, children }: BaseEmailProps) {
                 margin: "0",
               }}
             >
-              ModelSnap.ai
+              ModelSnapper.ai
             </Heading>
           </Section>
         </Row>
@@ -92,7 +92,7 @@ export function BaseEmail({ preview, title, children }: BaseEmailProps) {
                 margin: "0",
               }}
             >
-              © 2025 ModelSnap.ai. All rights reserved.
+              © 2026 ModelSnapper.ai. All rights reserved.
             </Text>
             <Text
               style={{

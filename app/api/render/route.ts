@@ -392,7 +392,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
               
               if (imageResponse.ok) {
                 const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-                const watermarkedBuffer = await applyWatermark(imageBuffer, "ModelSnap.ai");
+                const watermarkedBuffer = await applyWatermark(imageBuffer, "ModelSnapper.ai");
                 
                 // Store watermarked image locally (fallback)
                 const fs = await import("fs/promises");

@@ -6,7 +6,7 @@ import { FooterLinkTypes } from "@/components/landing/footer-link";
  */
 
 /** The name of your application */
-export const SiteName = "ModelSnap.ai";
+export const SiteName = "ModelSnapper.ai";
 
 /**
  * Main site settings interface
@@ -30,7 +30,7 @@ export interface SiteSettingsType {
  * ⚠️  IMPORTANT: Update these settings for your application
  */
 export const SiteSettings: SiteSettingsType = {
-  name: "ModelSnap.ai",
+  name: "ModelSnapper.ai",
   logoUrlLight: "/static/images/dark-logo.jpeg",
   logoUrlDark: "/static/images/dark-logo.jpeg",
   defaultTheme: "light",
