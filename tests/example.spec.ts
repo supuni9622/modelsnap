@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("landing page loads", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle(/ModelSnap/i);
+  await expect(page).toHaveTitle(/ModelSnapper/i);
 });
 
 test("can navigate to sign in", async ({ page }) => {

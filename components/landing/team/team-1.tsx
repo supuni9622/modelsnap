@@ -10,7 +10,7 @@ const team = [
     role: "Tech Builder",
     icon: Code,
     description1: "🌟 Turning crazy ideas into real features.",
-    description2: "💻 Building the tech that powers every ModelSnap render.",
+    description2: "💻 Building the tech that powers every ModelSnapper render.",
     url:'https://www.linkedin.com/in/supuni-manamperi-bb5baa176/'
   },
   {
@@ -18,12 +18,12 @@ const team = [
     role: "Fashion & Community",
     icon: TrendingUp,
     description1: "👗 Talking to fashion sellers every day.",
-    description2: "🚀 Making sure ModelSnap solves real fashion problems.",
+    description2: "🚀 Making sure ModelSnapper solves real fashion problems.",
     url:'https://www.linkedin.com/in/hoshiniperera/'
   },
 ];
 
-export function TeamModelSnap() {
+export function TeamModelSnapper() {
   return (
     <section className="py-20 px-4 md:px-24 bg-white text-[#1A1A1A]">
       <div className="max-w-4xl mx-auto">

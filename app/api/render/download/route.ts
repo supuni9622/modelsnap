@@ -205,7 +205,7 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
       // Apply watermark if needed
       if (needsWatermark) {
         try {
-          imageBuffer = await applyWatermark(imageBuffer, "ModelSnap.ai");
+          imageBuffer = await applyWatermark(imageBuffer, "ModelSnapper.ai");
         } catch (watermarkError) {
           console.error("Failed to apply watermark during download:", watermarkError);
           // Continue with original if watermarking fails

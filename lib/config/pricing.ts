@@ -76,7 +76,7 @@ export interface PricingPlanTypes {
 export const PricingPlans: PricingPlanTypes[] = [
   {
     id: "free",
-    description: "Perfect for trying out ModelSnap.ai",
+    description: "Perfect for trying out ModelSnapper.ai",
     name: "Free",
     type: "payment",
     price: "0",

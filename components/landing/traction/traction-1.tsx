@@ -52,7 +52,7 @@ function AnimatedCounter({ value, suffix = "" }: { value: string; suffix?: strin
   );
 }
 
-export function TractionModelSnap() {
+export function TractionModelSnapper() {
   return (
     <section className="py-20 px-4 md:px-24 bg-white text-[#1A1A1A]">
       <div className="max-w-6xl mx-auto">

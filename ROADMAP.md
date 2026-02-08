@@ -1,4 +1,4 @@
-# ModelSnap.ai MVP Implementation Roadmap
+# ModelSnapper.ai MVP Implementation Roadmap
 
 ## Project Status
 
@@ -8,7 +8,7 @@
 
 ## Overview
 
-This roadmap tracks the implementation of ModelSnap.ai MVP following the plan specified in `modelsnap-mvp-implementation.plan.md`.
+This roadmap tracks the implementation of ModelSnapper.ai MVP following the plan specified in `modelsnap-mvp-implementation.plan.md`.
 
 ## MVP Goals
 

@@ -31,7 +31,7 @@ const advantages = [
   },
 ];
 
-export function AdvantageModelSnap() {
+export function AdvantageModelSnapper() {
   return (
     <section className="py-20 px-4 md:px-24 bg-[#F7F7F7] text-[#1A1A1A]">
       <div className="max-w-6xl mx-auto">

@@ -3,12 +3,12 @@ import sharp from "sharp";
 /**
  * Apply watermark to an image
  * @param imageBuffer - Buffer containing the image data
- * @param watermarkText - Text to use as watermark (default: "ModelSnap.ai")
+ * @param watermarkText - Text to use as watermark (default: "ModelSnapper.ai")
  * @returns Buffer containing the watermarked image
  */
 export async function applyWatermark(
   imageBuffer: Buffer,
-  watermarkText: string = "ModelSnap.ai"
+  watermarkText: string = "ModelSnapper.ai"
 ): Promise<Buffer> {
   try {
     // Get image metadata

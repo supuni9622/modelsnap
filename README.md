@@ -1,4 +1,4 @@
-# ModelSnap.ai - AI Fashion Photography Platform
+# ModelSnapper.ai - AI Fashion Photography Platform
 
 AI-powered fashion photography platform for Sri Lankan fashion brands. Upload clothing, select AI models, and get studio-quality photos in minutes.
 

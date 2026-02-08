@@ -1,4 +1,4 @@
-# ModelSnap.ai - Complete Task List
+# ModelSnapper.ai - Complete Task List
 
 **Last Updated:** 2025-01-27  
 **Status Tracking:** Done ✅ | In Progress 🚧 | TODO 📋

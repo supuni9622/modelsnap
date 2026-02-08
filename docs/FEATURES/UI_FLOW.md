@@ -1,4 +1,4 @@
-Here we are going to implement the UI-platform flow of modelsnap application. (platform) directory is where the protected routes exists. @/app/[locale]/(platform)
+Here we are going to implement the UI-platform flow of ModelSnapper application. (platform) directory is where the protected routes exists. @/app/[locale]/(platform)
 
 ```
 ├── app/                          # Next.js app directory

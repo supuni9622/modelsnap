@@ -32,7 +32,7 @@ const problems = [
   },
 ];
 
-export function ProblemModelSnap() {
+export function ProblemModelSnapper() {
   return (
     <section className="py-20 px-4 md:px-24 bg-[#F7F7F7] text-[#1A1A1A]">
       <motion.div

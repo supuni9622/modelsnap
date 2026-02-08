@@ -141,7 +141,7 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
                 transition={{ duration: 0.2 }}
                 className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent whitespace-nowrap overflow-hidden"
               >
-                ModelSnap
+                ModelSnapper
               </motion.span>
             )}
           </AnimatePresence>

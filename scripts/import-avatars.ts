@@ -1,5 +1,5 @@
 /**
- * Import Avatars Script for ModelSnap.ai
+ * Import Avatars Script for ModelSnapper.ai
  * 
  * Imports avatars from avatarMap.json into MongoDB
  * 

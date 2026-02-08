@@ -1,10 +1,10 @@
-@# CDN Setup Guide for ModelSnap.ai
+# CDN Setup Guide for ModelSnapper.ai
 
 This guide explains how to set up CloudFront CDN for optimized image delivery.
 
 ## Overview
 
-ModelSnap.ai uses AWS CloudFront CDN to deliver images globally with:
+ModelSnapper.ai uses AWS CloudFront CDN to deliver images globally with:
 - **Faster load times**: Images served from edge locations closest to users
 - **Reduced bandwidth costs**: Lower data transfer costs
 - **Better caching**: Aggressive caching for immutable images

@@ -45,7 +45,7 @@ const galleryItems = [
   },
 ];
 
-export function GalleryModelSnap() {
+export function GalleryModelSnapper() {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
   return (

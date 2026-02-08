@@ -35,7 +35,7 @@ const steps = [
   },
 ];
 
-export function SolutionModelSnap() {
+export function SolutionModelSnapper() {
   return (
     <section className="py-20 px-4 md:px-24 bg-[#F7F7F7] text-[#1A1A1A]">
       <motion.div
@@ -52,7 +52,7 @@ export function SolutionModelSnap() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          How ModelSnap.ai Works
+          How ModelSnapper.ai Works
         </motion.h2>
 
         <motion.p
@@ -62,7 +62,7 @@ export function SolutionModelSnap() {
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          ModelSnap.ai makes fashion photography simple. No models, no studio, no logistics.
+          ModelSnapper.ai makes fashion photography simple. No models, no studio, no logistics.
         </motion.p>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ perspective: "1000px" }}>

@@ -1,5 +1,5 @@
 /**
- * Avatar Generation Script for ModelSnap.ai
+ * Avatar Generation Script for ModelSnapper.ai
  * 
  * Generates 32 Sri Lankan avatars using FASHN API
  * Based on FASHIONAI_GUIDE.md specifications

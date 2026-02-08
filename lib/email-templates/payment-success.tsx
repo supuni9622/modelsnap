@@ -91,7 +91,7 @@ export function PaymentSuccessEmail({
           margin: "0 0 20px 0",
         }}
       >
-        You now have access to all the premium features of ModelSnap.ai. Upload your clothing and create realistic fashion photos with AI.
+        You now have access to all the premium features of ModelSnapper.ai. Upload your clothing and create realistic fashion photos with AI.
       </Text>
 
       <Section style={{ textAlign: "center" as const, margin: "30px 0" }}>
@@ -153,9 +153,9 @@ export function PaymentSuccessEmail({
           margin: "0",
         }}
       >
-        Thank you for choosing ModelSnap.ai!
+        Thank you for choosing ModelSnapper.ai!
         <br />
-        The ModelSnap.ai Team
+        The ModelSnapper.ai Team
       </Text>
     </BaseEmail>
   );

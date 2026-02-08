@@ -85,7 +85,7 @@ export function OnboardingFlow() {
                 <Sparkles className="h-8 w-8 text-primary" />
               </div>
             </div>
-            <CardTitle className="text-3xl">Welcome to ModelSnap.ai!</CardTitle>
+            <CardTitle className="text-3xl">Welcome to ModelSnapper.ai!</CardTitle>
             <CardDescription className="text-lg">
               Let's get started. Choose your role to continue.
             </CardDescription>

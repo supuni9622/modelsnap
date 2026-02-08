@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the hybrid watermarking approach implemented for ModelSnap.ai, where original non-watermarked images are stored in S3, and watermarked versions are generated on-the-fly when needed.
+This document describes the hybrid watermarking approach implemented for ModelSnapper.ai, where original non-watermarked images are stored in S3, and watermarked versions are generated on-the-fly when needed.
 
 ## Architecture
 

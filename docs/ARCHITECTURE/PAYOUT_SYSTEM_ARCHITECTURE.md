@@ -173,7 +173,7 @@ const transfer = await stripe.transfers.create({
 // Example: Process payout via PayPal
 const payout = await paypal.payouts.create({
   sender_batch_header: {
-    email_subject: "ModelSnap Payout",
+    email_subject: "ModelSnapper Payout",
   },
   items: [{
     recipient_type: "EMAIL",
