@@ -4,19 +4,27 @@
       "SL-01": "/avatars/female/slim/SL-01.jpg",
       "SL-02": "/avatars/female/slim/SL-02.jpg",
       "SL-03": "/avatars/female/slim/SL-03.jpg",
-      "SL-04": "/avatars/female/slim/SL-04.jpg"
+      "SL-04": "/avatars/female/slim/SL-04.jpg",
+      "SL-05": "/avatars/female/slim/SL-05.png",
+      "SL-06": "/avatars/female/slim/SL-06.png",
+      "SL-07": "/avatars/female/slim/SL-07.png"
     },
     "curvy": {
       "SL-01": "/avatars/female/curvy/SL-01.jpg",
       "SL-02": "/avatars/female/curvy/SL-02.jpg",
       "SL-03": "/avatars/female/curvy/SL-03.jpg",
-      "SL-04": "/avatars/female/curvy/SL-04.jpg"
+      "SL-04": "/avatars/female/curvy/SL-04.jpg",
+      "SL-05": "/avatars/female/curvy/SL-05.png",
+      "SL-06": "/avatars/female/curvy/SL-06.png"
     },
     "athletic": {
       "SL-01": "/avatars/female/athletic/SL-01.jpg",
       "SL-02": "/avatars/female/athletic/SL-02.jpg",
       "SL-03": "/avatars/female/athletic/SL-03.jpg",
-      "SL-04": "/avatars/female/athletic/SL-04.jpg"
+      "SL-04": "/avatars/female/athletic/SL-04.jpg",
+      "SL-05": "/avatars/female/athletic/SL-05.png",
+      "SL-06": "/avatars/female/athletic/SL-06.png",
+      "SL-07": "/avatars/female/athletic/SL-07.png"
     },
     "plus-size": {
       "SL-01": "/avatars/female/plus-size/SL-01.jpg",
@@ -30,7 +38,9 @@
       "SL-01": "/avatars/male/slim/SL-01.jpg",
       "SL-02": "/avatars/male/slim/SL-02.jpg",
       "SL-03": "/avatars/male/slim/SL-03.jpg",
-      "SL-04": "/avatars/male/slim/SL-04.jpg"
+      "SL-04": "/avatars/male/slim/SL-04.jpg",
+      "SL-05": "/avatars/male/slim/SL-05.png",
+      "SL-06": "/avatars/male/slim/SL-06.png"
     },
     "athletic": {
       "SL-01": "/avatars/male/athletic/SL-01.jpg",
@@ -47,7 +57,8 @@
     "plus-size": {
       "SL-01": "/avatars/male/plus-size/SL-01.jpg",
       "SL-02": "/avatars/male/plus-size/SL-02.jpg",
-      "SL-04": "/avatars/male/plus-size/SL-04.jpg"
+      "SL-04": "/avatars/male/plus-size/SL-04.jpg",
+      "SL-05": "/avatars/male/plus-size/SL-05.png"
     }
   }
 }
