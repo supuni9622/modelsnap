@@ -197,13 +197,13 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Render History</CardTitle>
-          <CardDescription>Your past clothing renders</CardDescription>
+          <CardTitle>Photo History</CardTitle>
+          <CardDescription>Your previously created photos</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Loading render history...</p>
+            <p>Loading your photos...</p>
           </div>
         </CardContent>
       </Card>
@@ -214,12 +214,12 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Render History</CardTitle>
-          <CardDescription>Your past clothing renders</CardDescription>
+          <CardTitle>Photo History</CardTitle>
+          <CardDescription>Your previously created photos</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-muted-foreground">
-            <p>No renders yet. Create your first render to see it here!</p>
+            <p>No photos yet. Create your first photo to see it here.</p>
           </div>
         </CardContent>
       </Card>
@@ -230,23 +230,23 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Render History</CardTitle>
+          <CardTitle>Photo History</CardTitle>
           <CardDescription>
-            {pagination.total} render{pagination.total !== 1 ? "s" : ""} total
+            {pagination.total} photo{pagination.total !== 1 ? "s" : ""} total
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {renders.map((render) => (
               <div
                 key={render._id}
                 className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       {getStatusBadge(render.status)}
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground truncate">
                         {formatDate(render.createdAt)}
                       </span>
                     </div>
@@ -254,28 +254,28 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                       <p className="text-sm text-destructive mt-2">{render.errorMessage}</p>
                     )}
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Credits used</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm text-muted-foreground">Credits for this photo</p>
                     <p className="font-semibold">{render.creditsUsed}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-sm font-medium mb-2">Garment</p>
-                    <div className="relative aspect-square rounded-lg border overflow-hidden">
+                    <p className="text-sm font-medium mb-2">Your Upload</p>
+                    <div className="relative aspect-[3/4] max-h-[260px] w-full rounded-lg border overflow-hidden bg-muted/30">
                       <img
                         src={render.garmentImageUrl}
-                        alt="Garment"
-                        className="w-full h-full object-cover"
+                        alt="Uploaded photo"
+                        className="w-full h-full object-contain"
                       />
                     </div>
                   </div>
 
                   {(render.previewImageUrl || render.outputS3Url || render.renderedImageUrl || render.outputUrl) && render.status === "completed" && (
                     <div>
-                      <p className="text-sm font-medium mb-2">Rendered Result</p>
-                      <div className="relative aspect-square rounded-lg border overflow-hidden">
+                      <p className="text-sm font-medium mb-2">Final Photo</p>
+                      <div className="relative aspect-[3/4] max-h-[260px] w-full rounded-lg border overflow-hidden bg-muted/30">
                         <img
                           src={(() => {
                             // Always use watermarked preview URL for display
@@ -293,7 +293,7 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                             return "";
                           })()}
                           alt="Rendered result"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                           key={`watermarked-${render._id}`} // Force re-render to avoid cache
                         />
                       </div>
@@ -383,7 +383,7 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
           open={previewOpen}
           onOpenChange={setPreviewOpen}
           imageUrl={previewImage}
-          imageTitle="Rendered Image Preview"
+          imageTitle="Photo Preview"
           downloadFileName={previewFileName}
           generationId={previewId || undefined}
           type="ai"

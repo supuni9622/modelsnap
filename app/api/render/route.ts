@@ -54,7 +54,24 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
 
     // Parse request body
     const body = await req.json();
-    const { garmentImageUrl, avatarId, avatarImageUrl, modelId } = body;
+    const {
+      garmentImageUrl,
+      avatarId,
+      avatarImageUrl,
+      modelId,
+      garmentCategory,
+      garmentPhotoType,
+    } = body;
+
+    // Optional Fashn try-on params for better accuracy (tops | bottoms | one-pieces | auto)
+    const category =
+      garmentCategory && ["auto", "tops", "bottoms", "one-pieces"].includes(garmentCategory)
+        ? (garmentCategory as "auto" | "tops" | "bottoms" | "one-pieces")
+        : "auto";
+    const garment_photo_type =
+      garmentPhotoType && ["auto", "flat-lay", "model"].includes(garmentPhotoType)
+        ? (garmentPhotoType as "auto" | "flat-lay" | "model")
+        : "auto";
 
     // Determine model type
     const isHumanModel = !!modelId;
@@ -327,7 +344,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
         fashnResponse = await fashnClient.virtualTryOn({
           garment_image: garmentImageUrl,
           model_image: modelImageUrl,
-          // Optional: mode, category, etc. (see https://docs.fashn.ai/api-reference/tryon-v1-6)
+          category,
+          garment_photo_type,
           mode: "balanced", // performance | balanced | quality
         });
 
