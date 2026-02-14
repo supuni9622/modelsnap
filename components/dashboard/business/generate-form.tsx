@@ -5,6 +5,13 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Upload, X, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, Mountain, FileImage, Trash2, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -15,9 +22,11 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface Avatar {
   _id: string;
-  name: string;
+  name?: string;
   imageUrl: string;
   gender?: string;
+  bodyType?: string;
+  skinTone?: string;
 }
 
 interface Model {
@@ -46,12 +55,17 @@ export function GenerateForm() {
   const [generationType, setGenerationType] = useState<"ai" | "human">("ai");
   const [modelId, setModelId] = useState<string | null>(null);
   const [isPurchased, setIsPurchased] = useState<boolean | null>(null);
+  const [garmentCategory, setGarmentCategory] = useState<"auto" | "tops" | "bottoms" | "one-pieces">("auto");
+  const [garmentPhotoType, setGarmentPhotoType] = useState<"auto" | "flat-lay" | "model">("auto");
+  const [avatarGenderFilter, setAvatarGenderFilter] = useState<"all" | "female" | "male">("all");
 
-  // Fetch AI avatars
+  // Fetch AI avatars (with optional gender filter)
   const { data: avatarsData, isLoading: avatarsLoading } = useQuery({
-    queryKey: ["avatars"],
+    queryKey: ["avatars", avatarGenderFilter],
     queryFn: async () => {
-      const res = await fetch("/api/avatars");
+      const params = new URLSearchParams();
+      if (avatarGenderFilter !== "all") params.set("gender", avatarGenderFilter);
+      const res = await fetch(`/api/avatars?${params.toString()}`);
       const data = await res.json();
       if (data.status === "success") {
         return data.data;
@@ -80,6 +94,8 @@ export function GenerateForm() {
       avatarId?: string;
       avatarImageUrl?: string;
       modelId?: string;
+      garmentCategory?: string;
+      garmentPhotoType?: string;
     }) => {
       const res = await fetch("/api/render", {
         method: "POST",
@@ -246,8 +262,12 @@ export function GenerateForm() {
       avatarId?: string;
       avatarImageUrl?: string;
       modelId?: string;
+      garmentCategory?: string;
+      garmentPhotoType?: string;
     } = {
       garmentImageUrl,
+      garmentCategory,
+      garmentPhotoType,
     };
 
     if (modelType === "ai") {
@@ -312,44 +332,86 @@ export function GenerateForm() {
               </label>
             </div>
 
-            {/* Uploaded File Display */}
-            <AnimatePresence>
-              {uploadedFile && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border"
-                >
-                  <div className="relative w-12 h-12 rounded overflow-hidden bg-background flex items-center justify-center">
-                    {garmentImageUrl ? (
+            {/* Filters + larger uploaded image preview (bottom: filters left, preview right) */}
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
+              <div className="space-y-4">
+                {/* Garment type for better try-on accuracy */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Garment type</label>
+                  <Select
+                    value={garmentCategory}
+                    onValueChange={(v) => setGarmentCategory(v as "auto" | "tops" | "bottoms" | "one-pieces")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Auto-detect" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto</SelectItem>
+                      <SelectItem value="tops">Tops</SelectItem>
+                      <SelectItem value="bottoms">Bottoms</SelectItem>
+                      <SelectItem value="one-pieces">One-piece</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Helps the AI fit your garment more accurately.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Garment photo style</label>
+                  <Select
+                    value={garmentPhotoType}
+                    onValueChange={(v) => setGarmentPhotoType(v as "auto" | "flat-lay" | "model")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Auto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto</SelectItem>
+                      <SelectItem value="flat-lay">Flat-lay</SelectItem>
+                      <SelectItem value="model">On model</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Larger uploaded image preview — bottom right alongside filters */}
+              <AnimatePresence>
+                {uploadedFile && garmentImageUrl ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex flex-col items-end gap-2"
+                  >
+                    <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-lg overflow-hidden border-2 border-muted bg-muted/30 shadow-sm">
                       <Image
                         src={garmentImageUrl}
                         alt={uploadedFile.name}
                         fill
-                        className="object-cover"
+                        className="object-contain"
                         unoptimized
                       />
-                    ) : (
-                      <FileImage className="w-6 h-6 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{uploadedFile.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatFileSize(uploadedFile.size)}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleRemoveFile}
-                    className="h-8 w-8"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        onClick={handleRemoveFile}
+                        className="absolute top-1.5 right-1.5 h-8 w-8 rounded-full shadow-md opacity-90 hover:opacity-100"
+                        title="Remove"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="text-right max-w-[11rem] sm:max-w-[13rem]">
+                      <p className="text-sm font-medium truncate" title={uploadedFile.name}>
+                        {uploadedFile.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(uploadedFile.size)}</p>
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
           </CardContent>
         </Card>
 
@@ -372,10 +434,38 @@ export function GenerateForm() {
               </TabsList>
 
               <TabsContent value="ai" className="mt-6">
+                {/* Gender filter for AI models */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="text-sm text-muted-foreground self-center">Show:</span>
+                  <Button
+                    type="button"
+                    variant={avatarGenderFilter === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAvatarGenderFilter("all")}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={avatarGenderFilter === "female" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAvatarGenderFilter("female")}
+                  >
+                    Female
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={avatarGenderFilter === "male" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAvatarGenderFilter("male")}
+                  >
+                    Male
+                  </Button>
+                </div>
                 {avatarsLoading ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />
+                      <div key={i} className="aspect-[3/4] bg-muted animate-pulse rounded-lg" />
                     ))}
                   </div>
                 ) : (
@@ -384,10 +474,10 @@ export function GenerateForm() {
                       <motion.button
                         key={avatar._id}
                         onClick={() => setSelectedAvatar(avatar)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         className={cn(
-                          "relative aspect-square rounded-lg overflow-hidden border-2 transition-all",
+                          "relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all",
                           selectedAvatar?._id === avatar._id
                             ? "border-primary ring-2 ring-primary"
                             : "border-muted hover:border-primary/50"
@@ -395,9 +485,9 @@ export function GenerateForm() {
                       >
                         <Image
                           src={avatar.imageUrl}
-                          alt={avatar.name || "AI Avatar"}
+                          alt={avatar.name || [avatar.bodyType, avatar.skinTone].filter(Boolean).join(" ") || "AI Avatar"}
                           fill
-                          className="object-cover"
+                          className="object-contain"
                         />
                         <AnimatePresence>
                           {selectedAvatar?._id === avatar._id && (
@@ -412,9 +502,6 @@ export function GenerateForm() {
                             </motion.div>
                           )}
                         </AnimatePresence>
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2">
-                          <p className="text-xs text-white font-medium truncate">{avatar.name}</p>
-                        </div>
                       </motion.button>
                     ))}
                   </div>
@@ -422,6 +509,7 @@ export function GenerateForm() {
               </TabsContent>
 
               <TabsContent value="human" className="mt-6">
+                {/* Coming soon: Human models selection — data display commented out
                 {modelsLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[...Array(4)].map((_, i) => (
@@ -440,100 +528,44 @@ export function GenerateForm() {
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {modelsData?.map((model: Model) => (
-                      <motion.button
-                        key={model._id}
-                        onClick={() => setSelectedModel(model)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={cn(
-                          "relative aspect-square rounded-lg overflow-hidden border-2 transition-all",
-                          selectedModel?._id === model._id
-                            ? "border-primary ring-2 ring-primary"
-                            : "border-muted hover:border-primary/50"
-                        )}
-                      >
-                        {model.referenceImages?.[0] ? (
-                          <Image
-                            src={model.referenceImages[0]}
-                            alt={model.name || "Human Model"}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-muted flex items-center justify-center">
-                            <ImageIcon className="w-12 h-12 text-muted-foreground" />
-                          </div>
-                        )}
-                        <AnimatePresence>
-                          {selectedModel?._id === model._id && (
-                            <motion.div
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0, opacity: 0 }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                              className="absolute top-2 right-2 bg-primary rounded-full p-1"
-                            >
-                              <CheckCircle2 className="w-5 h-5 text-primary-foreground" />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2">
-                          <p className="text-xs text-white font-medium truncate">{model.name}</p>
-                        </div>
-                      </motion.button>
+                      <motion.button ... />
                     ))}
                   </div>
                 )}
+                */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="relative rounded-xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 via-background to-primary/5 p-10 text-center overflow-hidden"
+                >
+                  <div className="relative">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                      <ImageIcon className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
+                      Human Models — Coming Soon
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
+                      Try on your garments with verified human models. Browse the marketplace, request consent, and generate with real models — launching soon.
+                    </p>
+                    <Link href="/dashboard/business/models">
+                      <Button variant="outline" size="sm" className="rounded-full">
+                        Browse marketplace
+                      </Button>
+                    </Link>
+                  </div>
+                </motion.div>
               </TabsContent>
             </Tabs>
-
-            {/* Generate Button */}
-            <div className="mt-6">
-              <motion.div
-                whileHover={
-                  !renderMutation.isPending &&
-                  garmentImageUrl &&
-                  ((modelType === "ai" && selectedAvatar) || (modelType === "human" && selectedModel))
-                    ? { scale: 1.02 }
-                    : {}
-                }
-                whileTap={
-                  !renderMutation.isPending &&
-                  garmentImageUrl &&
-                  ((modelType === "ai" && selectedAvatar) || (modelType === "human" && selectedModel))
-                    ? { scale: 0.98 }
-                    : {}
-                }
-              >
-                <Button
-                  onClick={handleGenerate}
-                  disabled={
-                    !garmentImageUrl ||
-                    renderMutation.isPending ||
-                    (modelType === "ai" && !selectedAvatar) ||
-                    (modelType === "human" && !selectedModel)
-                  }
-                  className="w-full"
-                  size="lg"
-                >
-                  {renderMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate Image"
-                  )}
-                </Button>
-              </motion.div>
-            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Right Column: Preview Pane */}
+      {/* Right Column: Preview Pane + Generate Button (sticky together so button is always under card) */}
       <div className="lg:col-span-1">
-        <Card className="sticky top-6">
+        <div className="sticky top-6 space-y-4">
+        <Card>
           <CardHeader>
             <CardTitle>Generated Image</CardTitle>
           </CardHeader>
@@ -719,21 +751,6 @@ export function GenerateForm() {
                       </Button>
                     )}
                     
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setGeneratedImageUrl(null);
-                        setGenerationId(null);
-                        setGenerationType("ai");
-                        setGarmentImageUrl(null);
-                        setUploadedFile(null);
-                        setSelectedAvatar(null);
-                        setSelectedModel(null);
-                      }}
-                      className="w-full"
-                    >
-                      Generate Another
-                    </Button>
                     <Button asChild className="w-full">
                       <Link href="/dashboard/business/history">View History</Link>
                     </Button>
@@ -770,6 +787,46 @@ export function GenerateForm() {
             </AnimatePresence>
           </CardContent>
         </Card>
+
+        {/* Generate Button — under right-side card */}
+        <motion.div
+          whileHover={
+            !renderMutation.isPending &&
+            garmentImageUrl &&
+            ((modelType === "ai" && selectedAvatar) || (modelType === "human" && selectedModel))
+              ? { scale: 1.02 }
+              : {}
+          }
+          whileTap={
+            !renderMutation.isPending &&
+            garmentImageUrl &&
+            ((modelType === "ai" && selectedAvatar) || (modelType === "human" && selectedModel))
+              ? { scale: 0.98 }
+              : {}
+          }
+        >
+          <Button
+            onClick={handleGenerate}
+            disabled={
+              !garmentImageUrl ||
+              renderMutation.isPending ||
+              (modelType === "ai" && !selectedAvatar) ||
+              (modelType === "human" && !selectedModel)
+            }
+            className="w-full"
+            size="lg"
+          >
+            {renderMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              "Generate Image"
+            )}
+          </Button>
+        </motion.div>
+        </div>
       </div>
     </div>
   );

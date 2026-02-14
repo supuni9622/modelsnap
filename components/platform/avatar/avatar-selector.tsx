@@ -179,11 +179,11 @@ export function AvatarSelector({ onSelect, selectedAvatarId, className }: Avatar
                     : "border-muted"
                 )}
               >
-                <div className="aspect-square relative overflow-hidden rounded-t-lg">
+                <div className="aspect-[3/4] relative overflow-hidden rounded-t-lg">
                   <img
                     src={avatar.imageUrl}
                     alt={`${avatar.gender} ${avatar.bodyType} ${avatar.skinTone}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                   {selectedAvatarId === (avatar._id || avatar.id) && (
                     <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">

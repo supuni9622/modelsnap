@@ -5,6 +5,13 @@ import { UploadGarment } from "@/components/platform/upload/upload-garment";
 import { AvatarSelector } from "@/components/platform/avatar/avatar-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAppContext } from "@/context/app";
 import { Loader2, Download, CheckCircle2, XCircle, Sparkles, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,6 +38,8 @@ export function RenderInterface() {
   const { billing, refreshBillingData } = useAppContext();
   const [garmentImageUrl, setGarmentImageUrl] = useState<string | null>(null);
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
+  const [garmentCategory, setGarmentCategory] = useState<"auto" | "tops" | "bottoms" | "one-pieces">("auto");
+  const [garmentPhotoType, setGarmentPhotoType] = useState<"auto" | "flat-lay" | "model">("auto");
   const [isRendering, setIsRendering] = useState(false);
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +74,9 @@ export function RenderInterface() {
         body: JSON.stringify({
           garmentImageUrl,
           avatarId: selectedAvatar._id || selectedAvatar.id,
-          avatarImageUrl: selectedAvatar.imageUrl, // Use avatar image URL for FASHN API
+          avatarImageUrl: selectedAvatar.imageUrl,
+          garmentCategory,
+          garmentPhotoType,
         }),
       });
 
@@ -134,6 +145,49 @@ export function RenderInterface() {
 
       {/* Upload Section */}
       <UploadGarment onUploadComplete={handleUploadComplete} />
+
+      {/* Garment type for better try-on accuracy */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Garment options</CardTitle>
+          <CardDescription>Improve try-on accuracy</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Garment type</label>
+            <Select
+              value={garmentCategory}
+              onValueChange={(v) => setGarmentCategory(v as "auto" | "tops" | "bottoms" | "one-pieces")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto</SelectItem>
+                <SelectItem value="tops">Tops</SelectItem>
+                <SelectItem value="bottoms">Bottoms</SelectItem>
+                <SelectItem value="one-pieces">One-piece</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Photo style</label>
+            <Select
+              value={garmentPhotoType}
+              onValueChange={(v) => setGarmentPhotoType(v as "auto" | "flat-lay" | "model")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto</SelectItem>
+                <SelectItem value="flat-lay">Flat-lay</SelectItem>
+                <SelectItem value="model">On model</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Avatar Selector */}
       <AvatarSelector

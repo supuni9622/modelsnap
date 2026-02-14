@@ -222,6 +222,8 @@ export async function POST(
       const fashnResponse = await fashnClient.virtualTryOn({
         garment_image: garmentImageUrl,
         model_image: modelImageUrl,
+        category: "auto",
+        garment_photo_type: "auto",
         mode: "balanced", // performance | balanced | quality
       });
 
