@@ -236,17 +236,17 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {renders.map((render) => (
               <div
                 key={render._id}
                 className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       {getStatusBadge(render.status)}
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground truncate">
                         {formatDate(render.createdAt)}
                       </span>
                     </div>
@@ -254,20 +254,20 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                       <p className="text-sm text-destructive mt-2">{render.errorMessage}</p>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <p className="text-sm text-muted-foreground">Credits used</p>
                     <p className="font-semibold">{render.creditsUsed}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-sm font-medium mb-2">Garment</p>
-                    <div className="relative aspect-square rounded-lg border overflow-hidden">
+                    <div className="relative aspect-[3/4] max-h-[260px] w-full rounded-lg border overflow-hidden bg-muted/30">
                       <img
                         src={render.garmentImageUrl}
                         alt="Garment"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                     </div>
                   </div>
@@ -275,7 +275,7 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                   {(render.previewImageUrl || render.outputS3Url || render.renderedImageUrl || render.outputUrl) && render.status === "completed" && (
                     <div>
                       <p className="text-sm font-medium mb-2">Rendered Result</p>
-                      <div className="relative aspect-square rounded-lg border overflow-hidden">
+                      <div className="relative aspect-[3/4] max-h-[260px] w-full rounded-lg border overflow-hidden bg-muted/30">
                         <img
                           src={(() => {
                             // Always use watermarked preview URL for display
@@ -293,7 +293,7 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                             return "";
                           })()}
                           alt="Rendered result"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                           key={`watermarked-${render._id}`} // Force re-render to avoid cache
                         />
                       </div>
