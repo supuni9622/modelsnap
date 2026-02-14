@@ -63,10 +63,20 @@ export async function processRenderRequest(
         `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${avatarId}`;
     }
 
-    // Call FASHN API
+    // Call FASHN API (category/garment_photo_type from queue item or default "auto")
+    const category = (queueItem as { garmentCategory?: string }).garmentCategory;
+    const garment_photo_type = (queueItem as { garmentPhotoType?: string }).garmentPhotoType;
     const fashnResponse = await fashnClient.virtualTryOn({
       garment_image: garmentImageUrl,
       model_image: modelImageUrl,
+      category:
+        category && ["auto", "tops", "bottoms", "one-pieces"].includes(category)
+          ? (category as "auto" | "tops" | "bottoms" | "one-pieces")
+          : "auto",
+      garment_photo_type:
+        garment_photo_type && ["auto", "flat-lay", "model"].includes(garment_photo_type)
+          ? (garment_photo_type as "auto" | "flat-lay" | "model")
+          : "auto",
       mode: "balanced", // performance | balanced | quality
     });
 

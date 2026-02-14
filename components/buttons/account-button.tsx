@@ -3,14 +3,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SignOutButton, useUser } from "@clerk/nextjs";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { LogOutIcon, PanelsTopLeft } from "lucide-react";
-import { Link } from "@/i18n/navigation";
+import { LogOutIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AccountButton() {
@@ -35,13 +32,6 @@ export default function AccountButton() {
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="min-w-[200px]">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {/* <Link href="/dashboard/business/generate">
-              <DropdownMenuItem>
-                <PanelsTopLeft /> Dashboard
-              </DropdownMenuItem>
-            </Link> */}
             <SignOutButton>
               <DropdownMenuItem>
                 <LogOutIcon /> Logout

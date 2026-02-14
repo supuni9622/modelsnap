@@ -175,3 +175,8 @@ None currently.
 - [ ] Royalty tracking and payout system
 - [ ] Email notifications for consent workflow
 
+
+## Recent Update (2026-02-14)
+- Added canonical architecture reference: `docs/ARCHITECTURE/SOURCE_OF_TRUTH.md`
+- Confirmed payment gateway direction is Lemon Squeezy only
+- Added prioritized cleanup plan to remove payment/provider and documentation drift

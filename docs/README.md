@@ -26,6 +26,7 @@ Essential guides for getting started and configuring the application.
 - **[VERCEL_DEPLOYMENT.md](./SETUP/VERCEL_DEPLOYMENT.md)** - Vercel deployment guide
 - **[DATABASE_CONNECTION_IMPROVEMENTS.md](./SETUP/DATABASE_CONNECTION_IMPROVEMENTS.md)** - Database setup and connection improvements
 - **[SETUP_SYSTEM.md](./SETUP/SETUP_SYSTEM.md)** - Application setup system documentation
+- **[AI_AVATAR_AND_FASHN_GUIDE.md](./SETUP/AI_AVATAR_AND_FASHN_GUIDE.md)** - Add AI model images (manual or script), sync to DB/S3, and Fashn usage/improvements
 
 ### 🏗️ Architecture & Design (`ARCHITECTURE/`)
 
