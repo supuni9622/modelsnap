@@ -25,14 +25,14 @@ const businessNavItems = [
     path: "/dashboard/business/generate",
   },
   {
+    label: "Generation History",
+    emoji: "📜",
+    path: "/dashboard/business/history",
+  },
+  {
     label: "Models",
     emoji: "👥",
     path: "/dashboard/business/models",
-  },
-  {
-    label: "History",
-    emoji: "📜",
-    path: "/dashboard/business/history",
   },
   {
     label: "Billing",
@@ -125,11 +125,11 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
           className={cn(
-            "py-3 flex items-center transition-all duration-200",
+            "py-3 flex items-center gap-0 transition-all duration-200",
             isCollapsed ? "px-2 justify-center" : "px-3"
           )}
         >
-          <div className={cn("shrink-0", isCollapsed ? "" : "-mr-2")}>
+          <div className={cn("shrink-0", isCollapsed ? "" : "-mr-4")}>
             <Logo className={cn(isCollapsed ? "!w-[40px] !h-[40px]" : "!w-[120px] !h-[45px]")} />
           </div>
           <AnimatePresence mode="wait">
@@ -139,7 +139,7 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
-                className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent whitespace-nowrap overflow-hidden"
+                className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent whitespace-nowrap shrink-0"
               >
                 ModelSnapper
               </motion.span>
