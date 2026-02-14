@@ -25,7 +25,7 @@ const businessNavItems = [
     path: "/dashboard/business/generate",
   },
   {
-    label: "Generation History",
+    label: "Photo History",
     emoji: "📜",
     path: "/dashboard/business/history",
   },

@@ -197,13 +197,13 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Render History</CardTitle>
-          <CardDescription>Your past clothing renders</CardDescription>
+          <CardTitle>Photo History</CardTitle>
+          <CardDescription>Your previously created photos</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Loading render history...</p>
+            <p>Loading your photos...</p>
           </div>
         </CardContent>
       </Card>
@@ -214,12 +214,12 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Render History</CardTitle>
-          <CardDescription>Your past clothing renders</CardDescription>
+          <CardTitle>Photo History</CardTitle>
+          <CardDescription>Your previously created photos</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-muted-foreground">
-            <p>No renders yet. Create your first render to see it here!</p>
+            <p>No photos yet. Create your first photo to see it here.</p>
           </div>
         </CardContent>
       </Card>
@@ -230,9 +230,9 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Render History</CardTitle>
+          <CardTitle>Photo History</CardTitle>
           <CardDescription>
-            {pagination.total} render{pagination.total !== 1 ? "s" : ""} total
+            {pagination.total} photo{pagination.total !== 1 ? "s" : ""} total
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -255,18 +255,18 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
                     )}
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm text-muted-foreground">Credits used</p>
+                    <p className="text-sm text-muted-foreground">Credits for this photo</p>
                     <p className="font-semibold">{render.creditsUsed}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-sm font-medium mb-2">Garment</p>
+                    <p className="text-sm font-medium mb-2">Your Upload</p>
                     <div className="relative aspect-[3/4] max-h-[260px] w-full rounded-lg border overflow-hidden bg-muted/30">
                       <img
                         src={render.garmentImageUrl}
-                        alt="Garment"
+                        alt="Uploaded photo"
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -274,7 +274,7 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
 
                   {(render.previewImageUrl || render.outputS3Url || render.renderedImageUrl || render.outputUrl) && render.status === "completed" && (
                     <div>
-                      <p className="text-sm font-medium mb-2">Rendered Result</p>
+                      <p className="text-sm font-medium mb-2">Final Photo</p>
                       <div className="relative aspect-[3/4] max-h-[260px] w-full rounded-lg border overflow-hidden bg-muted/30">
                         <img
                           src={(() => {
@@ -383,7 +383,7 @@ export function RenderHistory({ initialRenders, page = 1, limit = 10 }: RenderHi
           open={previewOpen}
           onOpenChange={setPreviewOpen}
           imageUrl={previewImage}
-          imageTitle="Rendered Image Preview"
+          imageTitle="Photo Preview"
           downloadFileName={previewFileName}
           generationId={previewId || undefined}
           type="ai"
