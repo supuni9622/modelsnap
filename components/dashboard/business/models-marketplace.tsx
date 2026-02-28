@@ -46,11 +46,12 @@ export function ModelsMarketplace() {
     },
   });
 
-  // Fetch human models
+  // Fetch human models (active only)
   const { data: modelsData, isLoading: modelsLoading } = useQuery({
     queryKey: ["models"],
     queryFn: async () => {
-      const res = await fetch("/api/models?status=active");
+      const params = new URLSearchParams({ status: "active" });
+      const res = await fetch(`/api/models?${params.toString()}`);
       const data = await res.json();
       if (data.status === "success") {
         return data.data.models || [];
@@ -166,7 +167,7 @@ export function ModelsMarketplace() {
                 Browse human models and request consent to use their likeness
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               {modelsLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[...Array(6)].map((_, i) => (

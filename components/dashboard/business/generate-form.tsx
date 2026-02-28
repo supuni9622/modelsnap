@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   Select,
   SelectContent,
@@ -12,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, X, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, Mountain, FileImage, Trash2, Wand2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Upload, X, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, Mountain, FileImage, Trash2, Wand2, RotateCcw } from "lucide-react";
+import { cn, parseJsonResponse } from "@/lib/utils";
+import { FilterChipGroup } from "@/components/ui/filter-chip-group";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
@@ -58,15 +60,23 @@ export function GenerateForm() {
   const [garmentCategory, setGarmentCategory] = useState<"auto" | "tops" | "bottoms" | "one-pieces">("auto");
   const [garmentPhotoType, setGarmentPhotoType] = useState<"auto" | "flat-lay" | "model">("auto");
   const [avatarGenderFilter, setAvatarGenderFilter] = useState<"all" | "female" | "male">("all");
+  const [avatarFramingFilter, setAvatarFramingFilter] = useState<"all" | "full-body" | "half-body" | "three-quarter" | "upper-body" | "lower-body" | "back-view">("all");
+  const [avatarAspectRatioFilter, setAvatarAspectRatioFilter] = useState<"all" | "2:3" | "1:1" | "4:5" | "16:9">("all");
+  const [avatarSkinToneFilter, setAvatarSkinToneFilter] = useState<"all" | "light" | "medium" | "deep">("all");
+  const [avatarBackgroundFilter, setAvatarBackgroundFilter] = useState<"all" | "indoor" | "outdoor">("all");
 
-  // Fetch AI avatars (with optional gender filter)
+  // Fetch AI avatars (with optional gender, framing, aspect ratio, skin tone, background filters)
   const { data: avatarsData, isLoading: avatarsLoading } = useQuery({
-    queryKey: ["avatars", avatarGenderFilter],
+    queryKey: ["avatars", avatarGenderFilter, avatarFramingFilter, avatarAspectRatioFilter, avatarSkinToneFilter, avatarBackgroundFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (avatarGenderFilter !== "all") params.set("gender", avatarGenderFilter);
+      if (avatarFramingFilter !== "all") params.set("photoFraming", avatarFramingFilter);
+      if (avatarAspectRatioFilter !== "all") params.set("aspectRatio", avatarAspectRatioFilter);
+      if (avatarSkinToneFilter !== "all") params.set("skinToneCategory", avatarSkinToneFilter);
+      if (avatarBackgroundFilter !== "all") params.set("background", avatarBackgroundFilter);
       const res = await fetch(`/api/avatars?${params.toString()}`);
-      const data = await res.json();
+      const data = await parseJsonResponse<{ status?: string; data?: Avatar[]; message?: string }>(res);
       if (data.status === "success") {
         return data.data;
       }
@@ -79,9 +89,9 @@ export function GenerateForm() {
     queryKey: ["models", "approved"],
     queryFn: async () => {
       const res = await fetch("/api/models?status=active");
-      const data = await res.json();
+      const data = await parseJsonResponse<{ status?: string; data?: { models?: Model[] }; message?: string }>(res);
       if (data.status === "success") {
-        return data.data.models || [];
+        return data.data?.models ?? [];
       }
       throw new Error(data.message || "Failed to fetch models");
     },
@@ -102,7 +112,7 @@ export function GenerateForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = await parseJsonResponse<{ status?: string; message?: string; data?: Record<string, unknown> }>(res);
       if (data.status !== "success") {
         throw new Error(data.message || "Render failed");
       }
@@ -110,18 +120,19 @@ export function GenerateForm() {
     },
     onSuccess: async (data) => {
       // Update credits immediately from API response (optimistic update)
-      if (data.data?.creditsRemaining !== undefined && billing) {
+      const creditsRemaining = typeof data.data?.creditsRemaining === "number" ? data.data.creditsRemaining : undefined;
+      if (creditsRemaining !== undefined && billing) {
         setBilling({
           ...billing,
-          credits: data.data.creditsRemaining,
+          credits: creditsRemaining,
         });
       }
 
       // Display the generated image immediately
       const imageUrl = data.data?.previewImageUrl || data.data?.renderedImageUrl || data.data?.outputS3Url || data.data?.fashnImageUrl;
       if (imageUrl) {
-        setGeneratedImageUrl(imageUrl);
-        setGenerationId(data.data?.generationId);
+        setGeneratedImageUrl(String(imageUrl));
+        setGenerationId(typeof data.data?.generationId === "string" ? data.data.generationId : null);
         const isHuman = data.data?.type === "HUMAN_MODEL";
         setGenerationType(isHuman ? "human" : "ai");
         
@@ -130,7 +141,7 @@ export function GenerateForm() {
           setModelId(selectedModel._id);
           try {
             const purchaseRes = await fetch(`/api/models/${selectedModel._id}/purchase-status`);
-            const purchaseData = await purchaseRes.json();
+            const purchaseData = await parseJsonResponse<{ status?: string; data?: { isPurchased?: boolean } }>(purchaseRes);
             if (purchaseData.status === "success") {
               setIsPurchased(purchaseData.data?.isPurchased || false);
             }
@@ -284,12 +295,13 @@ export function GenerateForm() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left Column: Upload + Model Selection */}
       <div className="lg:col-span-2 space-y-6">
-        {/* Section 1: Upload Your Product Image */}
+        {/* Section 1: Upload Your Product */}
         <Card>
           <CardHeader>
-            <CardTitle>1. Upload Your Product Image</CardTitle>
+            <CardTitle>1. Upload Your Product</CardTitle>
             <CardDescription>
-              Upload a clear, high-resolution image of your product. Supported formats: JPG, PNG.
+              Use a clear, well-lit photo with the product centered. Plain or neutral backgrounds work best. 
+              Show one garment per image. Supported formats: JPG, PNG (max 10MB).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -324,20 +336,25 @@ export function GenerateForm() {
                   <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 )}
                 <p className="text-lg font-medium mb-2">
-                  {isUploading ? "Uploading..." : "Click to upload or drag and drop"}
+                  {isUploading ? "Uploading..." : "Drag & drop your product photo here"}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  PNG, JPG (MAX. 10MB)
-                </p>
+                {!isUploading && (
+                  <p className="text-sm text-muted-foreground">
+                    or click to upload (JPG or PNG, max 10MB)
+                  </p>
+                )}
               </label>
             </div>
 
             {/* Filters + larger uploaded image preview (bottom: filters left, preview right) */}
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
               <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Choosing these options helps the AI fit your garment more accurately and can improve output quality.
+                </p>
                 {/* Garment type for better try-on accuracy */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Garment type</label>
+                  <label className="text-sm font-medium">What type of garment is this?</label>
                   <Select
                     value={garmentCategory}
                     onValueChange={(v) => setGarmentCategory(v as "auto" | "tops" | "bottoms" | "one-pieces")}
@@ -346,18 +363,18 @@ export function GenerateForm() {
                       <SelectValue placeholder="Auto-detect" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Auto</SelectItem>
-                      <SelectItem value="tops">Tops</SelectItem>
-                      <SelectItem value="bottoms">Bottoms</SelectItem>
-                      <SelectItem value="one-pieces">One-piece</SelectItem>
+                      <SelectItem value="auto">Auto — let the AI detect</SelectItem>
+                      <SelectItem value="tops">Tops — shirts, blouses, jackets, etc.</SelectItem>
+                      <SelectItem value="bottoms">Bottoms — pants, skirts, shorts, etc.</SelectItem>
+                      <SelectItem value="one-pieces">One-piece — dresses, jumpsuits, etc.</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Helps the AI fit your garment more accurately.
+                    Pick the type that matches your product for a better fit. Use Auto if you&apos;re unsure.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Garment photo style</label>
+                  <label className="text-sm font-medium">Photo Background Style</label>
                   <Select
                     value={garmentPhotoType}
                     onValueChange={(v) => setGarmentPhotoType(v as "auto" | "flat-lay" | "model")}
@@ -366,11 +383,14 @@ export function GenerateForm() {
                       <SelectValue placeholder="Auto" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Auto</SelectItem>
-                      <SelectItem value="flat-lay">Flat-lay</SelectItem>
-                      <SelectItem value="model">On model</SelectItem>
+                      <SelectItem value="auto">Auto — let the AI detect</SelectItem>
+                      <SelectItem value="flat-lay">Flat-lay — product laid flat or on a surface</SelectItem>
+                      <SelectItem value="model">On model — worn on a mannequin or model</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Matching the photo style improves try-on accuracy. Use Auto if you&apos;re not sure.
+                  </p>
                 </div>
               </div>
 
@@ -415,10 +435,10 @@ export function GenerateForm() {
           </CardContent>
         </Card>
 
-        {/* Section 2: Choose Your Model */}
+        {/* Section 2: Select your Model */}
         <Card>
           <CardHeader>
-            <CardTitle>2. Choose Your Model</CardTitle>
+            <CardTitle>2. Select your Model</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={modelType} onValueChange={(v) => setModelType(v as "ai" | "human")}>
@@ -434,40 +454,163 @@ export function GenerateForm() {
               </TabsList>
 
               <TabsContent value="ai" className="mt-6">
-                {/* Gender filter for AI models */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="text-sm text-muted-foreground self-center">Show:</span>
-                  <Button
-                    type="button"
-                    variant={avatarGenderFilter === "all" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarGenderFilter("all")}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={avatarGenderFilter === "female" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarGenderFilter("female")}
-                  >
-                    Female
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={avatarGenderFilter === "male" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarGenderFilter("male")}
-                  >
-                    Male
-                  </Button>
+                {/* Filter summary: result count + clear all (compact) */}
+                {(() => {
+                  const hasActiveFilters =
+                    avatarGenderFilter !== "all" ||
+                    avatarFramingFilter !== "all" ||
+                    avatarSkinToneFilter !== "all" ||
+                    avatarBackgroundFilter !== "all" ||
+                    avatarAspectRatioFilter !== "all";
+                  return (
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-1.5 rounded-md border border-border/50 bg-muted/20 px-2.5 py-1.5">
+                      <span className="text-xs text-muted-foreground">
+                        {avatarsLoading ? (
+                          "Loading…"
+                        ) : (
+                          <>
+                            <span className="font-medium text-foreground">{avatarsData?.length ?? 0}</span>{" "}
+                            {avatarsData?.length === 1 ? "model" : "models"}
+                          </>
+                        )}
+                      </span>
+                      {hasActiveFilters && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAvatarGenderFilter("all");
+                            setAvatarFramingFilter("all");
+                            setAvatarAspectRatioFilter("all");
+                            setAvatarSkinToneFilter("all");
+                            setAvatarBackgroundFilter("all");
+                          }}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Primary filters: Gender + Skin tone (one row, compact) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+                  <FilterChipGroup
+                    label="Gender"
+                    options={[
+                      { value: "all", label: "All Models" },
+                      { value: "female", label: "Women" },
+                      { value: "male", label: "Men" },
+                    ]}
+                    value={avatarGenderFilter}
+                    onChange={setAvatarGenderFilter}
+                    compact
+                  />
+                  <FilterChipGroup
+                    label="Skin tone"
+                    options={[
+                      { value: "all", label: "All" },
+                      { value: "light", label: "Light" },
+                      { value: "medium", label: "Medium" },
+                      { value: "deep", label: "Deep" },
+                    ]}
+                    value={avatarSkinToneFilter}
+                    onChange={setAvatarSkinToneFilter}
+                    compact
+                  />
                 </div>
+
+                {/* Composition filters: collapsible to save space */}
+                {(() => {
+                  const compositionFiltersActive =
+                    avatarFramingFilter !== "all" ||
+                    avatarBackgroundFilter !== "all" ||
+                    avatarAspectRatioFilter !== "all";
+                  return (
+                <div className="rounded-lg border border-primary/20 bg-primary/5">
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="composition" className="border-none">
+                      <AccordionTrigger className="px-3 py-2.5 text-xs font-medium text-foreground hover:bg-primary/10 hover:text-foreground hover:no-underline [&[data-state=open]]:bg-primary/10 [&[data-state=open]]:rounded-t-lg">
+                        <span className="flex items-center gap-2">
+                          Photo Layout & Framing
+                          {compositionFiltersActive && (
+                            <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                              Active
+                            </span>
+                          )}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3 pt-0 pb-3">
+                      <div className="space-y-3">
+                        <FilterChipGroup
+                          label="Framing"
+                          options={[
+                            { value: "all", label: "All" },
+                            { value: "full-body", label: "Full body" },
+                            { value: "half-body", label: "Half body" },
+                            { value: "upper-body", label: "Upper body" },
+                            { value: "lower-body", label: "Lower body" },
+                            { value: "three-quarter", label: "Three-quarter" },
+                            { value: "back-view", label: "Back view" },
+                          ]}
+                          value={avatarFramingFilter}
+                          onChange={setAvatarFramingFilter}
+                          compact
+                        />
+                        <FilterChipGroup
+                          label="Background"
+                          options={[
+                            { value: "all", label: "All" },
+                            { value: "indoor", label: "Indoor" },
+                            { value: "outdoor", label: "Outdoor" },
+                          ]}
+                          value={avatarBackgroundFilter}
+                          onChange={setAvatarBackgroundFilter}
+                          compact
+                        />
+                        <FilterChipGroup
+                          label="Aspect ratio"
+                          options={[
+                            { value: "all", label: "All" },
+                            { value: "2:3", label: "2:3 Portrait" },
+                            { value: "1:1", label: "1:1 Square" },
+                            { value: "4:5", label: "4:5 Vertical" },
+                            { value: "16:9", label: "16:9 Landscape" },
+                          ]}
+                          value={avatarAspectRatioFilter}
+                          onChange={setAvatarAspectRatioFilter}
+                          compact
+                        />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                </div>
+                  );
+                })()}
+
+                <div className="mt-4">
                 {avatarsLoading ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {[...Array(6)].map((_, i) => (
                       <div key={i} className="aspect-[3/4] bg-muted animate-pulse rounded-lg" />
                     ))}
                   </div>
+                ) : (avatarsData?.length ?? 0) === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 py-10 px-6 text-center"
+                  >
+                    <p className="text-base font-medium text-foreground/90 cursor-default select-none transition-colors hover:text-primary">
+                      Stay tuned. Coming soon..
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      No models match your filters yet. Try clearing filters or check back later.
+                    </p>
+                  </motion.div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {avatarsData?.map((avatar: Avatar) => (
@@ -487,7 +630,9 @@ export function GenerateForm() {
                           src={avatar.imageUrl}
                           alt={avatar.name || [avatar.bodyType, avatar.skinTone].filter(Boolean).join(" ") || "AI Avatar"}
                           fill
+                          sizes="(max-width: 768px) 50vw, 200px"
                           className="object-contain"
+                          unoptimized
                         />
                         <AnimatePresence>
                           {selectedAvatar?._id === avatar._id && (
@@ -506,6 +651,7 @@ export function GenerateForm() {
                     ))}
                   </div>
                 )}
+                </div>
               </TabsContent>
 
               <TabsContent value="human" className="mt-6">
@@ -664,6 +810,7 @@ export function GenerateForm() {
                       src={generatedImageUrl}
                       alt="Generated fashion image"
                       fill
+                      sizes="(max-width: 768px) 100vw, 400px"
                       className="object-contain"
                       unoptimized
                     />
@@ -778,9 +925,9 @@ export function GenerateForm() {
                   >
                     <Mountain className="w-12 h-12 text-muted-foreground" />
                   </motion.div>
-                  <p className="text-sm font-medium mb-2">Your generated image will appear here</p>
+                  <p className="text-sm font-medium mb-2">Your model photo will appear here</p>
                   <p className="text-xs text-muted-foreground">
-                    Complete the steps on the left to begin.
+                    Upload a product and select a model to get started.
                   </p>
                 </motion.div>
               )}
@@ -822,7 +969,7 @@ export function GenerateForm() {
                 Generating...
               </>
             ) : (
-              "Generate Image"
+              "Generate Model Photo"
             )}
           </Button>
         </motion.div>

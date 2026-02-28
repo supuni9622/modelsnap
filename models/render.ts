@@ -17,6 +17,10 @@ const RenderSchema = new Schema(
     // Input images
     garmentImageUrl: { type: String, required: true }, // URL to uploaded garment
     avatarId: { type: String, required: true }, // Reference to Avatar model
+
+    // Fashn try-on params (from frontend user selection)
+    garmentCategory: { type: String }, // auto | tops | bottoms | one-pieces
+    garmentPhotoType: { type: String }, // auto | flat-lay | model
     
     // Output
     renderedImageUrl: { type: String }, // URL to rendered result (legacy)

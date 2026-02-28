@@ -34,6 +34,13 @@ const ModelProfileSchema = new Schema(
       maxlength: 500,
     },
 
+    // Optional: for new models from today; used for marketplace filters
+    gender: { type: String, enum: ["male", "female", "other"] },
+    photoFraming: { type: String, enum: ["full-body", "half-body", "three-quarter", "upper-body", "lower-body", "back-view"] },
+    aspectRatio: { type: String, enum: ["2:3", "1:1", "4:5", "16:9"] },
+    skinToneCategory: { type: String, enum: ["light", "medium", "deep"] },
+    background: { type: String, enum: ["indoor", "outdoor"] },
+
     // ============================================
     // PROFILE PHOTOS
     // ============================================
@@ -403,6 +410,15 @@ ModelProfileSchema.index({
 // ============================================
 // VIRTUAL FIELDS
 // ============================================
+
+// Alias: `visible` ⇔ `isVisible`
+ModelProfileSchema.virtual('visible')
+  .get(function() {
+    return this.isVisible;
+  })
+  .set(function(value: boolean) {
+    this.isVisible = value;
+  });
 
 // Calculate conversion rate (purchases / views)
 ModelProfileSchema.virtual('conversionRate').get(function() {

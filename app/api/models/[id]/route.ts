@@ -40,9 +40,21 @@ export async function GET(
       // Type assertion - findById returns a single document, not an array
       const modelDoc = model as any;
 
-      // Only show active models or if user is the owner/admin
+      // Only show active + visible models publicly (owner/admin can still access)
       const { userId } = await auth();
-      if (modelDoc.status !== "active" && userId) {
+      const isPubliclyVisible = modelDoc?.status === "active" && modelDoc?.isVisible !== false;
+      if (!isPubliclyVisible) {
+        if (!userId) {
+          return NextResponse.json(
+            {
+              status: "error",
+              message: "Model profile not found",
+              code: "NOT_FOUND",
+            },
+            { status: 404 }
+          );
+        }
+
         const user = await User.findOne({ id: userId });
         const isOwner = user && modelDoc.userId?.toString() === user._id.toString();
         const isAdmin = user?.role === "ADMIN";
@@ -150,12 +162,55 @@ export async function PUT(
 
       // Parse request body
       const body = await req.json();
-      const { name, referenceImages, status, consentSigned, phoneNumber, paymentMethods, activeness } = body;
+      const { name, referenceImages, status, consentSigned, phoneNumber, paymentMethods, activeness, gender, photoFraming, aspectRatio, skinToneCategory, background, visible, isVisible } = body;
 
       // Build update object
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
-      
+      if (gender !== undefined) {
+        if (gender === null || gender === "") {
+          updateData.gender = undefined;
+        } else if (["male", "female", "other"].includes(gender)) {
+          updateData.gender = gender;
+        }
+      }
+      if (photoFraming !== undefined) {
+        if (photoFraming === null || photoFraming === "") {
+          updateData.photoFraming = undefined;
+        } else if (["full-body", "half-body", "three-quarter", "upper-body", "lower-body", "back-view"].includes(photoFraming)) {
+          updateData.photoFraming = photoFraming;
+        }
+      }
+      if (aspectRatio !== undefined) {
+        if (aspectRatio === null || aspectRatio === "") {
+          updateData.aspectRatio = undefined;
+        } else if (["2:3", "1:1", "4:5", "16:9"].includes(aspectRatio)) {
+          updateData.aspectRatio = aspectRatio;
+        }
+      }
+      if (skinToneCategory !== undefined) {
+        if (skinToneCategory === null || skinToneCategory === "") {
+          updateData.skinToneCategory = undefined;
+        } else if (["light", "medium", "deep"].includes(skinToneCategory)) {
+          updateData.skinToneCategory = skinToneCategory;
+        }
+      }
+      if (background !== undefined) {
+        if (background === null || background === "") {
+          updateData.background = undefined;
+        } else if (["indoor", "outdoor"].includes(background)) {
+          updateData.background = background;
+        }
+      }
+      const requestedVisible = visible ?? isVisible;
+      if (requestedVisible !== undefined) {
+        if (typeof requestedVisible === "boolean") {
+          updateData.isVisible = requestedVisible;
+        } else if (requestedVisible === null) {
+          updateData.isVisible = undefined;
+        }
+      }
+
       // Personal information fields
       if (phoneNumber !== undefined) {
         updateData.phoneNumber = phoneNumber && phoneNumber.trim() ? phoneNumber.trim() : undefined;

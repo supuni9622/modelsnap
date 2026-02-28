@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -145,26 +145,11 @@ export function ModelMarketplace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredModels, setFilteredModels] = useState<Model[]>([]);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
-
-  useEffect(() => {
-    fetchModels();
-  }, []);
-
-  useEffect(() => {
-    // Filter models by search query
-    if (searchQuery.trim()) {
-      const filtered = models.filter((model) =>
-        model.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredModels(filtered);
-    } else {
-      setFilteredModels(models);
-    }
-  }, [searchQuery, models]);
-
-  const fetchModels = async () => {
+  const fetchModels = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await fetch("/api/models?status=active");
+      const params = new URLSearchParams({ status: "active" });
+      const response = await fetch(`/api/models?${params.toString()}`);
       const data = await response.json();
 
       if (data.status === "success") {
@@ -215,7 +200,23 @@ export function ModelMarketplace() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchModels();
+  }, [fetchModels]);
+
+  useEffect(() => {
+    // Filter models by search query
+    if (searchQuery.trim()) {
+      const filtered = models.filter((model) =>
+        model.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredModels(filtered);
+    } else {
+      setFilteredModels(models);
+    }
+  }, [searchQuery, models]);
 
   const getConsentBadge = (model: Model) => {
     if (!model.consentStatus) return null;

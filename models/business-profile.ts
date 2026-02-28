@@ -118,6 +118,16 @@ const BusinessProfileSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Package",
     },
+
+    // Onboarding preferences (from onboarding flow; multiple selections allowed)
+    onboardingCategory: {
+      type: [String],
+      default: [],
+    },
+    onboardingIntent: {
+      type: [String],
+      default: [],
+    },
   },
   { timestamps: true }
 );

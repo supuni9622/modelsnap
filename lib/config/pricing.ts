@@ -206,14 +206,14 @@ export const Credits = {
   plans: [
     {
       title: "40 Credits",
-      price: "5999.99",
+      price: "19",
       priceId: "", // Replace with actual Stripe price ID
       variantId: LEMON_STARTER_VARIANT || "1106959", // Replace with actual Lemon Squeezy variant ID
       credits: 40,
     },
     {
       title: "100 Credits",
-      price: "15099.99",
+      price: "49",
       priceId: "", // Replace with actual Stripe price ID
       variantId: LEMON_GROWTH_VARIANT || "1106971", // Replace with actual Lemon Squeezy variant ID
       credits: 100,

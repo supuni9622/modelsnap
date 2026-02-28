@@ -68,13 +68,13 @@ export default function SuccessPaymentPage() {
               <div className="flex flex-col gap-2 pt-4">
                 <Button asChild className="w-full">
                   <Link href="/dashboard/business/billing">
-                    View Billing Details
+                    View Plans
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
                 <Button variant="outline" asChild className="w-full">
                   <Link href="/dashboard/business/generate">
-                    Start Generating
+                    Go to Studio
                   </Link>
                 </Button>
               </div>
