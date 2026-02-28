@@ -274,6 +274,70 @@
         "skinToneCategory": "deep",
         "background": "indoor",
         "visible": false
+      },
+      "SL-28": {
+        "url": "/avatars/female/curvy/SL-28.png",
+        "photoFraming": "three-quarter",
+        "aspectRatio": "2:3",
+        "skinToneCategory": "medium",
+        "background": "indoor",
+        "visible": true
+      },
+      "SL-29": {
+        "url": "/avatars/female/curvy/SL-29.png",
+        "photoFraming": "upper-body",
+        "aspectRatio": "2:3",
+        "skinToneCategory": "medium",
+        "background": "indoor",
+        "visible": true
+      },
+      "SL-30": {
+        "url": "/avatars/female/curvy/SL-30.png",
+        "photoFraming": "half-body",
+        "aspectRatio": "2:3",
+        "skinToneCategory": "medium",
+        "background": "indoor",
+        "visible": true
+      } ,
+      "SL-31": {
+        "url": "/avatars/female/curvy/SL-31.png",
+        "photoFraming": "upper-body",
+        "aspectRatio": "2:3",
+        "skinToneCategory": "medium",
+        "background": "indoor",
+        "visible": true
+      },
+      "SL-32": {
+        "url": "/avatars/female/curvy/SL-32.png",
+        "photoFraming": "half-body",
+        "aspectRatio": "2:3",
+        "skinToneCategory": "medium",
+        "background": "indoor",
+        "visible": true
+      },
+      "SL-34": {
+        "url": "/avatars/female/curvy/SL-34.png",
+        "photoFraming": "three-quarter",
+        "aspectRatio": "2:3",
+        "skinToneCategory": "medium",
+        "background": "indoor",
+        "visible": true
+      },
+      "SL-35": {
+        "url": "/avatars/female/curvy/SL-35.png",
+        "photoFraming": "full-body",
+        "aspectRatio": "2:3",
+        "skinToneCategory": "medium",
+        "background": "indoor",
+        "visible": true
+      },
+      "SL-36": {
+        "url": "/avatars/female/curvy/SL-36.png",
+        "photoFraming": "upper-body",
+        "aspectRatio": "2:3",
+        "skinToneCategory": "deep",
+        "background": "indoor",
+        "visible": true
       }
     },
     "athletic": {
