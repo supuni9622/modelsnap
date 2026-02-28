@@ -35,15 +35,8 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
     const background = searchParams.get("background");
 
     // Build query
-    const query: {
-      gender?: string;
-      bodyType?: string;
-      skinTone?: string;
-      photoFraming?: string;
-      aspectRatio?: string;
-      skinToneCategory?: string;
-      background?: string;
-    } = {};
+    // Note: we treat `visible` missing as visible for backward compatibility
+    const query: any = { visible: { $ne: false } };
 
     if (gender && (gender === "male" || gender === "female")) {
       query.gender = gender;

@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   Select,
   SelectContent,
@@ -12,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, X, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, Mountain, FileImage, Trash2, Wand2 } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, Mountain, FileImage, Trash2, Wand2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FilterChipGroup } from "@/components/ui/filter-chip-group";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
@@ -442,139 +444,143 @@ export function GenerateForm() {
               </TabsList>
 
               <TabsContent value="ai" className="mt-6">
-                {/* Gender filter for AI models */}
-                <div className="flex flex-wrap gap-2 mb-2">
-                  <span className="text-sm text-muted-foreground self-center">Gender:</span>
-                  <Button
-                    type="button"
-                    variant={avatarGenderFilter === "all" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarGenderFilter("all")}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={avatarGenderFilter === "female" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarGenderFilter("female")}
-                  >
-                    Female
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={avatarGenderFilter === "male" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarGenderFilter("male")}
-                  >
-                    Male
-                  </Button>
+                {/* Filter summary: result count + clear all (compact) */}
+                {(() => {
+                  const hasActiveFilters =
+                    avatarGenderFilter !== "all" ||
+                    avatarFramingFilter !== "all" ||
+                    avatarSkinToneFilter !== "all" ||
+                    avatarBackgroundFilter !== "all" ||
+                    avatarAspectRatioFilter !== "all";
+                  return (
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-1.5 rounded-md border border-border/50 bg-muted/20 px-2.5 py-1.5">
+                      <span className="text-xs text-muted-foreground">
+                        {avatarsLoading ? (
+                          "Loading…"
+                        ) : (
+                          <>
+                            <span className="font-medium text-foreground">{avatarsData?.length ?? 0}</span>{" "}
+                            {avatarsData?.length === 1 ? "model" : "models"}
+                          </>
+                        )}
+                      </span>
+                      {hasActiveFilters && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAvatarGenderFilter("all");
+                            setAvatarFramingFilter("all");
+                            setAvatarAspectRatioFilter("all");
+                            setAvatarSkinToneFilter("all");
+                            setAvatarBackgroundFilter("all");
+                          }}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Primary filters: Gender + Skin tone (one row, compact) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+                  <FilterChipGroup
+                    label="Gender"
+                    options={[
+                      { value: "all", label: "All" },
+                      { value: "female", label: "Female" },
+                      { value: "male", label: "Male" },
+                    ]}
+                    value={avatarGenderFilter}
+                    onChange={setAvatarGenderFilter}
+                    compact
+                  />
+                  <FilterChipGroup
+                    label="Skin tone"
+                    options={[
+                      { value: "all", label: "All" },
+                      { value: "light", label: "Light" },
+                      { value: "medium", label: "Medium" },
+                      { value: "deep", label: "Deep" },
+                    ]}
+                    value={avatarSkinToneFilter}
+                    onChange={setAvatarSkinToneFilter}
+                    compact
+                  />
                 </div>
-                {/* Framing filter for AI models (new avatars only) */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="text-sm text-muted-foreground self-center">Framing:</span>
-                  <Button
-                    type="button"
-                    variant={avatarFramingFilter === "all" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarFramingFilter("all")}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={avatarFramingFilter === "full-body" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarFramingFilter("full-body")}
-                  >
-                    Full body
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={avatarFramingFilter === "half-body" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarFramingFilter("half-body")}
-                  >
-                    Half body
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={avatarFramingFilter === "upper-body" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarFramingFilter("upper-body")}
-                  >
-                    Upper body
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={avatarFramingFilter === "lower-body" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarFramingFilter("lower-body")}
-                  >
-                    Lower body
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={avatarFramingFilter === "three-quarter" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarFramingFilter("three-quarter")}
-                  >
-                    Three-Quarter
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={avatarFramingFilter === "back-view" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setAvatarFramingFilter("back-view")}
-                  >
-                    Back View
-                  </Button>
+
+                {/* Composition filters: collapsible to save space */}
+                {(() => {
+                  const compositionFiltersActive =
+                    avatarFramingFilter !== "all" ||
+                    avatarBackgroundFilter !== "all" ||
+                    avatarAspectRatioFilter !== "all";
+                  return (
+                <div className="rounded-lg border border-primary/20 bg-primary/5">
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="composition" className="border-none">
+                      <AccordionTrigger className="px-3 py-2.5 text-xs font-medium text-foreground hover:bg-primary/10 hover:text-foreground hover:no-underline [&[data-state=open]]:bg-primary/10 [&[data-state=open]]:rounded-t-lg">
+                        <span className="flex items-center gap-2">
+                          Composition (Framing, background, aspect ratio)
+                          {compositionFiltersActive && (
+                            <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                              Active
+                            </span>
+                          )}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3 pt-0 pb-3">
+                      <div className="space-y-3">
+                        <FilterChipGroup
+                          label="Framing"
+                          options={[
+                            { value: "all", label: "All" },
+                            { value: "full-body", label: "Full body" },
+                            { value: "half-body", label: "Half body" },
+                            { value: "upper-body", label: "Upper body" },
+                            { value: "lower-body", label: "Lower body" },
+                            { value: "three-quarter", label: "Three-quarter" },
+                            { value: "back-view", label: "Back view" },
+                          ]}
+                          value={avatarFramingFilter}
+                          onChange={setAvatarFramingFilter}
+                          compact
+                        />
+                        <FilterChipGroup
+                          label="Background"
+                          options={[
+                            { value: "all", label: "All" },
+                            { value: "indoor", label: "Indoor" },
+                            { value: "outdoor", label: "Outdoor" },
+                          ]}
+                          value={avatarBackgroundFilter}
+                          onChange={setAvatarBackgroundFilter}
+                          compact
+                        />
+                        <FilterChipGroup
+                          label="Aspect ratio"
+                          options={[
+                            { value: "all", label: "All" },
+                            { value: "2:3", label: "2:3 Portrait" },
+                            { value: "1:1", label: "1:1 Square" },
+                            { value: "4:5", label: "4:5 Vertical" },
+                            { value: "16:9", label: "16:9 Landscape" },
+                          ]}
+                          value={avatarAspectRatioFilter}
+                          onChange={setAvatarAspectRatioFilter}
+                          compact
+                        />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
                 </div>
-                {/* Skin tone: light, medium, deep */}
-                <div className="flex flex-wrap gap-2 mb-2">
-                  <span className="text-sm text-muted-foreground self-center">Skin tone:</span>
-                  {(["all", "light", "medium", "deep"] as const).map((value) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      variant={avatarSkinToneFilter === value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setAvatarSkinToneFilter(value)}
-                    >
-                      {value === "all" ? "All" : value.charAt(0).toUpperCase() + value.slice(1)}
-                    </Button>
-                  ))}
-                </div>
-                {/* Background: indoor, outdoor */}
-                <div className="flex flex-wrap gap-2 mb-2">
-                  <span className="text-sm text-muted-foreground self-center">Background:</span>
-                  {(["all", "indoor", "outdoor"] as const).map((value) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      variant={avatarBackgroundFilter === value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setAvatarBackgroundFilter(value)}
-                    >
-                      {value === "all" ? "All" : value.charAt(0).toUpperCase() + value.slice(1)}
-                    </Button>
-                  ))}
-                </div>
-                {/* Aspect ratio filter: 2:3 Portrait, 1:1 Square, 4:5 Vertical, 16:9 Landscape */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="text-sm text-muted-foreground self-center">Aspect ratio:</span>
-                  {(["all", "2:3", "1:1", "4:5", "16:9"] as const).map((value) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      variant={avatarAspectRatioFilter === value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setAvatarAspectRatioFilter(value)}
-                    >
-                      {value === "all" ? "All" : value === "2:3" ? "2:3 Portrait" : value === "1:1" ? "1:1 Square" : value === "4:5" ? "4:5 Vertical" : "16:9 Landscape"}
-                    </Button>
-                  ))}
-                </div>
+                  );
+                })()}
+
+                <div className="mt-4">
                 {avatarsLoading ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {[...Array(6)].map((_, i) => (
@@ -619,6 +625,7 @@ export function GenerateForm() {
                     ))}
                   </div>
                 )}
+                </div>
               </TabsContent>
 
               <TabsContent value="human" className="mt-6">
@@ -777,6 +784,7 @@ export function GenerateForm() {
                       src={generatedImageUrl}
                       alt="Generated fashion image"
                       fill
+                      sizes="(max-width: 768px) 100vw, 400px"
                       className="object-contain"
                       unoptimized
                     />

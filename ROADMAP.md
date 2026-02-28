@@ -180,3 +180,6 @@ None currently.
 - Added canonical architecture reference: `docs/ARCHITECTURE/SOURCE_OF_TRUTH.md`
 - Confirmed payment gateway direction is Lemon Squeezy only
 - Added prioritized cleanup plan to remove payment/provider and documentation drift
+
+## Recent Update (2026-02-28)
+- Added visibility controls for AI avatars (`visible`) and human model profiles (enforced `isVisible` / `visible` alias) so the frontend only lists visible models.

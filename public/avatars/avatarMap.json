@@ -6,49 +6,56 @@
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-02": {
         "url": "/avatars/female/slim/SL-02.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-03": {
         "url": "/avatars/female/slim/SL-03.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "medium",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-04": {
         "url": "/avatars/female/slim/SL-04.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-05": {
         "url": "/avatars/female/slim/SL-05.png",
         "photoFraming": "full-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "deep",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-06": {
         "url": "/avatars/female/slim/SL-06.png",
         "photoFraming": "full-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "deep",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-07": {
         "url": "/avatars/female/slim/SL-07.png",
         "photoFraming": "full-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "deep",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       }
     },
     "curvy": {
@@ -57,42 +64,48 @@
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-02": {
         "url": "/avatars/female/curvy/SL-02.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-03": {
         "url": "/avatars/female/curvy/SL-03.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "medium",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-04": {
         "url": "/avatars/female/curvy/SL-04.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "medium",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-05": {
         "url": "/avatars/female/curvy/SL-05.png",
         "photoFraming": "full-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "medium",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-06": {
         "url": "/avatars/female/curvy/SL-06.png",
         "photoFraming": "three-quarter",
         "aspectRatio": "2:3",
         "skinToneCategory": "deep",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       }
     },
     "athletic": {
@@ -101,49 +114,56 @@
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-02": {
         "url": "/avatars/female/athletic/SL-02.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-03": {
         "url": "/avatars/female/athletic/SL-03.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "deep",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-04": {
         "url": "/avatars/female/athletic/SL-04.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "medium",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-05": {
         "url": "/avatars/female/athletic/SL-05.png",
         "photoFraming": "full-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "deep",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-06": {
         "url": "/avatars/female/athletic/SL-06.png",
         "photoFraming": "full-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "deep",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-07": {
         "url": "/avatars/female/athletic/SL-07.png",
         "photoFraming": "full-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "deep",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       }
     },
     "plus-size": {
@@ -152,28 +172,32 @@
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-02": {
         "url": "/avatars/female/plus-size/SL-02.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-03": {
         "url": "/avatars/female/plus-size/SL-03.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "medium",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-04": {
         "url": "/avatars/female/plus-size/SL-04.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       }
     }
   },
@@ -184,42 +208,48 @@
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-02": {
         "url": "/avatars/male/slim/SL-02.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-03": {
         "url": "/avatars/male/slim/SL-03.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-04": {
         "url": "/avatars/male/slim/SL-04.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-05": {
         "url": "/avatars/male/slim/SL-05.png",
         "photoFraming": "full-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "deep",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-06": {
         "url": "/avatars/male/slim/SL-06.png",
         "photoFraming": "full-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "medium",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       }
     },
     "athletic": {
@@ -228,28 +258,32 @@
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-02": {
         "url": "/avatars/male/athletic/SL-02.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-03": {
         "url": "/avatars/male/athletic/SL-03.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-04": {
         "url": "/avatars/male/athletic/SL-04.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       }
     },
     "dad-bod": {
@@ -258,28 +292,32 @@
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-02": {
         "url": "/avatars/male/dad-bod/SL-02.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-03": {
         "url": "/avatars/male/dad-bod/SL-03.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "medium",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-04": {
         "url": "/avatars/male/dad-bod/SL-04.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "medium",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       }
     },
     "plus-size": {
@@ -288,28 +326,32 @@
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-02": {
         "url": "/avatars/male/plus-size/SL-02.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-04": {
         "url": "/avatars/male/plus-size/SL-04.jpg",
         "photoFraming": "half-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "light",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       },
       "SL-05": {
         "url": "/avatars/male/plus-size/SL-05.png",
         "photoFraming": "full-body",
         "aspectRatio": "2:3",
         "skinToneCategory": "deep",
-        "background": "indoor"
+        "background": "indoor",
+        "visible": true
       }
     }
   }

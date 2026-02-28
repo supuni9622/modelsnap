@@ -34,6 +34,10 @@ const AvatarSchema = new Schema(
     // Optional: background (indoor, outdoor)
     background: { type: String, enum: ["indoor", "outdoor"] },
 
+    // Controls whether this avatar should be shown in the UI
+    // Missing value is treated as visible by API queries for backward compatibility
+    visible: { type: Boolean, default: true, index: true },
+
     // Metadata
     createdAt: { type: Date, default: Date.now },
   },
@@ -47,6 +51,7 @@ AvatarSchema.index({ photoFraming: 1 });
 AvatarSchema.index({ aspectRatio: 1 });
 AvatarSchema.index({ skinToneCategory: 1 });
 AvatarSchema.index({ background: 1 });
+AvatarSchema.index({ visible: 1 });
 
 const Avatar = mongoose.models.Avatar || mongoose.model("Avatar", AvatarSchema);
 

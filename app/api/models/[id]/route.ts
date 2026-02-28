@@ -40,9 +40,21 @@ export async function GET(
       // Type assertion - findById returns a single document, not an array
       const modelDoc = model as any;
 
-      // Only show active models or if user is the owner/admin
+      // Only show active + visible models publicly (owner/admin can still access)
       const { userId } = await auth();
-      if (modelDoc.status !== "active" && userId) {
+      const isPubliclyVisible = modelDoc?.status === "active" && modelDoc?.isVisible !== false;
+      if (!isPubliclyVisible) {
+        if (!userId) {
+          return NextResponse.json(
+            {
+              status: "error",
+              message: "Model profile not found",
+              code: "NOT_FOUND",
+            },
+            { status: 404 }
+          );
+        }
+
         const user = await User.findOne({ id: userId });
         const isOwner = user && modelDoc.userId?.toString() === user._id.toString();
         const isAdmin = user?.role === "ADMIN";
@@ -150,7 +162,7 @@ export async function PUT(
 
       // Parse request body
       const body = await req.json();
-      const { name, referenceImages, status, consentSigned, phoneNumber, paymentMethods, activeness, gender, photoFraming, aspectRatio, skinToneCategory, background } = body;
+      const { name, referenceImages, status, consentSigned, phoneNumber, paymentMethods, activeness, gender, photoFraming, aspectRatio, skinToneCategory, background, visible, isVisible } = body;
 
       // Build update object
       const updateData: any = {};
@@ -188,6 +200,14 @@ export async function PUT(
           updateData.background = undefined;
         } else if (["indoor", "outdoor"].includes(background)) {
           updateData.background = background;
+        }
+      }
+      const requestedVisible = visible ?? isVisible;
+      if (requestedVisible !== undefined) {
+        if (typeof requestedVisible === "boolean") {
+          updateData.isVisible = requestedVisible;
+        } else if (requestedVisible === null) {
+          updateData.isVisible = undefined;
         }
       }
 

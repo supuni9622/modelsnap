@@ -31,6 +31,8 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
 
     // Build query (gender, photoFraming, aspectRatio, skinToneCategory, background filter to new models that have these set)
     const query: any = { status };
+    // Only show visible models in marketplace (treat missing as visible)
+    query.isVisible = { $ne: false };
     if (gender && ["male", "female", "other"].includes(gender)) {
       query.gender = gender;
     }
@@ -66,7 +68,10 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
       {
         status: "success",
         data: {
-          models,
+          models: (models || []).map((m: any) => ({
+            ...m,
+            visible: m?.isVisible ?? true,
+          })),
           pagination: {
             total,
             limit,
@@ -140,7 +145,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
 
     // Parse request body
     const body = await req.json();
-    const { name, referenceImages, consentSigned, gender, photoFraming, aspectRatio, skinToneCategory, background } = body;
+    const { name, referenceImages, consentSigned, gender, photoFraming, aspectRatio, skinToneCategory, background, visible, isVisible } = body;
 
     // Validate required fields
     if (!name) {
@@ -186,6 +191,10 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       royaltyBalance: 0,
       approvedBusinesses: [],
     };
+    const requestedVisible = visible ?? isVisible;
+    if (typeof requestedVisible === "boolean") {
+      (createPayload as any).isVisible = requestedVisible;
+    }
     if (gender && ["male", "female", "other"].includes(gender)) {
       createPayload.gender = gender;
     }

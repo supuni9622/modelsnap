@@ -30,13 +30,14 @@ type Framing = "full-body" | "half-body" | "three-quarter" | "upper-body" | "low
 type SkinToneCategory = "light" | "medium" | "deep";
 type Background = "indoor" | "outdoor";
 
-/** Value can be legacy path string or new format with optional photoFraming, aspectRatio, skinToneCategory, background */
+/** Value can be legacy path string or new format with optional photoFraming, aspectRatio, skinToneCategory, background, visible */
 type AvatarMapEntry = string | {
   url: string;
   photoFraming?: Framing;
   aspectRatio?: AspectRatio;
   skinToneCategory?: SkinToneCategory;
   background?: Background;
+  visible?: boolean;
 };
 
 interface AvatarMap {
@@ -53,9 +54,10 @@ function normalizeEntry(entry: AvatarMapEntry): {
   aspectRatio?: AspectRatio;
   skinToneCategory?: SkinToneCategory;
   background?: Background;
+  visible: boolean;
 } {
   if (typeof entry === "string") {
-    return { imageUrl: entry };
+    return { imageUrl: entry, visible: true };
   }
   return {
     imageUrl: entry.url,
@@ -63,6 +65,7 @@ function normalizeEntry(entry: AvatarMapEntry): {
     aspectRatio: entry.aspectRatio ?? DEFAULT_ASPECT_RATIO,
     ...(entry.skinToneCategory && { skinToneCategory: entry.skinToneCategory }),
     ...(entry.background && { background: entry.background }),
+    visible: entry.visible ?? true,
   };
 }
 
@@ -117,7 +120,7 @@ async function importAvatars(clearExisting = false): Promise<void> {
     for (const [bodyType, skinTones] of Object.entries(bodyTypes)) {
       for (const [skinTone, entry] of Object.entries(skinTones)) {
         try {
-          const { imageUrl, photoFraming, aspectRatio, skinToneCategory, background } = normalizeEntry(entry);
+          const { imageUrl, photoFraming, aspectRatio, skinToneCategory, background, visible } = normalizeEntry(entry);
           // Check if avatar already exists (by unique combination)
           const existing = await Avatar.findOne({
             gender,
@@ -132,6 +135,7 @@ async function importAvatars(clearExisting = false): Promise<void> {
             if (aspectRatio) (existing as any).aspectRatio = aspectRatio;
             if (skinToneCategory) (existing as any).skinToneCategory = skinToneCategory;
             if (background) (existing as any).background = background;
+            (existing as any).visible = visible;
             await existing.save();
             updated++;
             console.log(`  ↻ Updated: ${gender}/${bodyType}/${skinTone}`);
@@ -148,6 +152,7 @@ async function importAvatars(clearExisting = false): Promise<void> {
             if (aspectRatio) createPayload.aspectRatio = aspectRatio;
             if (skinToneCategory) createPayload.skinToneCategory = skinToneCategory;
             if (background) createPayload.background = background;
+            createPayload.visible = visible;
             await Avatar.create(createPayload);
             imported++;
             console.log(`  ✓ Imported: ${gender}/${bodyType}/${skinTone}`);

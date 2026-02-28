@@ -364,8 +364,12 @@ export class FashnClient {
       modelIsFile: params.model_image instanceof File,
     });
 
-    // Helper function to convert relative URL to absolute URL
+    // Helper function to convert relative URL to absolute URL (or pass through data URLs)
     const resolveImageUrl = (url: string): string => {
+      // Data URLs (base64) are sent as-is - Fashn API accepts them and we don't need to fetch
+      if (url.startsWith("data:")) {
+        return url;
+      }
       // If already absolute URL (starts with http:// or https://), return as is
       if (url.startsWith("http://") || url.startsWith("https://")) {
         return url;

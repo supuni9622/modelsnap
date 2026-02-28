@@ -411,6 +411,15 @@ ModelProfileSchema.index({
 // VIRTUAL FIELDS
 // ============================================
 
+// Alias: `visible` ⇔ `isVisible`
+ModelProfileSchema.virtual('visible')
+  .get(function() {
+    return this.isVisible;
+  })
+  .set(function(value: boolean) {
+    this.isVisible = value;
+  });
+
 // Calculate conversion rate (purchases / views)
 ModelProfileSchema.virtual('conversionRate').get(function() {
   if (this.profileViews === 0) return 0;
