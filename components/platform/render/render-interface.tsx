@@ -146,15 +146,17 @@ export function RenderInterface() {
       {/* Upload Section */}
       <UploadGarment onUploadComplete={handleUploadComplete} />
 
-      {/* Garment type for better try-on accuracy */}
+      {/* Garment options for better try-on accuracy */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Garment options</CardTitle>
-          <CardDescription>Improve try-on accuracy</CardDescription>
+          <CardDescription>
+            Select the type and photo style of your product for more accurate try-on results.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Garment type</label>
+            <label className="text-sm font-medium">What type of garment is this?</label>
             <Select
               value={garmentCategory}
               onValueChange={(v) => setGarmentCategory(v as "auto" | "tops" | "bottoms" | "one-pieces")}
@@ -163,15 +165,18 @@ export function RenderInterface() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="auto">Auto</SelectItem>
-                <SelectItem value="tops">Tops</SelectItem>
-                <SelectItem value="bottoms">Bottoms</SelectItem>
-                <SelectItem value="one-pieces">One-piece</SelectItem>
+                <SelectItem value="auto">Auto — let the AI detect</SelectItem>
+                <SelectItem value="tops">Tops — shirts, blouses, jackets</SelectItem>
+                <SelectItem value="bottoms">Bottoms — pants, skirts, shorts</SelectItem>
+                <SelectItem value="one-pieces">One-piece — dresses, jumpsuits</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Match your product type for a better fit. Use Auto if unsure.
+            </p>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Photo style</label>
+            <label className="text-sm font-medium">How was the product photographed?</label>
             <Select
               value={garmentPhotoType}
               onValueChange={(v) => setGarmentPhotoType(v as "auto" | "flat-lay" | "model")}
@@ -180,11 +185,14 @@ export function RenderInterface() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="auto">Auto</SelectItem>
-                <SelectItem value="flat-lay">Flat-lay</SelectItem>
-                <SelectItem value="model">On model</SelectItem>
+                <SelectItem value="auto">Auto — let the AI detect</SelectItem>
+                <SelectItem value="flat-lay">Flat-lay — laid flat or on a surface</SelectItem>
+                <SelectItem value="model">On model — on mannequin or model</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Matching the photo style improves accuracy. Use Auto if unsure.
+            </p>
           </div>
         </CardContent>
       </Card>

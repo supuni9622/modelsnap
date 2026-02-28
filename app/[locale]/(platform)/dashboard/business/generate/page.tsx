@@ -33,7 +33,7 @@ export default function GeneratePage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Generate Product Images</h1>
         <p className="text-muted-foreground mt-2">
-          Follow the steps to create stunning model images for your products.
+          Follow the steps below. Choosing the right garment type and photo style helps the AI produce better try-on results.
         </p>
       </div>
 

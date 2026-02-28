@@ -283,6 +283,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                 modelId: modelProfile._id,
                 modelType: "HUMAN_MODEL",
                 garmentImageUrl,
+                garmentCategory: category,
+                garmentPhotoType: garment_photo_type,
                 status: "processing",
                 creditsUsed: 1, // Human models also use credits
                 royaltyPaid: 0, // No royalties - models only earn from purchases
@@ -324,6 +326,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                 userId,
                 garmentImageUrl,
                 avatarId: avatarId || "avatar",
+                garmentCategory: category,
+                garmentPhotoType: garment_photo_type,
                 status: "processing",
                 creditsUsed: 1,
               },
@@ -377,7 +381,9 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
           model_image: modelImageUrl,
           category,
           garment_photo_type,
-          mode: "balanced", // performance | balanced | quality
+          mode: "balanced",
+          moderation_level: "permissive",
+          num_samples: 1,
         });
 
         const fashnImageUrl = fashnResponse.image_url;

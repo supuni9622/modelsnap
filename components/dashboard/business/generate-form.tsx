@@ -299,7 +299,8 @@ export function GenerateForm() {
           <CardHeader>
             <CardTitle>1. Upload Your Product Image</CardTitle>
             <CardDescription>
-              Upload a clear, high-resolution image of your product. Supported formats: JPG, PNG.
+              Use a clear, well-lit photo with the product centered. Plain or neutral backgrounds work best. 
+              Show one garment per image. Supported formats: JPG, PNG (max 10MB).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -345,9 +346,12 @@ export function GenerateForm() {
             {/* Filters + larger uploaded image preview (bottom: filters left, preview right) */}
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
               <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Choosing these options helps the AI fit your garment more accurately and can improve output quality.
+                </p>
                 {/* Garment type for better try-on accuracy */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Garment type</label>
+                  <label className="text-sm font-medium">What type of garment is this?</label>
                   <Select
                     value={garmentCategory}
                     onValueChange={(v) => setGarmentCategory(v as "auto" | "tops" | "bottoms" | "one-pieces")}
@@ -356,18 +360,18 @@ export function GenerateForm() {
                       <SelectValue placeholder="Auto-detect" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Auto</SelectItem>
-                      <SelectItem value="tops">Tops</SelectItem>
-                      <SelectItem value="bottoms">Bottoms</SelectItem>
-                      <SelectItem value="one-pieces">One-piece</SelectItem>
+                      <SelectItem value="auto">Auto — let the AI detect</SelectItem>
+                      <SelectItem value="tops">Tops — shirts, blouses, jackets, etc.</SelectItem>
+                      <SelectItem value="bottoms">Bottoms — pants, skirts, shorts, etc.</SelectItem>
+                      <SelectItem value="one-pieces">One-piece — dresses, jumpsuits, etc.</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Helps the AI fit your garment more accurately.
+                    Pick the type that matches your product for a better fit. Use Auto if you&apos;re unsure.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Garment photo style</label>
+                  <label className="text-sm font-medium">How was the product photographed?</label>
                   <Select
                     value={garmentPhotoType}
                     onValueChange={(v) => setGarmentPhotoType(v as "auto" | "flat-lay" | "model")}
@@ -376,11 +380,14 @@ export function GenerateForm() {
                       <SelectValue placeholder="Auto" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Auto</SelectItem>
-                      <SelectItem value="flat-lay">Flat-lay</SelectItem>
-                      <SelectItem value="model">On model</SelectItem>
+                      <SelectItem value="auto">Auto — let the AI detect</SelectItem>
+                      <SelectItem value="flat-lay">Flat-lay — product laid flat or on a surface</SelectItem>
+                      <SelectItem value="model">On model — worn on a mannequin or model</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Matching the photo style improves try-on accuracy. Use Auto if you&apos;re not sure.
+                  </p>
                 </div>
               </div>
 
