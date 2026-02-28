@@ -5,7 +5,7 @@ import CurrentPlanCard from "@/components/platform/billing/current-plan-card";
 import MonthlyCreditsCard from "@/components/platform/billing/monthly-credits-card";
 
 export const metadata: Metadata = {
-  title: "Billing | ModelSnapper.ai",
+  title: "Plans | ModelSnapper.ai",
   description: "Manage your subscription, credits, and invoices",
 };
 
@@ -13,7 +13,7 @@ export default function BillingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Billing & Subscription</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Plans</h1>
         <p className="text-muted-foreground mt-2">
           Manage your subscription plan, view credits, and access invoices
         </p>
