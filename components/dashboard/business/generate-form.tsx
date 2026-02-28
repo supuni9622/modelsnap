@@ -587,6 +587,20 @@ export function GenerateForm() {
                       <div key={i} className="aspect-[3/4] bg-muted animate-pulse rounded-lg" />
                     ))}
                   </div>
+                ) : (avatarsData?.length ?? 0) === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 py-10 px-6 text-center"
+                  >
+                    <p className="text-base font-medium text-foreground/90 cursor-default select-none transition-colors hover:text-primary">
+                      Stay tuned. Coming soon..
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      No models match your filters yet. Try clearing filters or check back later.
+                    </p>
+                  </motion.div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {avatarsData?.map((avatar: Avatar) => (
