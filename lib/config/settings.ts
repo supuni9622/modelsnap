@@ -18,6 +18,8 @@ export interface SiteSettingsType {
   logoUrlLight: string;
   /** Path to logo image for dark theme */
   logoUrlDark: string;
+  /** Path to logo for use on dark backgrounds (e.g. onboarding hero). Use light/white logo. */
+  logoUrlForDarkBg?: string;
   /** Default theme when user first visits */
   defaultTheme: "system" | "light" | "dark";
   /** Your domain name (used for SEO and metadata) */
@@ -33,6 +35,7 @@ export const SiteSettings: SiteSettingsType = {
   name: "ModelSnapper.ai",
   logoUrlLight: "/static/images/dark-logo.jpeg",
   logoUrlDark: "/static/images/dark-logo.jpeg",
+  logoUrlForDarkBg: "/static/images/dark-logo.jpeg",
   defaultTheme: "light",
   domainName: "Founderflow.online",
   domainUrl:
