@@ -52,7 +52,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <ThemeProvider
             attribute="class"
             defaultTheme="light"
-            enableSystem
+            enableSystem={false}
             disableTransitionOnChange
             storageKey="founderflow-theme"
           >
