@@ -606,7 +606,9 @@ export function GenerateForm() {
                           src={avatar.imageUrl}
                           alt={avatar.name || [avatar.bodyType, avatar.skinTone].filter(Boolean).join(" ") || "AI Avatar"}
                           fill
+                          sizes="(max-width: 768px) 50vw, 200px"
                           className="object-contain"
+                          unoptimized
                         />
                         <AnimatePresence>
                           {selectedAvatar?._id === avatar._id && (

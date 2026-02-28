@@ -44,7 +44,14 @@ async function uploadAvatarToS3(
 ): Promise<string> {
   const fileBuffer = fs.readFileSync(filePath);
   const filename = path.basename(filePath);
-  
+  const ext = path.extname(filename).toLowerCase();
+  const contentType =
+    ext === ".png"
+      ? "image/png"
+      : ext === ".webp"
+        ? "image/webp"
+        : "image/jpeg"; // .jpg, .jpeg, default
+
   // Generate S3 key for avatar (using "system" as userId for system avatars)
   const s3Key = generateS3Key("avatar", "system", `${gender}/${bodyType}/${filename}`);
   
@@ -57,12 +64,12 @@ async function uploadAvatarToS3(
     },
   });
   
-  // Upload to S3
+  // Upload to S3 with correct Content-Type so Next.js image optimizer and browsers work
   const command = new PutObjectCommand({
     Bucket: s3Config.bucketName,
     Key: s3Key,
     Body: fileBuffer,
-    ContentType: "image/jpeg",
+    ContentType: contentType,
     CacheControl: "public, max-age=31536000, immutable",
   });
   
