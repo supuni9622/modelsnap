@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { parseJsonResponse } from "@/lib/utils";
 
 // Define the Billing interface
 interface Billing {
@@ -35,6 +36,13 @@ interface MyFeedback {
     star: number;
     comment: string;
   };
+}
+
+// API response shape (fields may be missing; we normalize to null)
+interface AppApiResponse {
+  billing?: Billing | null;
+  user?: User | null;
+  myFeedback?: MyFeedback | null;
 }
 
 // Define the shape of the context data
@@ -87,10 +95,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         return;
       }
 
-      const data = await res.json();
-      setBilling(data.billing);
-      setUser(data.user);
-      setMyFeedback(data.myFeedback);
+      const data = await parseJsonResponse<AppApiResponse>(res);
+      const billingValue: Billing | null = data.billing ?? null;
+      const userValue: User | null = data.user ?? null;
+      const myFeedbackValue: MyFeedback | null = data.myFeedback ?? null;
+      setBilling(billingValue);
+      setUser(userValue);
+      setMyFeedback(myFeedbackValue);
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.error("Error refreshing billing data:", error);

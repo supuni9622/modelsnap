@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useAppContext } from "@/context/app";
 import { Loader2, Download, CheckCircle2, XCircle, Sparkles, Eye } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, parseJsonResponse } from "@/lib/utils";
 import { PreviewImageDialog } from "@/components/platform/preview-image-dialog";
 
 interface Avatar {
@@ -80,13 +80,13 @@ export function RenderInterface() {
         }),
       });
 
-      const data = await response.json();
+      const data = await parseJsonResponse<{ status?: string; message?: string; data?: Record<string, unknown> }>(response);
 
       if (!response.ok || data.status !== "success") {
         throw new Error(data.message || "Render failed");
       }
 
-      setRenderResult(data.data);
+      setRenderResult(data.data ? (data.data as unknown as RenderResult) : null);
       // Refresh billing data to update credits
       await refreshBillingData?.();
     } catch (err) {

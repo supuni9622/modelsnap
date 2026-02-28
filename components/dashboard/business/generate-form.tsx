@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Upload, X, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, Mountain, FileImage, Trash2, Wand2, RotateCcw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, parseJsonResponse } from "@/lib/utils";
 import { FilterChipGroup } from "@/components/ui/filter-chip-group";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -76,7 +76,7 @@ export function GenerateForm() {
       if (avatarSkinToneFilter !== "all") params.set("skinToneCategory", avatarSkinToneFilter);
       if (avatarBackgroundFilter !== "all") params.set("background", avatarBackgroundFilter);
       const res = await fetch(`/api/avatars?${params.toString()}`);
-      const data = await res.json();
+      const data = await parseJsonResponse<{ status?: string; data?: Avatar[]; message?: string }>(res);
       if (data.status === "success") {
         return data.data;
       }
@@ -89,9 +89,9 @@ export function GenerateForm() {
     queryKey: ["models", "approved"],
     queryFn: async () => {
       const res = await fetch("/api/models?status=active");
-      const data = await res.json();
+      const data = await parseJsonResponse<{ status?: string; data?: { models?: Model[] }; message?: string }>(res);
       if (data.status === "success") {
-        return data.data.models || [];
+        return data.data?.models ?? [];
       }
       throw new Error(data.message || "Failed to fetch models");
     },
@@ -112,7 +112,7 @@ export function GenerateForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = await parseJsonResponse<{ status?: string; message?: string; data?: Record<string, unknown> }>(res);
       if (data.status !== "success") {
         throw new Error(data.message || "Render failed");
       }
@@ -120,18 +120,19 @@ export function GenerateForm() {
     },
     onSuccess: async (data) => {
       // Update credits immediately from API response (optimistic update)
-      if (data.data?.creditsRemaining !== undefined && billing) {
+      const creditsRemaining = typeof data.data?.creditsRemaining === "number" ? data.data.creditsRemaining : undefined;
+      if (creditsRemaining !== undefined && billing) {
         setBilling({
           ...billing,
-          credits: data.data.creditsRemaining,
+          credits: creditsRemaining,
         });
       }
 
       // Display the generated image immediately
       const imageUrl = data.data?.previewImageUrl || data.data?.renderedImageUrl || data.data?.outputS3Url || data.data?.fashnImageUrl;
       if (imageUrl) {
-        setGeneratedImageUrl(imageUrl);
-        setGenerationId(data.data?.generationId);
+        setGeneratedImageUrl(String(imageUrl));
+        setGenerationId(typeof data.data?.generationId === "string" ? data.data.generationId : null);
         const isHuman = data.data?.type === "HUMAN_MODEL";
         setGenerationType(isHuman ? "human" : "ai");
         
@@ -140,7 +141,7 @@ export function GenerateForm() {
           setModelId(selectedModel._id);
           try {
             const purchaseRes = await fetch(`/api/models/${selectedModel._id}/purchase-status`);
-            const purchaseData = await purchaseRes.json();
+            const purchaseData = await parseJsonResponse<{ status?: string; data?: { isPurchased?: boolean } }>(purchaseRes);
             if (purchaseData.status === "success") {
               setIsPurchased(purchaseData.data?.isPurchased || false);
             }
