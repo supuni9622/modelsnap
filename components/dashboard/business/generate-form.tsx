@@ -295,10 +295,10 @@ export function GenerateForm() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left Column: Upload + Model Selection */}
       <div className="lg:col-span-2 space-y-6">
-        {/* Section 1: Upload Your Product Image */}
+        {/* Section 1: Upload Your Product */}
         <Card>
           <CardHeader>
-            <CardTitle>1. Upload Your Product Image</CardTitle>
+            <CardTitle>1. Upload Your Product</CardTitle>
             <CardDescription>
               Use a clear, well-lit photo with the product centered. Plain or neutral backgrounds work best. 
               Show one garment per image. Supported formats: JPG, PNG (max 10MB).
@@ -336,11 +336,13 @@ export function GenerateForm() {
                   <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 )}
                 <p className="text-lg font-medium mb-2">
-                  {isUploading ? "Uploading..." : "Click to upload or drag and drop"}
+                  {isUploading ? "Uploading..." : "Drag & drop your product photo here"}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  PNG, JPG (MAX. 10MB)
-                </p>
+                {!isUploading && (
+                  <p className="text-sm text-muted-foreground">
+                    or click to upload (JPG or PNG, max 10MB)
+                  </p>
+                )}
               </label>
             </div>
 
@@ -372,7 +374,7 @@ export function GenerateForm() {
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">How was the product photographed?</label>
+                  <label className="text-sm font-medium">Photo Background Style</label>
                   <Select
                     value={garmentPhotoType}
                     onValueChange={(v) => setGarmentPhotoType(v as "auto" | "flat-lay" | "model")}
@@ -433,10 +435,10 @@ export function GenerateForm() {
           </CardContent>
         </Card>
 
-        {/* Section 2: Choose Your Model */}
+        {/* Section 2: Select your Model */}
         <Card>
           <CardHeader>
-            <CardTitle>2. Choose Your Model</CardTitle>
+            <CardTitle>2. Select your Model</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={modelType} onValueChange={(v) => setModelType(v as "ai" | "human")}>
@@ -497,9 +499,9 @@ export function GenerateForm() {
                   <FilterChipGroup
                     label="Gender"
                     options={[
-                      { value: "all", label: "All" },
-                      { value: "female", label: "Female" },
-                      { value: "male", label: "Male" },
+                      { value: "all", label: "All Models" },
+                      { value: "female", label: "Women" },
+                      { value: "male", label: "Men" },
                     ]}
                     value={avatarGenderFilter}
                     onChange={setAvatarGenderFilter}
@@ -531,7 +533,7 @@ export function GenerateForm() {
                     <AccordionItem value="composition" className="border-none">
                       <AccordionTrigger className="px-3 py-2.5 text-xs font-medium text-foreground hover:bg-primary/10 hover:text-foreground hover:no-underline [&[data-state=open]]:bg-primary/10 [&[data-state=open]]:rounded-t-lg">
                         <span className="flex items-center gap-2">
-                          Composition (Framing, background, aspect ratio)
+                          Photo Layout & Framing
                           {compositionFiltersActive && (
                             <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                               Active
@@ -923,9 +925,9 @@ export function GenerateForm() {
                   >
                     <Mountain className="w-12 h-12 text-muted-foreground" />
                   </motion.div>
-                  <p className="text-sm font-medium mb-2">Your generated image will appear here</p>
+                  <p className="text-sm font-medium mb-2">Your model photo will appear here</p>
                   <p className="text-xs text-muted-foreground">
-                    Complete the steps on the left to begin.
+                    Upload a product and select a model to get started.
                   </p>
                 </motion.div>
               )}
@@ -967,7 +969,7 @@ export function GenerateForm() {
                 Generating...
               </>
             ) : (
-              "Generate Image"
+              "Generate Model Photo"
             )}
           </Button>
         </motion.div>

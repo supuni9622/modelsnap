@@ -176,7 +176,7 @@ export function RenderInterface() {
             </p>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">How was the product photographed?</label>
+            <label className="text-sm font-medium">Photo Background Style</label>
             <Select
               value={garmentPhotoType}
               onValueChange={(v) => setGarmentPhotoType(v as "auto" | "flat-lay" | "model")}

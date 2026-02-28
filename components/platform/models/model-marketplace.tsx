@@ -145,21 +145,10 @@ export function ModelMarketplace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredModels, setFilteredModels] = useState<Model[]>([]);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
-  const [genderFilter, setGenderFilter] = useState<"all" | "male" | "female" | "other">("all");
-  const [framingFilter, setFramingFilter] = useState<"all" | "full-body" | "half-body" | "three-quarter" | "upper-body" | "lower-body" | "back-view">("all");
-  const [aspectRatioFilter, setAspectRatioFilter] = useState<"all" | "2:3" | "1:1" | "4:5" | "16:9">("all");
-  const [skinToneFilter, setSkinToneFilter] = useState<"all" | "light" | "medium" | "deep">("all");
-  const [backgroundFilter, setBackgroundFilter] = useState<"all" | "indoor" | "outdoor">("all");
-
   const fetchModels = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ status: "active" });
-      if (genderFilter !== "all") params.set("gender", genderFilter);
-      if (framingFilter !== "all") params.set("photoFraming", framingFilter);
-      if (aspectRatioFilter !== "all") params.set("aspectRatio", aspectRatioFilter);
-      if (skinToneFilter !== "all") params.set("skinToneCategory", skinToneFilter);
-      if (backgroundFilter !== "all") params.set("background", backgroundFilter);
       const response = await fetch(`/api/models?${params.toString()}`);
       const data = await response.json();
 
@@ -211,7 +200,7 @@ export function ModelMarketplace() {
     } finally {
       setLoading(false);
     }
-  }, [genderFilter, framingFilter, aspectRatioFilter, skinToneFilter, backgroundFilter]);
+  }, []);
 
   useEffect(() => {
     fetchModels();
@@ -563,80 +552,6 @@ export function ModelMarketplace() {
           </motion.div>
         </div>
       </motion.div>
-
-      {/* Filters: Gender & Framing (for new models from today) */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Gender:</span>
-          {(["all", "female", "male", "other"] as const).map((value) => (
-            <Button
-              key={value}
-              type="button"
-              variant={genderFilter === value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setGenderFilter(value)}
-            >
-              {value === "all" ? "All" : value.charAt(0).toUpperCase() + value.slice(1)}
-            </Button>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Framing:</span>
-          {(["all", "full-body", "half-body", "three-quarter", "upper-body", "lower-body", "back-view"] as const).map((value) => (
-            <Button
-              key={value}
-              type="button"
-              variant={framingFilter === value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFramingFilter(value)}
-            >
-              {value === "all" ? "All" : value === "full-body" ? "Full body" : value === "half-body" ? "Half body" : value === "three-quarter" ? "Three-Quarter" : value === "upper-body" ? "Upper body" : value === "lower-body" ? "Lower body" : "Back View"}
-            </Button>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Skin tone:</span>
-          {(["all", "light", "medium", "deep"] as const).map((value) => (
-            <Button
-              key={value}
-              type="button"
-              variant={skinToneFilter === value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSkinToneFilter(value)}
-            >
-              {value === "all" ? "All" : value.charAt(0).toUpperCase() + value.slice(1)}
-            </Button>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Background:</span>
-          {(["all", "indoor", "outdoor"] as const).map((value) => (
-            <Button
-              key={value}
-              type="button"
-              variant={backgroundFilter === value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setBackgroundFilter(value)}
-            >
-              {value === "all" ? "All" : value.charAt(0).toUpperCase() + value.slice(1)}
-            </Button>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Aspect ratio:</span>
-          {(["all", "2:3", "1:1", "4:5", "16:9"] as const).map((value) => (
-            <Button
-              key={value}
-              type="button"
-              variant={aspectRatioFilter === value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setAspectRatioFilter(value)}
-            >
-              {value === "all" ? "All" : value === "2:3" ? "2:3 Portrait" : value === "1:1" ? "1:1 Square" : value === "4:5" ? "4:5 Vertical" : "16:9 Landscape"}
-            </Button>
-          ))}
-        </div>
-      </div>
 
       {/* Search Bar */}
       <div className="relative">
