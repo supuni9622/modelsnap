@@ -150,12 +150,47 @@ export async function PUT(
 
       // Parse request body
       const body = await req.json();
-      const { name, referenceImages, status, consentSigned, phoneNumber, paymentMethods, activeness } = body;
+      const { name, referenceImages, status, consentSigned, phoneNumber, paymentMethods, activeness, gender, photoFraming, aspectRatio, skinToneCategory, background } = body;
 
       // Build update object
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
-      
+      if (gender !== undefined) {
+        if (gender === null || gender === "") {
+          updateData.gender = undefined;
+        } else if (["male", "female", "other"].includes(gender)) {
+          updateData.gender = gender;
+        }
+      }
+      if (photoFraming !== undefined) {
+        if (photoFraming === null || photoFraming === "") {
+          updateData.photoFraming = undefined;
+        } else if (["full-body", "half-body", "three-quarter", "upper-body", "lower-body", "back-view"].includes(photoFraming)) {
+          updateData.photoFraming = photoFraming;
+        }
+      }
+      if (aspectRatio !== undefined) {
+        if (aspectRatio === null || aspectRatio === "") {
+          updateData.aspectRatio = undefined;
+        } else if (["2:3", "1:1", "4:5", "16:9"].includes(aspectRatio)) {
+          updateData.aspectRatio = aspectRatio;
+        }
+      }
+      if (skinToneCategory !== undefined) {
+        if (skinToneCategory === null || skinToneCategory === "") {
+          updateData.skinToneCategory = undefined;
+        } else if (["light", "medium", "deep"].includes(skinToneCategory)) {
+          updateData.skinToneCategory = skinToneCategory;
+        }
+      }
+      if (background !== undefined) {
+        if (background === null || background === "") {
+          updateData.background = undefined;
+        } else if (["indoor", "outdoor"].includes(background)) {
+          updateData.background = background;
+        }
+      }
+
       // Personal information fields
       if (phoneNumber !== undefined) {
         updateData.phoneNumber = phoneNumber && phoneNumber.trim() ? phoneNumber.trim() : undefined;

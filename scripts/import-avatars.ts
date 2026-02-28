@@ -21,11 +21,48 @@ import * as path from "path";
 
 const avatarMapPath = path.join(process.cwd(), "public", "avatars", "avatarMap.json");
 
+/** Aspect ratio options: 2:3 Portrait, 1:1 Square, 4:5 Vertical, 16:9 Landscape. Default "2:3". */
+const DEFAULT_ASPECT_RATIO = "2:3" as const;
+type AspectRatio = "2:3" | "1:1" | "4:5" | "16:9";
+
+/** Framing: Full Body, Three-Quarter, Upper Body, Lower Body, Back View */
+type Framing = "full-body" | "half-body" | "three-quarter" | "upper-body" | "lower-body" | "back-view";
+type SkinToneCategory = "light" | "medium" | "deep";
+type Background = "indoor" | "outdoor";
+
+/** Value can be legacy path string or new format with optional photoFraming, aspectRatio, skinToneCategory, background */
+type AvatarMapEntry = string | {
+  url: string;
+  photoFraming?: Framing;
+  aspectRatio?: AspectRatio;
+  skinToneCategory?: SkinToneCategory;
+  background?: Background;
+};
+
 interface AvatarMap {
   [gender: string]: {
     [bodyType: string]: {
-      [skinTone: string]: string;
+      [skinTone: string]: AvatarMapEntry;
     };
+  };
+}
+
+function normalizeEntry(entry: AvatarMapEntry): {
+  imageUrl: string;
+  photoFraming?: Framing;
+  aspectRatio?: AspectRatio;
+  skinToneCategory?: SkinToneCategory;
+  background?: Background;
+} {
+  if (typeof entry === "string") {
+    return { imageUrl: entry };
+  }
+  return {
+    imageUrl: entry.url,
+    ...(entry.photoFraming && { photoFraming: entry.photoFraming }),
+    aspectRatio: entry.aspectRatio ?? DEFAULT_ASPECT_RATIO,
+    ...(entry.skinToneCategory && { skinToneCategory: entry.skinToneCategory }),
+    ...(entry.background && { background: entry.background }),
   };
 }
 
@@ -78,8 +115,9 @@ async function importAvatars(clearExisting = false): Promise<void> {
     }
 
     for (const [bodyType, skinTones] of Object.entries(bodyTypes)) {
-      for (const [skinTone, imageUrl] of Object.entries(skinTones)) {
+      for (const [skinTone, entry] of Object.entries(skinTones)) {
         try {
+          const { imageUrl, photoFraming, aspectRatio, skinToneCategory, background } = normalizeEntry(entry);
           // Check if avatar already exists (by unique combination)
           const existing = await Avatar.findOne({
             gender,
@@ -90,18 +128,27 @@ async function importAvatars(clearExisting = false): Promise<void> {
           if (existing) {
             // Update existing avatar
             existing.imageUrl = imageUrl;
+            if (photoFraming) (existing as any).photoFraming = photoFraming;
+            if (aspectRatio) (existing as any).aspectRatio = aspectRatio;
+            if (skinToneCategory) (existing as any).skinToneCategory = skinToneCategory;
+            if (background) (existing as any).background = background;
             await existing.save();
             updated++;
             console.log(`  ↻ Updated: ${gender}/${bodyType}/${skinTone}`);
           } else {
             // Create new avatar with explicit unique ID
-            await Avatar.create({
+            const createPayload: Record<string, unknown> = {
               id: new mongoose.Types.ObjectId().toString(),
               gender,
               bodyType,
               skinTone,
               imageUrl,
-            });
+            };
+            if (photoFraming) createPayload.photoFraming = photoFraming;
+            if (aspectRatio) createPayload.aspectRatio = aspectRatio;
+            if (skinToneCategory) createPayload.skinToneCategory = skinToneCategory;
+            if (background) createPayload.background = background;
+            await Avatar.create(createPayload);
             imported++;
             console.log(`  ✓ Imported: ${gender}/${bodyType}/${skinTone}`);
           }

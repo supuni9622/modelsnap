@@ -58,13 +58,21 @@ export function GenerateForm() {
   const [garmentCategory, setGarmentCategory] = useState<"auto" | "tops" | "bottoms" | "one-pieces">("auto");
   const [garmentPhotoType, setGarmentPhotoType] = useState<"auto" | "flat-lay" | "model">("auto");
   const [avatarGenderFilter, setAvatarGenderFilter] = useState<"all" | "female" | "male">("all");
+  const [avatarFramingFilter, setAvatarFramingFilter] = useState<"all" | "full-body" | "half-body" | "three-quarter" | "upper-body" | "lower-body" | "back-view">("all");
+  const [avatarAspectRatioFilter, setAvatarAspectRatioFilter] = useState<"all" | "2:3" | "1:1" | "4:5" | "16:9">("all");
+  const [avatarSkinToneFilter, setAvatarSkinToneFilter] = useState<"all" | "light" | "medium" | "deep">("all");
+  const [avatarBackgroundFilter, setAvatarBackgroundFilter] = useState<"all" | "indoor" | "outdoor">("all");
 
-  // Fetch AI avatars (with optional gender filter)
+  // Fetch AI avatars (with optional gender, framing, aspect ratio, skin tone, background filters)
   const { data: avatarsData, isLoading: avatarsLoading } = useQuery({
-    queryKey: ["avatars", avatarGenderFilter],
+    queryKey: ["avatars", avatarGenderFilter, avatarFramingFilter, avatarAspectRatioFilter, avatarSkinToneFilter, avatarBackgroundFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (avatarGenderFilter !== "all") params.set("gender", avatarGenderFilter);
+      if (avatarFramingFilter !== "all") params.set("photoFraming", avatarFramingFilter);
+      if (avatarAspectRatioFilter !== "all") params.set("aspectRatio", avatarAspectRatioFilter);
+      if (avatarSkinToneFilter !== "all") params.set("skinToneCategory", avatarSkinToneFilter);
+      if (avatarBackgroundFilter !== "all") params.set("background", avatarBackgroundFilter);
       const res = await fetch(`/api/avatars?${params.toString()}`);
       const data = await res.json();
       if (data.status === "success") {
@@ -435,8 +443,8 @@ export function GenerateForm() {
 
               <TabsContent value="ai" className="mt-6">
                 {/* Gender filter for AI models */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="text-sm text-muted-foreground self-center">Show:</span>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <span className="text-sm text-muted-foreground self-center">Gender:</span>
                   <Button
                     type="button"
                     variant={avatarGenderFilter === "all" ? "default" : "outline"}
@@ -461,6 +469,111 @@ export function GenerateForm() {
                   >
                     Male
                   </Button>
+                </div>
+                {/* Framing filter for AI models (new avatars only) */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="text-sm text-muted-foreground self-center">Framing:</span>
+                  <Button
+                    type="button"
+                    variant={avatarFramingFilter === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAvatarFramingFilter("all")}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={avatarFramingFilter === "full-body" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAvatarFramingFilter("full-body")}
+                  >
+                    Full body
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={avatarFramingFilter === "half-body" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAvatarFramingFilter("half-body")}
+                  >
+                    Half body
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={avatarFramingFilter === "upper-body" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAvatarFramingFilter("upper-body")}
+                  >
+                    Upper body
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={avatarFramingFilter === "lower-body" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAvatarFramingFilter("lower-body")}
+                  >
+                    Lower body
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={avatarFramingFilter === "three-quarter" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAvatarFramingFilter("three-quarter")}
+                  >
+                    Three-Quarter
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={avatarFramingFilter === "back-view" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAvatarFramingFilter("back-view")}
+                  >
+                    Back View
+                  </Button>
+                </div>
+                {/* Skin tone: light, medium, deep */}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <span className="text-sm text-muted-foreground self-center">Skin tone:</span>
+                  {(["all", "light", "medium", "deep"] as const).map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={avatarSkinToneFilter === value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAvatarSkinToneFilter(value)}
+                    >
+                      {value === "all" ? "All" : value.charAt(0).toUpperCase() + value.slice(1)}
+                    </Button>
+                  ))}
+                </div>
+                {/* Background: indoor, outdoor */}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <span className="text-sm text-muted-foreground self-center">Background:</span>
+                  {(["all", "indoor", "outdoor"] as const).map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={avatarBackgroundFilter === value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAvatarBackgroundFilter(value)}
+                    >
+                      {value === "all" ? "All" : value.charAt(0).toUpperCase() + value.slice(1)}
+                    </Button>
+                  ))}
+                </div>
+                {/* Aspect ratio filter: 2:3 Portrait, 1:1 Square, 4:5 Vertical, 16:9 Landscape */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="text-sm text-muted-foreground self-center">Aspect ratio:</span>
+                  {(["all", "2:3", "1:1", "4:5", "16:9"] as const).map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={avatarAspectRatioFilter === value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAvatarAspectRatioFilter(value)}
+                    >
+                      {value === "all" ? "All" : value === "2:3" ? "2:3 Portrait" : value === "1:1" ? "1:1 Square" : value === "4:5" ? "4:5 Vertical" : "16:9 Landscape"}
+                    </Button>
+                  ))}
                 </div>
                 {avatarsLoading ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

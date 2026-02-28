@@ -18,9 +18,34 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextRequ
     const status = searchParams.get("status") || "active";
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = parseInt(searchParams.get("skip") || "0");
+    const gender = searchParams.get("gender");
+    const photoFraming = searchParams.get("photoFraming");
+    const aspectRatio = searchParams.get("aspectRatio");
+    const skinToneCategory = searchParams.get("skinToneCategory");
+    const background = searchParams.get("background");
 
-    // Build query
+    const VALID_ASPECT_RATIOS = ["2:3", "1:1", "4:5", "16:9"];
+    const VALID_FRAMING = ["full-body", "half-body", "three-quarter", "upper-body", "lower-body", "back-view"];
+    const VALID_SKIN_TONE_CATEGORIES = ["light", "medium", "deep"];
+    const VALID_BACKGROUND = ["indoor", "outdoor"];
+
+    // Build query (gender, photoFraming, aspectRatio, skinToneCategory, background filter to new models that have these set)
     const query: any = { status };
+    if (gender && ["male", "female", "other"].includes(gender)) {
+      query.gender = gender;
+    }
+    if (photoFraming && VALID_FRAMING.includes(photoFraming)) {
+      query.photoFraming = photoFraming;
+    }
+    if (aspectRatio && VALID_ASPECT_RATIOS.includes(aspectRatio)) {
+      query.aspectRatio = aspectRatio;
+    }
+    if (skinToneCategory && VALID_SKIN_TONE_CATEGORIES.includes(skinToneCategory)) {
+      query.skinToneCategory = skinToneCategory;
+    }
+    if (background && VALID_BACKGROUND.includes(background)) {
+      query.background = background;
+    }
     
     // Show all active models in marketplace
     // Businesses can request consent from any model they see
@@ -115,7 +140,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
 
     // Parse request body
     const body = await req.json();
-    const { name, referenceImages, consentSigned } = body;
+    const { name, referenceImages, consentSigned, gender, photoFraming, aspectRatio, skinToneCategory, background } = body;
 
     // Validate required fields
     if (!name) {
@@ -151,8 +176,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       );
     }
 
-    // Create model profile
-    const modelProfile = await ModelProfile.create({
+    // Create model profile (gender and photoFraming optional, for new models from today)
+    const createPayload: Record<string, unknown> = {
       userId: user._id,
       name,
       referenceImages,
@@ -160,7 +185,23 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
       status: "active",
       royaltyBalance: 0,
       approvedBusinesses: [],
-    });
+    };
+    if (gender && ["male", "female", "other"].includes(gender)) {
+      createPayload.gender = gender;
+    }
+    if (photoFraming && ["full-body", "half-body", "three-quarter", "upper-body", "lower-body", "back-view"].includes(photoFraming)) {
+      createPayload.photoFraming = photoFraming;
+    }
+    if (aspectRatio && ["2:3", "1:1", "4:5", "16:9"].includes(aspectRatio)) {
+      createPayload.aspectRatio = aspectRatio;
+    }
+    if (skinToneCategory && ["light", "medium", "deep"].includes(skinToneCategory)) {
+      createPayload.skinToneCategory = skinToneCategory;
+    }
+    if (background && ["indoor", "outdoor"].includes(background)) {
+      createPayload.background = background;
+    }
+    const modelProfile = await ModelProfile.create(createPayload);
 
     // Update user role to MODEL if not already set
     if (user.role !== "MODEL") {
