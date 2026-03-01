@@ -11,6 +11,14 @@ const FASHN_API_KEY = process.env.FASHN_API_KEY;
 /**
  * FASHN API Types
  */
+/** Request to create model(s) from a manual array of prompts. One model per prompt. */
+export interface FashnModelGenerateWithPromptsRequest {
+  prompts: string[];
+  aspect_ratio?: "1:1" | "2:3" | "3:4" | "4:5" | "5:4" | "4:3" | "3:2" | "16:9" | "9:16";
+  output_format?: "png" | "jpeg";
+}
+
+/** Legacy attribute-based params (use buildPromptFromAttributes + prompts array if needed). */
 export interface FashnModelGenerateRequest {
   gender: "male" | "female";
   ethnicity: string;
@@ -79,6 +87,22 @@ export interface FashnErrorResponse {
   error: string;
   message?: string;
   code?: string;
+}
+
+/** Build a prompt string from attribute-based params (e.g. for scripts using generateModel({ prompts: [buildPromptFromAttributes(params)] })). */
+export function buildPromptFromAttributes(params: FashnModelGenerateRequest): string {
+  const parts: string[] = [];
+  parts.push(`${params.gender} model`);
+  if (params.body_type) parts.push(`${params.body_type} body type`);
+  if (params.ethnicity) parts.push(`${params.ethnicity} ethnicity`);
+  if (params.skin_tone) parts.push(`${params.skin_tone} skin`);
+  if (params.hair) parts.push(params.hair);
+  if (params.eyes) parts.push(params.eyes);
+  if (params.pose) parts.push(params.pose);
+  if (params.background) parts.push(`${params.background} background`);
+  if (params.style) parts.push(params.style);
+  parts.push("fashion model", "studio photography", "professional lighting");
+  return parts.join(", ");
 }
 
 /**
@@ -237,140 +261,90 @@ export class FashnClient {
   }
 
   /**
-   * Build prompt from model parameters
+   * Run a single model-create job for one prompt.
    */
-  private buildPrompt(params: FashnModelGenerateRequest): string {
-    const parts: string[] = [];
-
-    // Gender and body type
-    parts.push(`${params.gender} model`);
-    if (params.body_type) {
-      parts.push(`${params.body_type} body type`);
-    }
-
-    // Ethnicity
-    if (params.ethnicity) {
-      parts.push(`${params.ethnicity} ethnicity`);
-    }
-
-    // Skin tone
-    if (params.skin_tone) {
-      parts.push(`${params.skin_tone} skin`);
-    }
-
-    // Hair
-    if (params.hair) {
-      parts.push(params.hair);
-    }
-
-    // Eyes
-    if (params.eyes) {
-      parts.push(params.eyes);
-    }
-
-    // Pose
-    if (params.pose) {
-      parts.push(params.pose);
-    }
-
-    // Background
-    if (params.background) {
-      parts.push(`${params.background} background`);
-    }
-
-    // Style
-    if (params.style) {
-      parts.push(params.style);
-    }
-
-    // Default additions for fashion model
-    parts.push("fashion model", "studio photography", "professional lighting");
-
-    return parts.join(", ");
-  }
-
-  /**
-   * Generate AI model using FASHN API
-   * POST /v1/run (Model Create)
-   * Based on: https://docs.fashn.ai/api-reference/model-create
-   */
-  async generateModel(
-    params: FashnModelGenerateRequest
+  private async runOneModelCreate(
+    prompt: string,
+    options: { aspect_ratio?: FashnRunRequest["inputs"]["aspect_ratio"]; output_format?: FashnRunRequest["inputs"]["output_format"] } = {}
   ): Promise<FashnModelGenerateResponse> {
-    if (!this.apiKey) {
-      throw new Error("FASHN_API_KEY is not configured");
-    }
-
-    logger.info("Generating AI model", { gender: params.gender, body_type: params.body_type });
-
-    // Build prompt from parameters
-    const prompt = this.buildPrompt(params);
-
-    // Create request in the correct format
     const runRequest: FashnRunRequest = {
       model_name: "model-create",
       inputs: {
         prompt,
-        aspect_ratio: "2:3", // Default fashion model aspect ratio
-        output_format: "jpeg", // Faster response
+        aspect_ratio: options.aspect_ratio ?? "2:3",
+        output_format: options.output_format ?? "jpeg",
       },
     };
 
-    // Submit the request
     const runResponse = await this.makeRequest<FashnRunResponse | FashnStatusResponse>(
       "/v1/run",
-      {
-        method: "POST",
-        body: JSON.stringify(runRequest),
-      }
+      { method: "POST", body: JSON.stringify(runRequest) }
     );
 
-    logger.debug("FASHN /v1/run response", { 
+    logger.debug("FASHN /v1/run response", {
       id: "id" in runResponse ? runResponse.id : undefined,
       status: "status" in runResponse ? runResponse.status : undefined,
       hasError: "error" in runResponse ? !!runResponse.error : false,
     });
 
-    // Check if response already contains status (some APIs return status immediately)
     if ("status" in runResponse && (runResponse.status === "succeeded" || runResponse.status === "completed")) {
       const statusResponse = runResponse as FashnStatusResponse;
       if (statusResponse.output && statusResponse.output.length > 0) {
-        return {
-          image_url: statusResponse.output[0],
-          model_id: statusResponse.id,
-        };
+        return { image_url: statusResponse.output[0], model_id: statusResponse.id };
       }
     }
 
-    // If it's just an ID response, poll for status
     if ("id" in runResponse && !("status" in runResponse)) {
       if (runResponse.error) {
         throw new Error(runResponse.error.message || "Model generation failed");
       }
-
       logger.info("Polling for status", { predictionId: runResponse.id });
-
-      // Poll for status using the ID
       const statusResponse = await this.pollStatus(runResponse.id);
-      
       if (!statusResponse.output || statusResponse.output.length === 0) {
         throw new Error("No output image URL returned");
       }
-
-      // Return in the expected format
-      return {
-        image_url: statusResponse.output[0],
-        model_id: statusResponse.id,
-      };
+      return { image_url: statusResponse.output[0], model_id: statusResponse.id };
     }
 
-    // If we get here, the response format is unexpected
     logger.error("Unexpected response format from FASHN API", new Error("Invalid response structure"), {
       hasId: "id" in runResponse,
       hasStatus: "status" in runResponse,
       hasError: "error" in runResponse,
     });
     throw new Error("Unexpected response format from FASHN API");
+  }
+
+  /**
+   * Generate AI model(s) using FASHN API from a manual array of prompts.
+   * POST /v1/run (Model Create) per prompt.
+   * Based on: https://docs.fashn.ai/api-reference/model-create
+   * @returns Array of results, one per prompt (same order as prompts).
+   */
+  async generateModel(
+    params: FashnModelGenerateWithPromptsRequest
+  ): Promise<FashnModelGenerateResponse[]> {
+    if (!this.apiKey) {
+      throw new Error("FASHN_API_KEY is not configured");
+    }
+
+    const { prompts, aspect_ratio, output_format } = params;
+    if (!prompts?.length) {
+      throw new Error("prompts array is required and must not be empty");
+    }
+
+    logger.info("Generating AI model(s) from prompts", { count: prompts.length });
+
+    const results: FashnModelGenerateResponse[] = [];
+    for (let i = 0; i < prompts.length; i++) {
+      const prompt = prompts[i];
+      if (typeof prompt !== "string" || !prompt.trim()) {
+        throw new Error(`prompts[${i}] must be a non-empty string`);
+      }
+      const result = await this.runOneModelCreate(prompt.trim(), { aspect_ratio, output_format });
+      results.push(result);
+    }
+
+    return results;
   }
 
   /**
@@ -390,8 +364,12 @@ export class FashnClient {
       modelIsFile: params.model_image instanceof File,
     });
 
-    // Helper function to convert relative URL to absolute URL
+    // Helper function to convert relative URL to absolute URL (or pass through data URLs)
     const resolveImageUrl = (url: string): string => {
+      // Data URLs (base64) are sent as-is - Fashn API accepts them and we don't need to fetch
+      if (url.startsWith("data:")) {
+        return url;
+      }
       // If already absolute URL (starts with http:// or https://), return as is
       if (url.startsWith("http://") || url.startsWith("https://")) {
         return url;

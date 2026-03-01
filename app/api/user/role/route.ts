@@ -30,7 +30,7 @@ export const POST = (async (req: NextRequest) => {
 
     // Parse request body
     const body = await req.json();
-    const { role } = body;
+    const { role, category, intent } = body;
 
     // Validate role
     if (!role || !["BUSINESS", "MODEL", "ADMIN"].includes(role)) {
@@ -79,6 +79,17 @@ export const POST = (async (req: NextRequest) => {
 
     // Create profile document based on role (as per UI_FLOW.md requirements)
     if (role === "BUSINESS") {
+      const onboardingCategory = Array.isArray(category)
+        ? category.filter((c): c is string => typeof c === "string").map((c) => c.trim()).filter(Boolean)
+        : typeof category === "string" && category.trim()
+          ? [category.trim()]
+          : [];
+      const onboardingIntent = Array.isArray(intent)
+        ? intent.filter((i): i is string => typeof i === "string").map((i) => i.trim()).filter(Boolean)
+        : typeof intent === "string" && intent.trim()
+          ? [intent.trim()]
+          : [];
+
       // Check if business profile already exists
       const existingBusinessProfile = await BusinessProfile.findOne({ userId: updatedUser._id });
       if (!existingBusinessProfile) {
@@ -96,8 +107,16 @@ export const POST = (async (req: NextRequest) => {
           lastCreditReset: currentDate,
           creditResetDay: currentDate.getDate(),
           approvedModels: [],
+          onboardingCategory,
+          onboardingIntent,
         });
         console.log("✅ Business profile created automatically for user:", userId);
+      } else if (onboardingCategory.length > 0 || onboardingIntent.length > 0) {
+        // Update existing profile with onboarding data if provided
+        await BusinessProfile.findByIdAndUpdate(existingBusinessProfile._id, {
+          ...(onboardingCategory.length > 0 && { onboardingCategory }),
+          ...(onboardingIntent.length > 0 && { onboardingIntent }),
+        });
       }
     } else if (role === "MODEL") {
       // Check if model profile already exists

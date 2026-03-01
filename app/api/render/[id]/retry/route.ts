@@ -219,12 +219,30 @@ export async function POST(
         );
       }
 
+      // Use stored Fashn params from original request (user selection), fallback to "auto"
+      const storedCategory = isGeneration
+        ? (generation as { garmentCategory?: string })?.garmentCategory
+        : (render as { garmentCategory?: string })?.garmentCategory;
+      const storedPhotoType = isGeneration
+        ? (generation as { garmentPhotoType?: string })?.garmentPhotoType
+        : (render as { garmentPhotoType?: string })?.garmentPhotoType;
+      const category =
+        storedCategory && ["auto", "tops", "bottoms", "one-pieces"].includes(storedCategory)
+          ? (storedCategory as "auto" | "tops" | "bottoms" | "one-pieces")
+          : "auto";
+      const garment_photo_type =
+        storedPhotoType && ["auto", "flat-lay", "model"].includes(storedPhotoType)
+          ? (storedPhotoType as "auto" | "flat-lay" | "model")
+          : "auto";
+
       const fashnResponse = await fashnClient.virtualTryOn({
         garment_image: garmentImageUrl,
         model_image: modelImageUrl,
-        category: "auto",
-        garment_photo_type: "auto",
-        mode: "balanced", // performance | balanced | quality
+        category,
+        garment_photo_type,
+        mode: "balanced",
+        moderation_level: "permissive",
+        num_samples: 1,
       });
 
       const fashnImageUrl = fashnResponse.image_url;

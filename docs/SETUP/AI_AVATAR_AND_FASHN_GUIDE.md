@@ -58,6 +58,8 @@ Edit **`public/avatars/avatarMap.json`**.
 
 **Path format:** `/avatars/{gender}/{bodyType}/{skinTone}.jpg` or `.png` (leading slash, no `public`).
 
+For **new avatars from today**, you can optionally set framing, aspect ratio, skin tone category, and background. Use an object instead of a string: **photoFraming** `"full-body"`, `"half-body"`, `"three-quarter"`, `"upper-body"`, `"lower-body"`, or `"back-view"`; **aspectRatio** `"2:3"`, `"1:1"`, `"4:5"`, or `"16:9"` (default `"2:3"`); **skinToneCategory** `"light"`, `"medium"`, or `"deep"`; **background** `"indoor"` or `"outdoor"`. Legacy string paths still work (no extra filters).
+
 **Example (add one new avatar):**
 
 ```json

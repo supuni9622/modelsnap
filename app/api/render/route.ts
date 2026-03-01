@@ -15,8 +15,34 @@ import { uploadToS3, generateS3Key, isS3Configured } from "@/lib/s3";
 import { checkConsentStatus } from "@/lib/consent-utils";
 import { sendRenderCompletionEmail, sendLowCreditWarningEmail } from "@/lib/email-notifications";
 import { canGenerate, deductCredit } from "@/lib/credit-utils";
+import * as fs from "fs";
+import * as path from "path";
 
 const logger = createLogger({ component: "render-api" });
+
+/**
+ * When avatar image is a relative path (e.g. /avatars/female/curvy/SL-06.png), read from
+ * public/ and return a data URL so Fashn receives the image in the request body instead
+ * of fetching a URL (avoids ngrok interstitial / localhost unreachable).
+ */
+function relativeAvatarPathToDataUrl(relativePath: string): string | null {
+  if (!relativePath || relativePath.startsWith("http")) return null;
+  const normalized = relativePath.startsWith("/") ? relativePath.slice(1) : relativePath;
+  if (!normalized.startsWith("avatars/")) return null;
+  const publicPath = path.join(process.cwd(), "public", normalized);
+  const publicDir = path.join(process.cwd(), "public");
+  const resolved = path.resolve(publicPath);
+  if (!resolved.startsWith(publicDir) || !fs.existsSync(resolved)) return null;
+  try {
+    const buf = fs.readFileSync(resolved);
+    const ext = path.extname(resolved).toLowerCase();
+    const mime = ext === ".png" ? "image/png" : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "image/png";
+    const base64 = buf.toString("base64");
+    return `data:${mime};base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * POST /api/render
@@ -257,6 +283,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                 modelId: modelProfile._id,
                 modelType: "HUMAN_MODEL",
                 garmentImageUrl,
+                garmentCategory: category,
+                garmentPhotoType: garment_photo_type,
                 status: "processing",
                 creditsUsed: 1, // Human models also use credits
                 royaltyPaid: 0, // No royalties - models only earn from purchases
@@ -298,6 +326,8 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
                 userId,
                 garmentImageUrl,
                 avatarId: avatarId || "avatar",
+                garmentCategory: category,
+                garmentPhotoType: garment_photo_type,
                 status: "processing",
                 creditsUsed: 1,
               },
@@ -317,24 +347,29 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
 
         generation = result;
         
-        // Fetch avatar from database to get S3 URL (publicly accessible for FASHN API)
+        // Fetch avatar from database to get image URL for FASHN API
         if (avatarId) {
           const avatar = await Avatar.findById(avatarId);
           if (avatar && avatar.imageUrl) {
-            // Use S3 URL if available (starts with http/https), otherwise fallback
             if (avatar.imageUrl.startsWith("http")) {
-              modelImageUrl = avatar.imageUrl; // S3 URL - publicly accessible
+              modelImageUrl = avatar.imageUrl; // S3 or other public URL - Fashn can fetch it
             } else {
-              // Legacy: relative path - use provided avatarImageUrl or construct URL
-              modelImageUrl = avatarImageUrl || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${avatar.imageUrl}`;
-              logger.warn("Avatar using relative path - should be uploaded to S3", { avatarId, imageUrl: avatar.imageUrl });
+              // Relative path: send as base64 data URL so Fashn gets the image in-body (avoids
+              // ngrok interstitial / localhost unreachable when they fetch the URL)
+              const dataUrl = relativeAvatarPathToDataUrl(avatar.imageUrl);
+              if (dataUrl) {
+                modelImageUrl = dataUrl;
+                logger.debug("Avatar image sent as base64 data URL (relative path)", { avatarId });
+              } else {
+                modelImageUrl = avatarImageUrl || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${avatar.imageUrl}`;
+                logger.warn("Avatar using relative path - could not read from disk, using URL", { avatarId, imageUrl: avatar.imageUrl });
+              }
             }
           } else {
-            // Fallback to provided avatarImageUrl or construct from avatarId
-            modelImageUrl = avatarImageUrl || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${avatarId}`;
+            const dataUrl = relativeAvatarPathToDataUrl(typeof avatarId === "string" ? avatarId : "");
+            modelImageUrl = dataUrl || avatarImageUrl || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${avatarId}`;
           }
         } else {
-          // Use provided avatarImageUrl directly (should be S3 URL)
           modelImageUrl = avatarImageUrl || "";
         }
       }
@@ -346,7 +381,9 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
           model_image: modelImageUrl,
           category,
           garment_photo_type,
-          mode: "balanced", // performance | balanced | quality
+          mode: "balanced",
+          moderation_level: "permissive",
+          num_samples: 1,
         });
 
         const fashnImageUrl = fashnResponse.image_url;
@@ -673,15 +710,11 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.PUBLIC)(async (req: NextReq
     }
 
     // Step 6: Return rendered image URL
-    // Always return watermarked preview URL for display
-    // Original S3 URL is stored for download (non-watermarked for authorized users)
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    
-    // Generate watermarked preview URL if S3 upload succeeded
-    // Otherwise fallback to FASHN URL (which will be watermarked on-the-fly if needed)
+    // Use relative URL for our API so the frontend always loads from same origin (avoids port/host mismatch)
+    // Fallback to Fashn URL when S3/watermark path isn't used
     const previewImageUrl = s3UploadSucceeded && renderedImageUrl
-      ? `${baseUrl}/api/images/${generation._id}/watermarked?type=${isHumanModel ? "human" : "ai"}`
-      : fashnResponse?.image_url; // Fallback to FASHN URL if S3 upload failed
+      ? `/api/images/${generation._id}/watermarked?type=${isHumanModel ? "human" : "ai"}`
+      : (fashnResponse?.image_url ?? renderedImageUrl ?? "");
     
     // Get updated credits for all renders (after deduction)
     // Both AI avatars and human models use credits

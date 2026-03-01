@@ -29,13 +29,13 @@ export default function CancelPaymentPage() {
             <Button asChild className="w-full">
               <Link href="/dashboard/business/billing">
                 <CreditCard className="w-4 h-4 mr-2" />
-                Back to Billing
+                Back to Plans
               </Link>
             </Button>
             <Button variant="outline" asChild className="w-full">
               <Link href="/dashboard/business/generate">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Continue to Dashboard
+                Back to Studio
               </Link>
             </Button>
           </div>

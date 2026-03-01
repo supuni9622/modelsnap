@@ -20,12 +20,12 @@ interface DashboardSidebarProps {
 
 const businessNavItems = [
   {
-    label: "Generate",
+    label: "Studio",
     emoji: "✨",
     path: "/dashboard/business/generate",
   },
   {
-    label: "Photo History",
+    label: "Gallery",
     emoji: "📜",
     path: "/dashboard/business/history",
   },
@@ -35,12 +35,12 @@ const businessNavItems = [
     path: "/dashboard/business/models",
   },
   {
-    label: "Billing",
+    label: "Plans",
     emoji: "💳",
     path: "/dashboard/business/billing",
   },
   {
-    label: "Profile",
+    label: "Account",
     emoji: "👤",
     path: "/dashboard/business/profile",
   },
